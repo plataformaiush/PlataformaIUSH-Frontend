@@ -1,8 +1,8 @@
-# EduPlatform - Plataforma Educativa LMS
+# Iush - Plataforma Educativa
 
 ## Descripción
 
-EduPlatform es una **plataforma educativa web tipo LMS (Learning Management System)** personalizable por institución educativa, diseñada para gestionar todo el ciclo de aprendizaje: desde la creación de cursos hasta la certificación del estudiante.
+Iush es una **plataforma educativa web tipo LMS (Learning Management System)** personalizable por institución educativa, diseñada para gestionar todo el ciclo de aprendizaje: desde la creación de cursos hasta la certificación del estudiante.
 
 ### Características Principales
 
@@ -120,7 +120,7 @@ Copiar `.env.example` a `.env.local` y configurar:
 VITE_API_BASE_URL=http://localhost:8080/api
 VITE_ANALYTICS_PROVIDER=plausible
 VITE_MAX_FILE_SIZE=104857600
-VITE_APP_NAME=EduPlatform
+VITE_APP_NAME=Iush
 ```
 
 ## Paleta de Colores
@@ -143,5 +143,3 @@ Cada institución puede personalizar:
 Proyecto propiedad de la institución educativa. Todos los derechos reservados.
 
 ---
-
-**Estado Actual**: Arquitectura completa y lista para desarrollo en paralelo por los 10 equipos.
