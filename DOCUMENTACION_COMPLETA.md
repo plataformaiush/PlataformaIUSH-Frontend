@@ -1310,4 +1310,359 @@ npm run type-check   # Verificar tipos
 
 ---
 
+## 23.  CI/CD con GitHub Actions (Validación de Calidad)
+
+### ¿Por qué GitHub Actions SOLO para validación?
+
+```
+Proyecto académico desde cero con 10 equipos:
+1. Necesitamos asegurar calidad ANTES de integrar
+2. Evitar que código de baja calidad entre al main
+3. Coordinar 10 equipos sin conflictos
+4. Deploy MANUAL hasta tener arquitectura estable
+5. Focus en aprendizaje, no en automatización de deploy
+```
+
+### Workflows Implementados
+
+#### **CI Pipeline (Validación Obligatoria)**
+```yaml
+# .github/workflows/ci.yml
+name: CI Pipeline
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Type Check
+        run: npm run type-check
+      - name: Lint
+        run: npm run lint
+      - name: Test Coverage
+        run: npm run test:coverage
+      - name: Build Verification
+        run: npm run build
+      - name: Security Audit
+        run: npm audit --audit-level high
+```
+
+#### **Security Pipeline**
+```yaml
+# .github/workflows/security.yml
+name: Security Scan
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependency Audit
+        run: npm audit --audit-level high
+      - name: CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+      - name: Secret Scan
+        uses: trufflesecurity/trufflehog@main
+```
+
+### Status Checks Requeridos
+
+```
+Para hacer merge a develop/main:
+- CI Pipeline (quality checks)
+- Security Scan (vulnerabilities)
+- Type Check (0 errores TypeScript)
+- Test Coverage (>80%)
+- Build Verification
+- Code Review (aprobación humana)
+```
+
+### Flujo de Trabajo con GitHub Actions
+
+```
+1. Equipo crea rama feature/*
+2. Desarrolla siguiendo arquitectura
+3. Crea Pull Request a develop
+4. GitHub Actions ejecuta validaciones
+5. Si falla: Equipo corrige y vuelve a intentar
+6. Si pasa: Code review manual
+7. Merge a develop
+8. Deploy MANUAL cuando sea necesario
+```
+
+### Reglas de Oro
+
+```
+- NUNCA hacer merge si GitHub Actions falla
+- NUNCA hacer bypass de validaciones
+- SIEMPER esperar a que todos los checks pasen
+- NUNCA hacer deploy automático desde GitHub Actions
+- SIEMPER hacer deploy manual hasta estabilizar
+```
+
+---
+
+## 24.  Métricas y KPIs del Proyecto
+
+### Métricas Técnicas (Quality Gates)
+
+```
+Coverage de Tests:
+- Mínimo 80% coverage general
+- Mínimo 90% coverage en capa domain
+- Mínimo 70% coverage en capa presentation
+- Tests de integración para casos críticos
+
+Calidad de Código:
+- 0 errores de TypeScript
+- 0 warnings de ESLint
+- 0 vulnerabilidades de seguridad (npm audit)
+- Complejidad ciclomática < 10 por función
+- Build size < 1MB (gzipped)
+
+Performance:
+- First Contentful Paint < 2s
+- Lighthouse score > 90
+- Sin memory leaks en componentes
+- Bundle analysis optimizado
+```
+
+### Métricas de Equipo (Collaboration)
+
+```
+Productividad:
+- PR merge time: <24h promedio
+- Code review participation: 100%
+- Build success rate: >95%
+- Deploy frequency: 1-2x por semana
+
+Calidad:
+- Bug fix time: <4h promedio
+- Regression rate: <5%
+- Test failure rate: <10%
+- Code review approval rate: >90%
+```
+
+### Métricas de Proyecto (Success)
+
+```
+Entrega:
+- Features delivered on time: >80%
+- Sprint completion rate: >90%
+- Technical debt index: <20%
+- Documentation coverage: 100%
+
+Adopción:
+- Team satisfaction score: >8/10
+- Architecture compliance: 100%
+- Best practices adherence: >95%
+- Learning objectives achieved: >90%
+```
+
+### Cómo Medir estas Métricas
+
+```bash
+# Coverage
+npm run test:coverage
+
+# Build size
+npm run build && npx bundlesize
+
+# Performance
+npx lighthouse http://localhost:3000
+
+# Security
+npm audit
+
+# Code quality
+npm run lint && npm run type-check
+```
+
+---
+
+## 25.  Gestión de Errores y Logging
+
+### Tipos de Errores en la Arquitectura
+
+#### **Domain Errors (Errores de Negocio)**
+```typescript
+// src/domain/shared/errors/
+export class ValidationError extends Error {
+  constructor(message: string, public field?: string) {
+    super(message)
+    this.name = 'ValidationError'
+  }
+}
+
+export class BusinessRuleError extends Error {
+  constructor(message: string, public rule: string) {
+    super(message)
+    this.name = 'BusinessRuleError'
+  }
+}
+
+// Ejemplo de uso
+if (courseTitle.length < 3) {
+  throw new ValidationError('Course title must be at least 3 characters', 'title')
+}
+```
+
+#### **Infrastructure Errors (Errores Técnicos)**
+```typescript
+// src/infrastructure/errors/
+export class NetworkError extends Error {
+  constructor(message: string, public statusCode?: number) {
+    super(message)
+    this.name = 'NetworkError'
+  }
+}
+
+export class DatabaseError extends Error {
+  constructor(message: string, public operation: string) {
+    super(message)
+    this.name = 'DatabaseError'
+  }
+}
+```
+
+#### **Presentation Errors (Errores de UI)**
+```typescript
+// src/presentation/errors/
+export class UIError extends Error {
+  constructor(message: string, public component?: string) {
+    super(message)
+    this.name = 'UIError'
+  }
+}
+```
+
+### Strategy de Logging
+
+#### **Development Environment**
+```typescript
+// Console logging detallado
+const logger = {
+  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data),
+  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data),
+  error: (message: string, error?: Error) => console.error(`[ERROR] ${message}`, error),
+  debug: (message: string, data?: any) => console.debug(`[DEBUG] ${message}`, data),
+}
+```
+
+#### **Production Environment**
+```typescript
+// Service logging (estructurado)
+const logger = {
+  info: (message: string, meta?: Record<string, any>) => {
+    // Enviar a servicio de logging (Sentry, LogRocket, etc.)
+  },
+  warn: (message: string, meta?: Record<string, any>) => {
+    // Alertas de bajo nivel
+  },
+  error: (message: string, error?: Error, meta?: Record<string, any>) => {
+    // Alertas críticas con stack trace
+  },
+}
+```
+
+### Error Boundaries en React
+
+```tsx
+// src/presentation/error-handling/ErrorBoundary.tsx
+import React from 'react'
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+export class ErrorBoundary extends React.Component<
+  React.PropsWithChildren<{}>,
+  ErrorBoundaryState
+> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log error al servicio
+    logger.error('React Error Boundary', error, {
+      componentStack: errorInfo.componentStack,
+    })
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">
+              Something went wrong
+            </h1>
+            <p className="text-gray-600 mb-4">
+              We're working to fix this issue.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary text-white px-4 py-2 rounded"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+```
+
+### Manejo de Errores en Hooks
+
+```typescript
+// src/presentation/hooks/useErrorHandler.ts
+import { useState, useCallback } from 'react'
+
+export function useErrorHandler() {
+  const [error, setError] = useState<string | null>(null)
+
+  const handleError = useCallback((error: unknown) => {
+    if (error instanceof Error) {
+      logger.error('Hook Error', error)
+      setError(error.message)
+    } else {
+      logger.error('Unknown Error', new Error(String(error)))
+      setError('An unexpected error occurred')
+    }
+  }, [])
+
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
+  return { error, handleError, clearError }
+}
+```
+
+### Mejores Prácticas de Error Handling
+
+```
+1. Siempre loggear errores con contexto
+2. Nunar errores específicos por capa
+3. Usar Error Boundaries para React
+4. Manejar errores asíncronos en try/catch
+5. Proporcionar feedback al usuario
+6. Nunar errores con información sensible
+7. Implementar retry para errores recuperables
+8. Monitorear tasa de errores por feature
+```
+
+---
+
 **¡Bienvenidos a Iush! Esta guía será su mejor amiga durante el desarrollo. Si algo no está claro, pregunten. Estamos aquí para construir algo increíble juntos.**

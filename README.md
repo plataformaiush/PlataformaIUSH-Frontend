@@ -99,6 +99,52 @@ npm run format
 - `npm run format` - Formateo del código
 - `npm run type-check` - Verificación de tipos
 
+## GitHub Actions - Validación de Calidad
+
+El proyecto incluye **GitHub Actions para validación automática de calidad** que se ejecutan en cada Pull Request:
+
+### **CI Pipeline (Validación Obligatoria)**
+```yaml
+# .github/workflows/ci.yml
+- TypeScript compilation (0 errores)
+- ESLint checking (0 warnings)
+- Prettier formatting verification
+- Test execution (>80% coverage)
+- Build verification
+- Security audit (0 vulnerabilities)
+```
+
+### **Security Pipeline**
+```yaml
+# .github/workflows/security.yml
+- Dependency vulnerability scan
+- Code security analysis
+- Secret scanning
+- License compliance check
+```
+
+### **¿Por qué solo validación y no deploy?**
+
+```
+1. Proyecto académico desde cero
+2. 10 equipos trabajando en paralelo
+3. Necesitamos asegurar calidad antes de integrar
+4. Deploy manual hasta tener arquitectura estable
+5. Evitar conflictos entre equipos
+```
+
+### **Status Checks en Pull Requests**
+```
+Todos los PRs deben pasar:
+- CI Pipeline
+- Security Scan
+- Type Check
+- Test Coverage
+- Build Verification
+```
+
+**Nota**: Los equipos deben esperar a que todos los checks pasen antes de hacer merge a develop/main.
+
 ## Flujo de Trabajo
 
 ### Ramas
