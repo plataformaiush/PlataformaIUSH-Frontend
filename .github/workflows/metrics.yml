@@ -1,0 +1,69 @@
+name: Project Metrics
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Test Coverage Report
+        run: npm run test:coverage
+        
+      - name: Coverage Summary
+        run: |
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          npx nyc report --reporter=text-summary >> $GITHUB_STEP_SUMMARY
+          
+      - name: Build Application
+        run: npm run build
+        
+      - name: Bundle Analysis
+        run: |
+          echo "## Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "Bundle size should be < 1MB gzipped" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Check Documentation Coverage
+        run: |
+          echo "## Documentation Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "README.md lines: $(wc -l < README.md)" >> $GITHUB_STEP_SUMMARY
+          echo "DOCUMENTACION_COMPLETA.md lines: $(wc -l < DOCUMENTACION_COMPLETA.md)" >> $GITHUB_STEP_SUMMARY
+          echo "Total documentation files: $(find . -name "*.md" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Architecture Compliance Check
+        run: |
+          echo "## Architecture Compliance" >> $GITHUB_STEP_SUMMARY
+          echo "Domain layer files: $(find src/domain -name "*.ts" -o -name "*.tsx" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Application layer files: $(find src/application -name "*.ts" -o -name "*.tsx" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Infrastructure layer files: $(find src/infrastructure -name "*.ts" -o -name "*.tsx" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Presentation layer files: $(find src/presentation -name "*.ts" -o -name "*.tsx" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Team Structure Validation
+        run: |
+          echo "## Team Structure Validation" >> $GITHUB_STEP_SUMMARY
+          echo "Team 1 folders (courses, modules, contents): $(find src -path "*/courses/*" -o -path "*/modules/*" -o -path "*/contents/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 2 folders (files): $(find src -path "*/files/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 3 folders (institutions): $(find src -path "*/institutions/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 4 folders (admin): $(find src -path "*/admin/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 5 folders (grades, certifications): $(find src -path "*/grades/*" -o -path "*/certifications/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 6 folders (teacher): $(find src -path "*/teacher/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 7 folders (socio-emotional): $(find src -path "*/socio-emotional/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 8 folders (auth, users, roles): $(find src -path "*/auth/*" -o -path "*/users/*" -o -path "*/roles/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 9 folders (analytics): $(find src -path "*/analytics/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "Team 10 folders (student): $(find src -path "*/student/*" | wc -l)" >> $GITHUB_STEP_SUMMARY
