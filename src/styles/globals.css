@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for theme customization */
+:root {
+  --color-background: #ffffff;
+  --color-foreground: #060a0d;
+  --color-primary: #223740;
+  --color-secondary: #5a878c;
+  --color-tertiary: #aeebf2;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-input: #ffffff;
+  --color-ring: #223740;
+}
+
+/* Dark theme variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #060a0d;
+    --color-foreground: #ffffff;
+    --color-primary: #aeebf2;
+    --color-secondary: #5a878c;
+    --color-tertiary: #223740;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-border: #334155;
+    --color-input: #0f172a;
+    --color-ring: #aeebf2;
+  }
+}
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Utility classes */
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary/90;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-white hover:bg-secondary/90;
+}
+
+.btn-tertiary {
+  @apply bg-tertiary text-primary hover:bg-tertiary/90;
+}
