@@ -1,4 +1,4 @@
-- Plataforma Educativa LMS
+# Iush - Plataforma Educativa LMS
 
 ## Descripción
 
