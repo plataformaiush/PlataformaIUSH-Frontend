@@ -1,4 +1,4 @@
-# EduPlatform - Plataforma Educativa LMS
+- Plataforma Educativa LMS
 
 ## Descripción
 
