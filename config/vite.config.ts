@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     legacy({
-      targets: ['last 3 versions', '> 0.5%', 'not dead'],
+      targets: ['last 2 versions', '> 1%', 'not dead'], // Less targets = faster build
       additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
       modernPolyfills: ['es.promise.finally', 'es/map', 'es/set'],
     }),
@@ -34,8 +34,9 @@ export default defineConfig({
   build: {
     target: 'es2015',
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable source maps for faster builds
     cssTarget: ['chrome61', 'firefox60', 'safari11', 'edge79'],
+    minify: 'esbuild', // Faster minifier
     rollupOptions: {
       output: {
         manualChunks: {

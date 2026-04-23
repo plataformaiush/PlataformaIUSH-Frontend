@@ -1,8 +1,354 @@
-# Iush - Plataforma Educativa
+# 🎓 Iush - Plataforma Educativa LMS
 
-## Descripción
+## 🚀 ¡Nuevo aquí? Lee la guía completa
 
-Iush es una **plataforma educativa web tipo LMS (Learning Management System)** personalizable por institución educativa, diseñada para gestionar todo el ciclo de aprendizaje: desde la creación de cursos hasta la certificación del estudiante.
+**[📖 Ver guía completa del proyecto](COMPLETO.md)**
+
+---
+
+## 🎓 Descripción
+
+**Plataforma LMS tipo Duolingo/Platzi** para educación superior con modelo de suscripciones.
+
+Iush es una **plataforma educativa web tipo LMS (Learning Management System)** diseñada para instituciones educativas que buscan ofrecer cursos online con:
+
+- **Suscripciones pagas** por institución
+- **Multi-tenant** - Cada cliente tiene su instancia independiente
+- **Contenido multimedia** - Videos, textos, PDF, docs, xlsx
+- **Personalización completa** - Logo y colores por institución
+- **Seguridad robusta** - Bearer tokens y permisos granulares
+- **Analytics integrado** - Google Ad Manager o equivalente
+
+---
+
+## 🎯 Características Principales
+
+### 📚 **Gestión Educativa Completa**
+- **Multi-rol**: Super Admin, Admin, Docente, Estudiante
+- **Gestión de cursos**: Creación, módulos y contenido multimedia
+- **Contenido diverso**: Videos, textos, archivos (PDF, Word, Excel)
+- **Sistema de calificaciones**: Por módulo y curso completo
+- **Certificaciones automáticas**: Generación de certificados PDF
+- **Competencias socioemocionales**: Evaluación de habilidades blandas
+
+### 🎨 **Personalización por Institución**
+- **White-label completo**: Logo, colores y branding personalizado
+- **Variables CSS**: Fondos, textos primarios/secundarios/terciarios
+- **Configuración visual**: Cada institución con su identidad única
+
+### 📱 **Experiencia de Usuario**
+- **Responsive design**: Mobile-first, compatible con todos los dispositivos
+- **Retrocompatibilidad**: Soporte para las 3 últimas versiones de navegadores
+- **Interfaz moderna**: React 19 + TypeScript + Tailwind CSS 4
+
+### 🔐 **Seguridad y Analytics**
+- **Seguridad avanzada**: Bearer tokens con expiración automática
+- **Permisos granulares**: Control visual por rol y permisos específicos
+- **Analytics integrado**: Google Ad Manager o equivalente libre para métricas
+
+---
+
+## 🏗️ Arquitectura MVP (2 Meses)
+
+### 📁 **Estructura Simple y Directa**
+
+```
+src/
+├── 🧠 domain/                    ← REGLAS DEL JUEGO (Lógica pura)
+│   ├── shared/                  ← Código que todos usan
+│   │   ├── interfaces/          ← Contratos entre equipos
+│   │   ├── value-objects/       ← UUID, Email, colores
+│   │   └── enums/              ← Roles, estados
+│   ├── auth/                    ← Equipo 8: Login y seguridad
+│   ├── courses/                 ← Equipo 1: Cursos y contenido
+│   ├── files/                   ← Equipo 2: Archivos multimedia
+│   ├── institutions/            ← Equipo 3: Configuración visual
+│   ├── grades/                  ← Equipo 5: Notas y certificados
+│   ├── socio-emotional/         ← Equipo 7: Habilidades blandas
+│   ├── analytics/               ← Equipo 9: Métricas y reportes
+│   └── student/                 ← Equipo 10: Datos del estudiante
+├── 🎨 presentation/              ← LO QUE VE EL USUARIO (Vistas)
+│   ├── features/               ← Componentes por equipo
+│   │   ├── auth/               ← Login, registro (Equipo 8)
+│   │   ├── courses/            ← Lista cursos, detalle (Equipo 1)
+│   │   ├── files/              ← Upload archivos (Equipo 2)
+│   │   ├── institutions/       ← Configuración (Equipo 3)
+│   │   ├── admin/              ← Vista admin (Equipo 4)
+│   │   ├── grades/             ← Calificaciones (Equipo 5)
+│   │   ├── teacher/            ← Vista docente (Equipo 6)
+│   │   ├── socio-emotional/    ← Evaluación (Equipo 7)
+│   │   ├── analytics/          ← Dashboard métricas (Equipo 9)
+│   │   └── student/            ← Dashboard estudiante (Equipo 10)
+│   └── stores/                 ← Estado global simple
+├── 🛣️ routes/                    ← NAVEGACIÓN (Enlaces entre páginas)
+├── 🎨 styles/                    ← ESTILOS GLOBALES (CSS)
+└── 🧪 tests/                     ← PRUEBAS AUTOMÁTICAS
+```
+
+### 🔧 **¿Cómo funciona en práctica?**
+
+**1. Cada equipo tiene SU carpeta:**
+```bash
+# Equipo 1 trabaja aquí:
+src/domain/courses/          ← Reglas de los cursos
+src/presentation/features/courses/  ← Vistas de cursos
+
+# Equipo 8 trabaja aquí:
+src/domain/auth/             ← Reglas de login
+src/presentation/features/auth/    ← Vistas de login
+```
+
+**2. Los equipos NO se bloquean:**
+- **Equipo 9** puede hacer analytics sin esperar al **Equipo 8**
+- **Equipo 1** puede crear cursos sin esperar al **Equipo 3**
+- **Todos trabajan en paralelo** 🚀
+
+**3. Comunicación entre equipos:**
+```typescript
+// Si necesitas algo de otro equipo, usa interfaces compartidas
+import { ITokenManager } from '../shared/interfaces/ITokenManager'
+
+// No importes directamente de otros equipos
+// ❌ import { TokenManager } from '../auth/types'  // BLOQUEA
+// ✅ import { ITokenManager } from '../shared/interfaces/ITokenManager'  // LIBRE
+```
+
+### 👥 **División por Equipos (32 Estudiantes)**
+
+| Equipo | Módulo Responsable | Carpeta Domain | Carpeta Presentation |
+|--------|-------------------|----------------|-------------------|
+| **Equipo 1** | Cursos, Módulos, Contenidos | `domain/courses/`, `domain/modules/`, `domain/contents/` | `presentation/features/courses/` |
+| **Equipo 2** | Gestión de Archivos | `domain/files/` | `presentation/features/files/` |
+| **Equipo 3** | Vista Institución (Super Admin) | `domain/institutions/` | `presentation/features/institutions/` |
+| **Equipo 4** | Vista Administrador | `domain/admin/` | `presentation/features/admin/` |
+| **Equipo 5** | Notas y Certificaciones | `domain/grades/`, `domain/certifications/` | `presentation/features/grades/` |
+| **Equipo 6** | Vista Docente | `domain/teacher/` | `presentation/features/teacher/` |
+| **Equipo 7** | Competencias Socioemocionales | `domain/socio-emotional/` | `presentation/features/socio-emotional/` |
+| **Equipo 8** | Login, Usuarios, Roles | `domain/auth/`, `domain/users/`, `domain/roles/` | `presentation/features/auth/` |
+| **Equipo 9** | Reportes (Ad Manager) | `domain/analytics/` | `presentation/features/analytics/` |
+| **Equipo 10** | Vista Estudiante | `domain/student/` | `presentation/features/student/` |
+
+---
+
+## 🛠️ Stack Tecnológico
+
+### Frontend
+- **React 19.2.5** + **TypeScript 5.7.0** + **Vite 6.0.0**
+- **Tailwind CSS 4.0.0** + **@tailwindcss/postcss 4.2.4**
+- **Zustand 5.0.2** + **TanStack Query 5.62.0**
+- **React Router 7.1.0** + **React Hook Form 7.54.0** + **Zod 3.24.1**
+- **Axios 1.7.9** + **Lucide React 0.468.0**
+
+### Desarrollo y Calidad
+- **Node.js 20.20.0** + **npm 10.8.2**
+- **ESLint 9.39.4** + **Prettier 3.4.2**
+- **Vitest 2.1.0** + **Testing Library 16.3.2** + **MSW 2.7.0**
+- **@vitest/coverage-v8 2.1.0** - Reporte de cobertura
+
+### Build y Deploy
+- **Vite 6.0.0** con **@vitejs/plugin-legacy** - Retrocompatibilidad
+- **GitHub Actions** - CI/CD automatizado
+- **Configuración optimizada** - Build rápido y eficiente
+
+---
+
+## 🚀 Empezar a Desarrollar
+
+### 📋 **Prerrequisitos**
+- Node.js 20.20.0+
+- npm 10.8.2+
+- Git
+
+### ⚡ **Instalación y Setup**
+```bash
+# 1. Clonar el repositorio
+git clone <repository-url>
+cd PlataformaIUSH-Frontend
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Verificar que todo funciona
+npm run type-check    # Debe decir "0 errors"
+npm run lint          # Debe decir "0 warnings"
+npm run test          # Debe pasar los tests
+
+# 4. Iniciar desarrollo
+npm run dev          # Abre http://localhost:3000
+```
+
+### 🎯 **Paso 2: Encuentra tu equipo y carpeta**
+
+**Busca tu equipo en la tabla de arriba y ve a tu carpeta:**
+
+```bash
+# Ejemplo: Si eres Equipo 1 (Cursos)
+cd src/domain/courses/           ← Trabajas aquí
+cd src/presentation/features/courses/  ← Y aquí
+
+# Ejemplo: Si eres Equipo 8 (Auth)
+cd src/domain/auth/              ← Trabajas aquí
+cd src/presentation/features/auth/     ← Y aquí
+```
+
+### 🛠️ **Paso 3: Crea tu primer código (Patrón para todos)**
+
+**A. Crea tipos en domain:**
+```typescript
+// src/domain/[tu-equipo]/types.ts
+export interface Course {
+  id: string
+  title: string
+  description: string
+}
+
+export interface CreateCourseRequest {
+  title: string
+  description: string
+}
+```
+
+**B. Crea componentes en presentation:**
+```typescript
+// src/presentation/features/[tu-equipo]/CourseList.tsx
+import React from 'react'
+import { Course } from '../../../domain/[tu-equipo]/types'
+
+export function CourseList() {
+  const courses: Course[] = [
+    { id: '1', title: 'React Básico', description: 'Aprende React' }
+  ]
+  
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Mis Cursos</h1>
+      <div className="grid gap-4">
+        {courses.map(course => (
+          <div key={course.id} className="border p-4 rounded">
+            <h3 className="font-semibold">{course.title}</h3>
+            <p className="text-gray-600">{course.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+**C. Crea tests:**
+```typescript
+// src/presentation/features/[tu-equipo]/CourseList.test.tsx
+import { render, screen } from '@testing-library/react'
+import { CourseList } from './CourseList'
+
+describe('CourseList', () => {
+  it('should render course list', () => {
+    render(<CourseList />)
+    expect(screen.getByText('Mis Cursos')).toBeInTheDocument()
+  })
+})
+```
+
+### 🧪 **Scripts Disponibles (Uso Diario)**
+```bash
+npm run dev              # Desarrollo rápido con recarga
+npm run build            # Build para producción (7.33s)
+npm run build:fast       # Build ultra rápido (0.85s)
+npm run test             # Ejecutar tests
+npm run test:coverage    # Tests con cobertura
+npm run lint             # Revisar calidad de código
+npm run type-check       # Verificar TypeScript
+npm run preview          # Ver build local
+```
+
+### ⚠️ **Reglas de Oro (¡MUY IMPORTANTE!)**
+
+**✅ HACER:**
+- Trabaja SOLO en tus carpetas asignadas
+- Usa interfaces compartidas para comunicarte
+- Escribe tests para tu código
+- Haz commits descriptivos
+- Pide ayuda si estás bloqueado
+
+**❌ NO HACER:**
+- No toques código de otros equipos
+- No importes directamente de otros equipos
+- No subas código con errores
+- No hagas cambios en config/ sin preguntar
+- No te quedes bloqueado sin pedir ayuda
+
+---
+
+## 📁 Estructura de Carpetas
+
+```
+PlataformaIUSH-Frontend/
+├── 📁 src/                  # Código fuente
+│   ├── domain/            # Lógica de negocio por equipos
+│   ├── presentation/      # Vistas y componentes
+│   ├── routes/           # Navegación
+│   ├── styles/           # Estilos globales
+│   └── tests/            # Tests automatizados
+├── 📁 config/              # Configuración técnica
+│   ├── vite.config.ts    # Configuración Vite
+│   ├── tailwind.config.ts # Configuración Tailwind
+│   ├── eslint.config.js  # Reglas de código
+│   └── tsconfig.json     # Configuración TypeScript
+├── 📁 public/             # Archivos estáticos
+├── 📁 .github/            # CI/CD automatización
+├── 📄 package.json        # Dependencias y scripts
+└── 📄 README.md           # Este archivo
+```
+
+---
+
+## 🎯 MVP en 2 Meses
+
+### 📅 **Timeline Realista**
+- **Mes 1**: Setup y estructura (✅ Completado) → Desarrollo de módulos core
+- **Mes 2**: Integraciones avanzadas → Testing y deploy
+
+### 🎓 **Objetivos de Aprendizaje**
+- **React 19 + TypeScript** - Tecnologías del mercado laboral
+- **Arquitectura simple** - Práctica y aplicable
+- **Trabajo en equipo** - Colaboración y coordinación
+- **Testing automatizado** - Calidad de software
+- **CI/CD** - Integración y despliegue continuo
+
+---
+
+## 🤝 Contribución
+
+### 👥 **Guía para Estudiantes**
+1. **Encuentra tu equipo** en la tabla de módulos
+2. **Ve a tu carpeta** asignada en `src/domain/` y `src/presentation/features/`
+3. **Sigue los patrones existentes** - Copia y adapta
+4. **Escribe tests** para tu código
+5. **Haz commits descriptivos** - Seguir convenciones
+
+### 📋 **Requisitos de Calidad**
+- **TypeScript estricto** - Sin errores de tipado
+- **Tests funcionales** - Cobertura mínima del código
+- **Componentes reutilizables** - DRY principle
+- **Mobile First** - Responsive design
+- **Accesibilidad** - Buenas prácticas WCAG
+
+---
+
+## 📄 Licencia
+
+Proyecto educativo para la materia **Profundización 2 - Desarrollo Software** de la Universidad Salazar y Herrera.
+
+---
+
+## 🎓 Contacto
+
+**Profesor:** Juan David Fernández Moreno  
+**Email:** juan.fernandez@salazaryherrera.edu.co
+
+---
+
+*Última actualización: Abril 2026 - MVP listo para desarrollo de 32 estudiantes*
 
 ### Características Principales
 

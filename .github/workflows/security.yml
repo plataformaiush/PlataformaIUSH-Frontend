@@ -33,7 +33,7 @@ jobs:
           head: HEAD
           
       - name: Security Scorecard
-        uses: ossf/scorecard-action@v2
+        uses: ossf/scorecard-action@v2.4.0
         with:
           results-file: security-results.json
           results-format: sarif

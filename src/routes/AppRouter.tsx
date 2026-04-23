@@ -1,3 +1,5 @@
+import React from 'react'
+
 // Este es un placeholder temporal
 // Los equipos crearán sus rutas específicas según sus necesidades
 //
