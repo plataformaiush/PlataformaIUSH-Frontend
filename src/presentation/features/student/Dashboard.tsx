@@ -1,8 +1,48 @@
 import React from 'react'
-import { StudentService, Course, Certificate } from '../../../domain/student'
+import { Course, Certificate } from '../../../domain/student'
+import { useStudentData } from './hooks/useStudentData'
 
 export function StudentDashboard() {
-  const studentData = StudentService.getDashboardData()
+  const { student, loading, error, refreshData } = useStudentData()
+
+  // Estados de loading y error
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={refreshData}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">No se encontraron datos del estudiante</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -14,32 +54,32 @@ export function StudentDashboard() {
             <div className="flex items-center space-x-4 mb-6 md:mb-0">
               <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
                 <span className="text-3xl text-blue-600 font-bold">
-                  {studentData.name.split(' ').map((n: string) => n[0]).join('')}
+                  {student.name.split(' ').map((n: string) => n[0]).join('')}
                 </span>
               </div>
               <div>
-                <h1 className="text-3xl font-bold">{studentData.name}</h1>
-                <p className="text-blue-100">{studentData.email}</p>
-                <p className="text-blue-200 text-sm">{studentData.institution}</p>
+                <h1 className="text-3xl font-bold">{student.name}</h1>
+                <p className="text-blue-100">{student.email}</p>
+                <p className="text-blue-200 text-sm">{student.institution}</p>
               </div>
             </div>
 
             {/* Estadísticas rápidas */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold">{studentData.progress.totalCourses}</div>
+                <div className="text-2xl font-bold">{student.progress.totalCourses}</div>
                 <div className="text-blue-200 text-sm">Cursos Totales</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{studentData.progress.completedCourses}</div>
+                <div className="text-2xl font-bold">{student.progress.completedCourses}</div>
                 <div className="text-blue-200 text-sm">Completados</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{studentData.progress.averageGrade.toFixed(1)}</div>
+                <div className="text-2xl font-bold">{student.progress.averageGrade.toFixed(1)}</div>
                 <div className="text-blue-200 text-sm">Promedio</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{studentData.progress.totalHours}h</div>
+                <div className="text-2xl font-bold">{student.progress.totalHours}h</div>
                 <div className="text-blue-200 text-sm">Horas</div>
               </div>
             </div>
@@ -57,7 +97,7 @@ export function StudentDashboard() {
               <h2 className="text-xl font-bold text-gray-900 mb-6">Mis Cursos</h2>
               
               <div className="space-y-4">
-                {studentData.enrolledCourses.map((course: Course) => (
+                {student.enrolledCourses.map((course: Course) => (
                   <CourseCard key={course.id} course={course} />
                 ))}
               </div>
@@ -79,12 +119,12 @@ export function StudentDashboard() {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span>Cursos Completados</span>
-                    <span>{studentData.progress.completedCourses}/{studentData.progress.totalCourses}</span>
+                    <span>{student.progress.completedCourses}/{student.progress.totalCourses}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-green-500 h-2 rounded-full"
-                      style={{ width: `${(studentData.progress.completedCourses / studentData.progress.totalCourses) * 100}%` }}
+                      style={{ width: `${(student.progress.completedCourses / student.progress.totalCourses) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -92,12 +132,12 @@ export function StudentDashboard() {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span>Promedio General</span>
-                    <span>{studentData.progress.averageGrade.toFixed(1)}/10</span>
+                    <span>{student.progress.averageGrade.toFixed(1)}/10</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${(studentData.progress.averageGrade / 10) * 100}%` }}
+                      style={{ width: `${(student.progress.averageGrade / 10) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -109,7 +149,7 @@ export function StudentDashboard() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Certificados</h3>
               
               <div className="space-y-3">
-                {studentData.progress.certificates.map((cert: Certificate) => (
+                {student.progress.certificates.map((cert: Certificate) => (
                   <div key={cert.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <div className="font-medium text-gray-900">{cert.courseTitle}</div>
@@ -123,7 +163,7 @@ export function StudentDashboard() {
                   </div>
                 ))}
                 
-                {studentData.progress.certificates.length === 0 && (
+                {student.progress.certificates.length === 0 && (
                   <p className="text-gray-500 text-center py-4">
                     No hay certificados disponibles
                   </p>
