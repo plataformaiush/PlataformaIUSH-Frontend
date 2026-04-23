@@ -36,7 +36,19 @@ jobs:
         run: npm run format --check
         
       - name: Test
-        run: npm run test:coverage || true
+        run: npm run test:coverage
+        
+      - name: Generate Coverage Summary
+        run: |
+          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          if [ -f "./coverage/coverage-summary.json" ]; then
+            echo "### 📈 Coverage Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat ./coverage/coverage-summary.json | jq -r '.total | to_entries[] | "\(.key): \(.value)%"' >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
         
       - name: Build
         run: npm run build
@@ -44,5 +56,5 @@ jobs:
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage/lcov.info
+          directory: ./coverage
           fail_ci_if_error: false

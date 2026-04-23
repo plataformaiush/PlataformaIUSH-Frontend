@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     legacy({
-      targets: ['last 2 versions', '> 1%', 'not dead'], // Less targets = faster build
+      targets: ['last 3 versions', '> 0.5%', 'not dead'], // Support last 3 versions
       additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
       modernPolyfills: ['es.promise.finally', 'es/map', 'es/set'],
     }),

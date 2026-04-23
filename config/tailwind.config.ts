@@ -70,5 +70,10 @@ export default {
       },
     },
   },
+  },
   plugins: [],
+  // Soporte para últimas 3 versiones de navegadores
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
 } satisfies Config
