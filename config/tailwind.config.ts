@@ -61,11 +61,11 @@ export default {
         sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
       screens: {
-        'xs': '320px',
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
+        'xs': '320px',   // Mobile S
+        'sm': '375px',   // Mobile M
+        'md': '425px',   // Mobile L
+        'lg': '768px',   // Tablet
+        'xl': '1024px',  // Laptop
         '2xl': '1536px',
       },
     },

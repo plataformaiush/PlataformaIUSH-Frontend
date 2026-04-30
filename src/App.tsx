@@ -1,8 +1,13 @@
 import React from 'react'
 import { AppRouter } from './routes/AppRouter'
+import { InstitutionProvider } from './context/InstitutionContext'
 
 function App() {
-  return <AppRouter />
+  return (
+    <InstitutionProvider>
+      <AppRouter />
+    </InstitutionProvider>
+  )
 }
 
 export default App

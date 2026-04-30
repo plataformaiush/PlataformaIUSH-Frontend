@@ -1,0 +1,27 @@
+.superAdminContainer {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.superAdminContainer button,
+.superAdminContainer [role="button"],
+.superAdminContainer a {
+  cursor: pointer !important;
+}
+
+.superAdminContainer button:hover,
+.superAdminContainer [role="button"]:hover,
+.superAdminContainer a:hover {
+  cursor: pointer !important;
+}
+
+/* Asegurar que funciona con elementos inline también */
+.superAdminContainer * {
+  cursor: pointer;
+}
+
+.superAdminContainer *[onclick],
+.superAdminContainer *[role="button"] {
+  cursor: pointer !important;
+}
