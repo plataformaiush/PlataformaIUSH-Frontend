@@ -1,4 +1,5 @@
 /* CSS Variables for theme customization */
+@import "tailwindcss";
 :root {
   --color-background: #ffffff;
   --color-foreground: #060a0d;
