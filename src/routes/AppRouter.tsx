@@ -1,16 +1,15 @@
-import React from 'react'
+import { useRoutes } from 'react-router-dom'
+import { authRoutes } from './definitions/auth.routes'
+import { courseRoutes } from './definitions/course.routes'
 
-// Este es un placeholder temporal
-// Los equipos crearán sus rutas específicas según sus necesidades
-//
-// Equipo 8 (Auth, Usuarios, Roles): src/routes/definitions/auth.routes.ts
-// Equipo 1 (Cursos, Módulos, Contenidos): src/routes/definitions/course.routes.ts
-// Equipo 2 (Archivos): src/routes/definitions/file.routes.ts
-// ... etc
-//
-// Cada equipo debe crear sus propias rutas en sus carpetas asignadas
-
+// Este router combina las rutas de auth y del equipo 1.
 export const AppRouter = () => {
+  const element = useRoutes([...authRoutes, ...courseRoutes])
+
+  if (element) {
+    return element
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
