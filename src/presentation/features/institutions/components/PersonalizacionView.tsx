@@ -103,14 +103,16 @@ export function PersonalizacionView() {
       </div>
 
       {/* Logo */}
-      <div className="border rounded-xl p-4 space-y-3" 
+      <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md" 
         style={{ 
-          backgroundColor: 'var(--color-background)',
           borderColor: 'var(--color-border)'
         }}>
-        <p className="text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>Logo de la institución</p>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider">Logo de la institución</p>
+        </div>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
         <div>
-          <label className="text-xs mb-1 block" style={{ color: 'var(--color-muted-foreground)' }}>URL del logo</label>
+          <label className="text-xs mb-1 block" style={{ color: '#475569' }}>URL del logo</label>
           <input
             type="text"
             value={logo}
@@ -118,16 +120,16 @@ export function PersonalizacionView() {
             placeholder="https://mi-institucion.edu/logo.png"
             className="w-full text-sm px-3 py-2 border rounded-lg outline-none"
             style={{
-              borderColor: 'var(--color-border)',
+              borderColor: '#E2E8F0',
               backgroundColor: 'var(--color-input)',
-              color: 'var(--color-foreground)'
+              color: '#0F172A'
             }}
           />
         </div>
         <div className="flex items-center justify-center p-6 border border-dashed rounded-lg min-h-[120px]"
           style={{
-            borderColor: 'var(--color-border)',
-            backgroundColor: 'var(--color-muted)'
+            borderColor: '#E2E8F0',
+            backgroundColor: '#F8FAFC'
           }}>
           {logo && !logoError ? (
             <img
@@ -139,38 +141,39 @@ export function PersonalizacionView() {
             />
           ) : logo && logoError ? (
             <div className="text-center">
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-foreground)' }}>❌ No se pudo cargar</p>
-              <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>Verifica la URL del logo</p>
+              <p className="text-xs font-medium mb-1" style={{ color: '#0F172A' }}>❌ No se pudo cargar</p>
+              <p className="text-[10px]" style={{ color: '#475569' }}>Verifica la URL del logo</p>
             </div>
           ) : (
-            <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>📷 Ingresa una URL para ver el logo</p>
+            <p className="text-xs" style={{ color: '#475569' }}>📷 Ingresa una URL para ver el logo</p>
           )}
+        </div>
         </div>
       </div>
 
       {/* Colores */}
-      <div className="border rounded-xl p-4 space-y-3" 
+      <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md" 
         style={{ 
-          backgroundColor: 'var(--color-background)',
           borderColor: 'var(--color-border)'
         }}>
-        <div>
-          <p className="text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>Paleta de colores</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider">Paleta de colores</p>
+          <p className="text-xs mt-0.5 text-white/80">
             Haz clic en el cuadro de color o escribe el hexadecimal
           </p>
         </div>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
 
         <div className="space-y-4">
           {['Colores principales', 'Fondos', 'Texto', 'Bordes'].map((category) => (
             <div key={category}>
-              <h3 className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+              <h3 className="text-xs font-semibold uppercase mb-2" style={{ color: '#475569' }}>
                 {category}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {COLOR_FIELDS.filter((f) => f.category === category).map(({ key, label }) => (
                   <div key={key}>
-                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-muted-foreground)' }}>
+                    <label className="text-xs mb-1 block" style={{ color: '#475569' }}>
                       {label}
                     </label>
                     <div className="flex items-center gap-2">
@@ -180,8 +183,8 @@ export function PersonalizacionView() {
                         onChange={(e) => handleColorChange(key, e.target.value)}
                         className="w-8 h-8 rounded-lg border cursor-pointer p-0.5"
                         style={{
-                          borderColor: 'var(--color-border)',
-                          backgroundColor: 'var(--color-background)'
+                          borderColor: '#E2E8F0',
+                          backgroundColor: '#F8FAFC'
                         }}
                       />
                       <input
@@ -191,9 +194,9 @@ export function PersonalizacionView() {
                         maxLength={7}
                         className="flex-1 text-xs font-mono px-2 py-1.5 border rounded-lg outline-none uppercase"
                         style={{
-                          borderColor: 'var(--color-border)',
+                          borderColor: '#E2E8F0',
                           backgroundColor: 'var(--color-input)',
-                          color: 'var(--color-foreground)'
+                          color: '#0F172A'
                         }}
                       />
                     </div>
@@ -203,15 +206,18 @@ export function PersonalizacionView() {
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {/* Vista previa de colores en componentes */}
-      <div className="border rounded-xl p-4 space-y-3" 
+      <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md" 
         style={{ 
-          backgroundColor: 'var(--color-background)',
           borderColor: 'var(--color-border)'
         }}>
-        <p className="text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>Vista previa</p>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <p className="text-sm font-semibold uppercase tracking-wider">Vista previa</p>
+        </div>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Botón primario */}
           <div>
@@ -238,17 +244,17 @@ export function PersonalizacionView() {
           </div>
 
           {/* Texto principal */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: colors.background, borderColor: colors.border, borderWidth: '1px' }}>
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC', borderColor: colors.border, borderWidth: '1px' }}>
             <p style={{ color: colors.textBase }}>Texto principal: Como ta muchachos</p>
           </div>
 
           {/* Texto secundario */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: colors.background, borderColor: colors.border, borderWidth: '1px' }}>
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC', borderColor: colors.border, borderWidth: '1px' }}>
             <p style={{ color: colors.textSecondary }}>Texto secundario: Information adicional</p>
           </div>
 
           {/* Texto tenue */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: colors.background, borderColor: colors.border, borderWidth: '1px' }}>
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC', borderColor: colors.border, borderWidth: '1px' }}>
             <p style={{ color: colors.textTertiary }}>Texto tenue: Detalles mínimos</p>
           </div>
 
@@ -257,11 +263,12 @@ export function PersonalizacionView() {
             <input type="text" placeholder="Ejemplo de input"
               className="w-full px-3 py-2 rounded-lg border outline-none text-xs"
               style={{
-                backgroundColor: colors.input,
+                backgroundColor: 'var(--color-input)',
                 borderColor: colors.border,
                 color: colors.textBase
               }} />
           </div>
+        </div>
         </div>
       </div>
 

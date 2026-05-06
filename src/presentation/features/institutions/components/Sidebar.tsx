@@ -87,20 +87,20 @@ export function Sidebar({ active, onNavigate, logo }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="border-t pt-3 px-2 transition-all duration-300" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-        <button className="group w-full flex items-center gap-2 p-2 rounded-lg transition-all duration-300 hover:bg-white/10 active:scale-95">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1))' }}>
-            <span className="text-[10px] font-bold text-white">AD</span>
-          </div>
-          <div className="text-left">
-            <p className="text-xs font-semibold text-white transition-colors duration-300">Admin</p>
-            <p className="text-[10px] text-white/60 transition-colors duration-300">Super Admin</p>
-          </div>
-          <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-1 h-1 rounded-full bg-white/80" />
-          </div>
-        </button>
-      </div>
+        <div className="border-t pt-3 px-2 transition-all duration-300" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+          <button className="group w-full flex items-center gap-2 p-2 rounded-lg transition-all duration-300 hover:bg-white/10 active:scale-95">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1))' }}>
+              <span className="text-[10px] font-bold text-white">AD</span>
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-semibold text-white transition-colors duration-300">Admin</p>
+              <p className="text-[10px] text-white/60 transition-colors duration-300">Super Admin</p>
+            </div>
+            <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="w-1 h-1 rounded-full bg-white/80" />
+            </div>
+          </button>
+        </div>
     </aside>
   )
 }

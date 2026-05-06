@@ -102,7 +102,7 @@ export function ReportesView() {
         ].map((s) => (
           <div key={s.l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{ 
-              background: 'white',
+              background: 'var(--color-tertiary)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -137,7 +137,7 @@ export function ReportesView() {
         <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Tendencia de sesiones — últimos 7 días</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'white' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
           <SessionLineChart />
         </div>
       </div>
@@ -150,7 +150,7 @@ export function ReportesView() {
         <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Sesiones por día</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'white' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
           <div className="flex items-end justify-between gap-3 h-48 mt-4">
             {sesiones.map((s) => (
               <div key={s.dia} className="flex-1 flex flex-col items-center gap-3 group">
@@ -178,22 +178,22 @@ export function ReportesView() {
         <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Comparativo mensual</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'white' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
                 {['Métrica', 'Este mes', 'Anterior', 'Variación'].map((h) => (
-                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold" style={{ color: 'var(--color-muted-foreground)' }}>{h}</th>
+                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold" style={{ color: 'var(--sa-muted)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {comparativo.map((r, i) => (
                 <tr key={r.metrica} style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: i === comparativo.length - 1 ? '0' : '1px' }}>
-                  <td className="py-3 px-4 font-medium" style={{ color: 'var(--color-foreground)' }}>{r.metrica}</td>
-                  <td className="py-3 px-4" style={{ color: 'var(--color-foreground)' }}>{r.actual}</td>
-                  <td className="py-3 px-4" style={{ color: 'var(--color-muted-foreground)' }}>{r.anterior}</td>
+                  <td className="py-3 px-4 font-medium" style={{ color: 'var(--sa-foreground)' }}>{r.metrica}</td>
+                  <td className="py-3 px-4" style={{ color: 'var(--sa-foreground)' }}>{r.actual}</td>
+                  <td className="py-3 px-4" style={{ color: 'var(--sa-muted)' }}>{r.anterior}</td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center gap-1 text-[10px] px-3 py-1 rounded-full font-semibold ${
                       r.up ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'

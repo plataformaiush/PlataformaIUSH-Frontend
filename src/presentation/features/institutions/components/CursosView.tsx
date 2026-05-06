@@ -43,7 +43,7 @@ export function CursosView() {
         {[['Total', '32'], ['Con contenido', '26'], ['Sin contenido', '6']].map(([l, v]) => (
           <div key={l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{
-              background: 'white',
+              background: 'var(--color-tertiary)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -71,7 +71,7 @@ export function CursosView() {
         <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Listado de cursos</p>
         </div>
-        <div className="p-8" style={{ backgroundColor: 'white' }}>
+        <div className="p-8" style={{ backgroundColor: 'var(--color-tertiary)' }}>
           <input
             type="text"
             placeholder="Buscar curso..."
@@ -97,7 +97,7 @@ export function CursosView() {
                   color: 'white'
                 } : {
                   borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)'
+                  color: 'var(--sa-muted)'
                 }}
               >
                 {f}
@@ -107,7 +107,7 @@ export function CursosView() {
         </div>
 
         {/* Vista de tabla - Desktop/Tablet */}
-        <div className="hidden md:block px-8 py-6">
+        <div className="hidden md:block px-8 py-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
@@ -143,7 +143,7 @@ export function CursosView() {
         </div>
 
         {/* Vista de cards - Mobile */}
-        <div className="md:hidden space-y-3 px-8 py-6">
+        <div className="md:hidden space-y-3 px-8 py-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
           {slice.length === 0 ? (
             <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</div>
           ) : (
@@ -190,11 +190,15 @@ export function CursosView() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`text-xs w-7 h-7 rounded-lg border transition-all ${
-                  page === p
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-border text-muted-foreground hover:bg-muted'
-                }`}
+                className="text-xs w-7 h-7 rounded-lg border transition-all"
+                style={page === p ? {
+                  backgroundColor: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
+                  color: 'white'
+                } : {
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-muted-foreground)'
+                }}
               >
                 {p}
               </button>

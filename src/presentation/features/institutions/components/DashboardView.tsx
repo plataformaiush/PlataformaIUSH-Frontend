@@ -180,7 +180,7 @@ export function DashboardView() {
         {stats.map((s) => (
           <div key={s.label} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{ 
-              background: 'white',
+              background: 'var(--color-tertiary)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -215,7 +215,7 @@ export function DashboardView() {
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Sesiones semanales</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'white' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
             <SessionsChart />
           </div>
         </div>
@@ -226,21 +226,21 @@ export function DashboardView() {
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Tipo de contenido</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'white' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
             <ContentPieChart />
           </div>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-96">
         {/* Top Courses */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Cursos más visitados</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'white' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
             <div className="space-y-4">
               {topCursos.map((c, idx) => (
                 <div key={c.nombre} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer">
@@ -262,13 +262,13 @@ export function DashboardView() {
         </div>
 
         {/* Recent Activity */}
-        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
+        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col"
           style={{ borderColor: 'var(--color-border)' }}>
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Actividad reciente</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'white' }}>
-            <div className="space-y-0 max-h-64 overflow-y-auto">
+          <div style={{ backgroundColor: 'var(--color-tertiary)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="space-y-0 flex-1 overflow-y-auto px-4 py-4">
               {recentActivity.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="text-3xl mb-2 text-muted-foreground">-</div>

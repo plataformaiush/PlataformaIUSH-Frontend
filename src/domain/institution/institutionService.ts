@@ -17,11 +17,11 @@ function authHeaders(): HeadersInit {
  * Mapeo directo (sin duplicados):
  * - background_color → background (fondo principal)
  * - text_primary → textBase (texto principal)
- * - primary_color → primary (fondo secundario/menu)
- * - secondary_color → secondary (acentos secundarios)
- * - tertiary_color → tertiary (acentos terciarios)
+ * - primary_color → primary (color principal)
+ * - secondary_color → secondary (color secundario)
+ * - tertiary_color → tertiary (color terciario)
  * - text_secondary → textSecondary (texto secundario)
- * - text_tertiary → textTertiary (texto tenue)
+ * - color_muted → textTertiary (texto tenue)
  * - border_color → border (bordes)
  * - input_color → input (inputs)
  */
@@ -37,7 +37,7 @@ function normalizeInstitutionData(data: any): Institution {
       secondary: data.secondary_color || defaultInstitutionColors.secondary,
       tertiary: data.tertiary_color || defaultInstitutionColors.tertiary,
       textSecondary: data.text_secondary || defaultInstitutionColors.textSecondary,
-      textTertiary: data.text_tertiary || defaultInstitutionColors.textTertiary,
+      textTertiary: data.color_muted || defaultInstitutionColors.textTertiary,
       border: data.border_color || defaultInstitutionColors.border,
       input: data.input_color || defaultInstitutionColors.input,
     },
@@ -84,20 +84,27 @@ export const institutionService = {
       // Transformar la estructura al formato que espera el backend
       const payload: any = {}
       
-      if (data.logo) {
-        payload.logo_url = data.logo
+      // Siempre enviar algo, aunque sea null o los valores actuales
+      if (data.logo !== undefined) {
+        payload.logo_url = data.logo || null
       }
       
       if (data.colors) {
-        payload.background_color = data.colors.background
-        payload.text_primary = data.colors.textBase
-        payload.primary_color = data.colors.primary
-        payload.secondary_color = data.colors.secondary
-        payload.tertiary_color = data.colors.tertiary
-        payload.text_secondary = data.colors.textSecondary
-        payload.text_tertiary = data.colors.textTertiary
-        payload.border_color = data.colors.border
-        payload.input_color = data.colors.input
+        payload.logo_url = data.logo || null
+        payload.primary_color = data.colors.primary || null
+        payload.secondary_color = data.colors.secondary || null
+        payload.tertiary_color = data.colors.tertiary || null
+        payload.background_color = data.colors.background || null
+        payload.text_primary = data.colors.textBase || null
+        payload.text_secondary = data.colors.textSecondary || null
+        payload.color_muted = data.colors.textTertiary || null
+        payload.border_color = data.colors.border || null
+        payload.input_color = data.colors.input || null
+      }
+
+      // Evitar enviar payload vacío
+      if (Object.keys(payload).length === 0) {
+        throw new Error('No hay cambios para guardar')
       }
 
       const res = await fetch(`${BASE}/config`, {
