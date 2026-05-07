@@ -1,6 +1,5 @@
 import { JSX, useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
-import styles from './SuperAdminPage.module.css'
 import { Sidebar } from './components/Sidebar'
 import { DashboardView } from './components/DashboardView'
 import { UsuariosView } from './components/UsuariosView'
@@ -51,7 +50,7 @@ export function SuperAdminPage() {
   }
 
   return (
-    <div className={`${styles.superAdminContainer} flex h-screen overflow-hidden`} style={{ backgroundColor: 'var(--color-background)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
       {/* Sidebar - Desktop */}
       <div className="hidden lg:block">
         <Sidebar active={page} onNavigate={(page) => handleNavigate(page as Page)} logo={logo} />

@@ -1,34 +1,16 @@
 @import "tailwindcss";
-
-/* CSS Variables for theme customization */
-@import "tailwindcss";
 :root {
-  --color-background: #F8FAFC;
+  --color-background: #FFFAFA;
   --color-foreground: #0F172A;
-  --color-primary: #1E40AF;
-  --color-secondary: #0891B2;
-  --color-tertiary: #AEEDF2;
-  --color-muted: #94A3B8;
+  --color-primary: #223740;
+  --color-secondary: #5a878C;
+  --color-tertiary: #aeebf2;
+  --color-muted: #f8f8ff;
   --color-muted-foreground: #475569;
   --color-border: #E2E8F0;
   --color-input: #FFFFFF;
+  --color-text-on-dark: #F5F5F5;
   --color-ring: #1E40AF;
-}
-
-/* Dark theme variables */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #0F172A;
-    --color-foreground: #F8FAFC;
-    --color-primary: #0891B2;
-    --color-secondary: #06B6D4;
-    --color-tertiary: #22D3EE;
-    --color-muted: #475569;
-    --color-muted-foreground: #CBD5E1;
-    --color-border: #334155;
-    --color-input: #1E293B;
-    --color-ring: #0891B2;
-  }
 }
 
 /* Base styles */

@@ -1,11 +1,10 @@
 import { Institution, InstitutionColors, generateCSSVariables, defaultInstitutionColors } from './types'
-import { TokenManager } from '../auth/tokenManager'
 
 const API_BASE = 'http://localhost:3000'
 const BASE = `${API_BASE}/api/institucion`
 
 function authHeaders(): HeadersInit {
-  const token = TokenManager.getToken() ?? ''
+  const token = localStorage.getItem('token') ?? ''
   return {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
@@ -24,6 +23,7 @@ function authHeaders(): HeadersInit {
  * - color_muted → textTertiary (texto tenue)
  * - border_color → border (bordes)
  * - input_color → input (inputs)
+ * - text_on_dark → textOnDark (texto sobre fondos oscuros)
  */
 function normalizeInstitutionData(data: any): Institution {
   return {
@@ -40,6 +40,7 @@ function normalizeInstitutionData(data: any): Institution {
       textTertiary: data.color_muted || defaultInstitutionColors.textTertiary,
       border: data.border_color || defaultInstitutionColors.border,
       input: data.input_color || defaultInstitutionColors.input,
+      textOnDark: data.text_on_dark || defaultInstitutionColors.textOnDark,
     },
     settings: data.settings || {},
   }
@@ -47,14 +48,12 @@ function normalizeInstitutionData(data: any): Institution {
 
 export const institutionService = {
   async getConfig(): Promise<Institution> {
-    const token = TokenManager.getToken()
-    
-    if (!token) {
-      throw new Error('Sin token de autenticación')
-    }
-
     try {
-      const res = await fetch(`${BASE}/config`, { headers: authHeaders() })
+      const res = await fetch(`${BASE}/config`, { 
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
@@ -64,17 +63,13 @@ export const institutionService = {
       const data = await res.json()
       return normalizeInstitutionData(data)
     } catch (error) {
-      // Solo loguear si no es un error 401 (token expirado)
-      const errorMessage = String(error)
-      if (!errorMessage.includes('HTTP 401')) {
-        console.error('getConfig error:', error)
-      }
+      console.error('getConfig error:', error)
       throw error
     }
   },
 
   async updateConfig(data: Partial<Pick<Institution, 'logo' | 'colors'>>): Promise<Institution> {
-    const token = TokenManager.getToken()
+    const token = localStorage.getItem('token')
     
     if (!token) {
       throw new Error('Sin token de autenticación')
@@ -100,6 +95,7 @@ export const institutionService = {
         payload.color_muted = data.colors.textTertiary || null
         payload.border_color = data.colors.border || null
         payload.input_color = data.colors.input || null
+        payload.text_on_dark = data.colors.textOnDark || null
       }
 
       // Evitar enviar payload vacío
@@ -148,4 +144,5 @@ export function applyTheme(colors: InstitutionColors): void {
   root.style.setProperty('--color-muted', colors.textTertiary)
   root.style.setProperty('--color-border', colors.border)
   root.style.setProperty('--color-input', colors.input)
+  root.style.setProperty('--color-text-on-dark', colors.textOnDark)
 }

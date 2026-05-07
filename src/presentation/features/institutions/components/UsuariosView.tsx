@@ -46,7 +46,7 @@ export function UsuariosView() {
         {[['Total', '1,332'], ['Estudiantes', '1,284'], ['Docentes', '48']].map(([l, v]) => (
           <div key={l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{
-              background: 'var(--color-tertiary)',
+              background: 'var(--color-muted)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -54,12 +54,12 @@ export function UsuariosView() {
             <div className="w-full p-3 transition-all duration-300"
               style={{ 
                 background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                color: 'white'
+                color: 'var(--color-text-on-dark)'
               }}>
               <p className="text-sm font-semibold uppercase tracking-wider">{l}</p>
             </div>
             <div className="p-5">
-              <p className="text-4xl font-bold transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-primary)' }}>{v}</p>
+              <p className="text-4xl font-bold transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-foreground)' }}>{v}</p>
             </div>
           </div>
         ))}
@@ -69,10 +69,10 @@ export function UsuariosView() {
         style={{
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Listado de usuarios</p>
         </div>
-        <div className="p-8" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-8" style={{ backgroundColor: 'var(--color-muted)' }}>
           <input
             type="text"
             placeholder="Buscar usuario..."
@@ -108,7 +108,7 @@ export function UsuariosView() {
         </div>
 
         {/* Vista de tabla - Desktop/Tablet */}
-        <div className="hidden md:block px-8 py-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="hidden md:block px-8 py-6" style={{ backgroundColor: 'var(--color-muted)' }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
@@ -149,13 +149,13 @@ export function UsuariosView() {
         </div>
 
         {/* Vista de cards - Mobile */}
-        <div className="md:hidden space-y-3 px-8 py-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="md:hidden space-y-3 px-8 py-6" style={{ backgroundColor: 'var(--color-muted)' }}>
           {slice.length === 0 ? (
             <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</div>
           ) : (
             slice.map((u) => (
               <div key={u.nombre} className="border rounded-lg p-4" style={{
-                backgroundColor: 'var(--color-background)',
+                backgroundColor: 'var(--color-muted)',
                 borderColor: 'var(--color-border)'
               }}>
                 <div className="flex items-start justify-between mb-3">
@@ -185,7 +185,7 @@ export function UsuariosView() {
           )}
         </div>
 
-        <div className="flex justify-between items-center pt-3 px-8 pb-6 border-t border-border mt-2">
+        <div className="flex justify-between items-center pt-3 px-8 pb-6 border-t border-border mt-2" style={{ backgroundColor: 'var(--color-muted)' }}>
           <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
             {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
           </span>

@@ -18,6 +18,7 @@ export interface InstitutionColors {
   textTertiary: string    // --color-muted (texto_tenue)
   border: string          // --color-border (bordes)
   input: string           // --color-input (inputs)
+  textOnDark: string      // --color-text-on-dark (texto_sobre_fondos_oscuros)
 }
  
 export interface InstitutionSettings {
@@ -38,6 +39,7 @@ export const defaultInstitutionColors: InstitutionColors = {
   textTertiary: '#94A3B8',
   border: '#E2E8F0',
   input: '#FFFFFF',
+  textOnDark: '#FFFFFF',
 }
 
 export const generateCSSVariables = (colors: InstitutionColors) => ({
@@ -50,4 +52,5 @@ export const generateCSSVariables = (colors: InstitutionColors) => ({
   '--color-muted': colors.textTertiary,
   '--color-border': colors.border,
   '--color-input': colors.input,
+  '--color-text-on-dark': colors.textOnDark,
 })

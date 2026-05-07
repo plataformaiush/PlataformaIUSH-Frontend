@@ -102,7 +102,7 @@ export function ReportesView() {
         ].map((s) => (
           <div key={s.l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{ 
-              background: 'var(--color-tertiary)',
+              background: 'var(--color-muted)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -110,14 +110,14 @@ export function ReportesView() {
             <div className="w-full p-3 transition-all duration-300"
               style={{ 
                 background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                color: 'white'
+                color: 'var(--color-text-on-dark)'
               }}>
               <p className="text-sm font-semibold uppercase tracking-wider">{s.l}</p>
             </div>
             
             {/* Body blanco */}
             <div className="p-5">
-              <p className="text-4xl font-bold mb-3 transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-primary)' }}>{s.v}</p>
+              <p className="text-4xl font-bold mb-3 transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-foreground)' }}>{s.v}</p>
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg w-fit transition-all duration-300"
                 style={{ backgroundColor: s.up ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)' }}>
                 <span className={`text-sm font-bold ${s.up ? 'text-green-600' : 'text-red-600'}`}>
@@ -134,10 +134,10 @@ export function ReportesView() {
         style={{
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Tendencia de sesiones — últimos 7 días</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
           <SessionLineChart />
         </div>
       </div>
@@ -147,10 +147,10 @@ export function ReportesView() {
         style={{
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Sesiones por día</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
           <div className="flex items-end justify-between gap-3 h-48 mt-4">
             {sesiones.map((s) => (
               <div key={s.dia} className="flex-1 flex flex-col items-center gap-3 group">
@@ -175,10 +175,10 @@ export function ReportesView() {
         style={{
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Comparativo mensual</p>
         </div>
-        <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

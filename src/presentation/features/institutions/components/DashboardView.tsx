@@ -32,9 +32,9 @@ const topCursos = [
 ]
 
 const contentTypes = [
-  { type: 'Video', pct: 45, color: 'rgb(59, 130, 246)' },
-  { type: 'Texto', pct: 35, color: 'rgb(34, 197, 94)' },
-  { type: 'PDF', pct: 20, color: 'rgb(248, 113, 113)' },
+  { type: 'Video', pct: 45, color: 'var(--color-primary)' },
+  { type: 'Texto', pct: 35, color: 'var(--color-secondary)' },
+  { type: 'PDF', pct: 20, color: 'var(--color-tertiary)' },
 ]
 
 // Gráfica de líneas para sesiones
@@ -162,12 +162,13 @@ export function DashboardView() {
     <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>Panel de control</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Bienvenido, últimas 24 horas</p>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Panel de control</h1>
+          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Bienvenido, últimas 24 horas</p>
         </div>
-        <button className="px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+        <button className="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
           style={{
             background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 50%, var(--color-secondary) 100%)',
+            color: 'var(--color-text-on-dark)',
             boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
             border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
@@ -179,8 +180,8 @@ export function DashboardView() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
-            style={{ 
-              background: 'var(--color-tertiary)',
+            style={{
+              background: 'var(--color-muted)',
               borderColor: 'var(--color-border)',
               overflow: 'hidden'
             }}>
@@ -188,14 +189,14 @@ export function DashboardView() {
             <div className="w-full p-3 transition-all duration-300"
               style={{ 
                 background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                color: 'white'
+                color: 'var(--color-text-on-dark)'
               }}>
               <p className="text-sm font-semibold uppercase tracking-wider">{s.label}</p>
             </div>
             
             {/* Body blanco */}
             <div className="p-5">
-              <p className="text-4xl font-bold mb-3 transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-primary)' }}>{s.value}</p>
+              <p className="text-4xl font-bold mb-3 transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-foreground)' }}>{s.value}</p>
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg w-fit transition-all duration-300"
                 style={{ backgroundColor: s.up ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)' }}>
                 <span className={`text-sm font-bold ${s.up ? 'text-green-600' : 'text-red-600'}`}>
@@ -212,10 +213,10 @@ export function DashboardView() {
         {/* Sessions Chart */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md" 
           style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Sesiones semanales</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
             <SessionsChart />
           </div>
         </div>
@@ -223,10 +224,10 @@ export function DashboardView() {
         {/* Content Pie Chart */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Tipo de contenido</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
             <ContentPieChart />
           </div>
         </div>
@@ -237,10 +238,10 @@ export function DashboardView() {
         {/* Top Courses */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Cursos más visitados</p>
           </div>
-          <div className="p-6" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
             <div className="space-y-4">
               {topCursos.map((c, idx) => (
                 <div key={c.nombre} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer">
@@ -248,7 +249,7 @@ export function DashboardView() {
                     <span className="text-xs font-medium w-24 truncate" style={{ color: 'var(--color-foreground)' }}>{c.nombre}</span>
                     <span className="text-xs font-bold px-2 py-1 rounded-md transition-all duration-200 group-hover:scale-110" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary)15' }}>{c.pct}%</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-muted)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-tertiary)' }}>
                     <div className="h-full rounded-full transition-all duration-500" style={{ 
                       background: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`,
                       width: `${c.pct}%`,
@@ -264,10 +265,10 @@ export function DashboardView() {
         {/* Recent Activity */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col"
           style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
             <p className="text-sm font-semibold uppercase tracking-wider">Actividad reciente</p>
           </div>
-          <div style={{ backgroundColor: 'var(--color-tertiary)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ backgroundColor: 'var(--color-muted)', flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div className="space-y-0 flex-1 overflow-y-auto px-4 py-4">
               {recentActivity.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">

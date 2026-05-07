@@ -11,10 +11,11 @@ const COLOR_FIELDS: { key: keyof InstitutionColors; label: string; category: str
   // Colores de fondo
   { key: 'background', label: 'Background - Fondo de la página', category: 'Fondos' },
   { key: 'input', label: 'Input - Fondo de campos de entrada', category: 'Fondos' },
+  { key: 'textTertiary', label: 'Muted - Colores suaves', category: 'Fondos' },
   // Colores de texto
   { key: 'textBase', label: 'Foreground - Texto principal', category: 'Texto' },
   { key: 'textSecondary', label: 'Muted Foreground - Texto secundario', category: 'Texto' },
-  { key: 'textTertiary', label: 'Muted - Colores suaves', category: 'Texto' },
+  { key: 'textOnDark', label: 'Text on Dark - Texto sobre fondos oscuros', category: 'Texto' },
   // Colores de bordes
   { key: 'border', label: 'Border - Bordes', category: 'Bordes' },
 ]
@@ -107,10 +108,10 @@ export function PersonalizacionView() {
         style={{ 
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Logo de la institución</p>
         </div>
-        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-muted)' }}>
         <div>
           <label className="text-xs mb-1 block" style={{ color: '#475569' }}>URL del logo</label>
           <input
@@ -156,13 +157,13 @@ export function PersonalizacionView() {
         style={{ 
           borderColor: 'var(--color-border)'
         }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
+        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Paleta de colores</p>
           <p className="text-xs mt-0.5 text-white/80">
             Haz clic en el cuadro de color o escribe el hexadecimal
           </p>
         </div>
-        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-muted)' }}>
 
         <div className="space-y-4">
           {['Colores principales', 'Fondos', 'Texto', 'Bordes'].map((category) => (
@@ -217,7 +218,7 @@ export function PersonalizacionView() {
         <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white' }}>
           <p className="text-sm font-semibold uppercase tracking-wider">Vista previa</p>
         </div>
-        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+        <div className="p-4 space-y-3" style={{ backgroundColor: 'var(--color-muted)' }}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Botón primario */}
           <div>
@@ -254,8 +255,13 @@ export function PersonalizacionView() {
           </div>
 
           {/* Texto tenue */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: '#F8FAFC', borderColor: colors.border, borderWidth: '1px' }}>
-            <p style={{ color: colors.textTertiary }}>Texto tenue: Detalles mínimos</p>
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-2 rounded-lg" style={{ backgroundColor: 'var(--color-muted)', borderColor: colors.border, borderWidth: '1px' }}>
+            <p style={{ color: 'var(--color-foreground)' }}>Muted tenue: Fondos mínimos</p>
+          </div>
+
+          {/* Texto sobre fondo oscuro */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}>
+            <p style={{ color: colors.textOnDark }} className="font-semibold">Texto sobre fondo oscuro: Headers y gradientes</p>
           </div>
 
           {/* Input */}
