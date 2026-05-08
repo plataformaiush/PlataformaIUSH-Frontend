@@ -37,7 +37,7 @@ export default function Filters({
             className="
               text-[11px]
               font-semibold
-              text-[#9AAEB2]
+              text-[#404040]
               uppercase
               tracking-wide
               font-['Plus_Jakarta_Sans']
@@ -62,7 +62,7 @@ export default function Filters({
               border
               border-[#E7EEF0]
               bg-white
-              px-4
+              px-3
               text-[14px]
               font-medium
               text-[#223740]

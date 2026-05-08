@@ -64,7 +64,7 @@ export default function CourseRanking({
 }: CourseRankingProps) {
 
   return (
-    <div className="bg-white border border-[#E7EEF0] rounded-2xl p-5 shadow-sm">
+    <div className="bg-white border border-[#E7EEF0] rounded-2xl p-3.5 shadow-sm">
 
       <h2
         className="

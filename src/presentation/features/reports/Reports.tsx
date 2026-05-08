@@ -1,12 +1,16 @@
+import React, { useState } from 'react';
 import Filters, { FilterOption } from "./modules/Filters";
 import MetricCard, { Metric } from "./modules/MetricCard";
 import ActivityChart from "./modules/ActivityChart";
 import CourseRanking from "./modules/CourseRanking";
+import GraphsLooker from "./modules/lookerStudio/GraphsLooker";
 
 import { IoPersonOutline } from "react-icons/io5";
 import { TfiBlackboard } from "react-icons/tfi";
 import { LiaCertificateSolid } from "react-icons/lia";
 import { FaRegClock } from "react-icons/fa6";
+import SimulateEvents from './modules/gtm/simulateEvents';
+
 
 const filters: FilterOption[] = [
   {
@@ -128,18 +132,19 @@ const courses = [
 ];
 
 export default function Reports() {
+
   return (
-    <div className="ml-[290px] min-h-screen bg-[#F8FAFB] font-['Plus_Jakarta_Sans']">
+    <div className="ml-[290px] min-h-screen bg-[#f6f6f6] font-['Plus_Jakarta_Sans'] select-none">
       
       <div className="px-10 py-8 max-w-[1400px]">
 
         {/* Header */}
-        <div className="mb-8">
+        <div className="pb-8">
           <h1 className="text-[32px] font-bold text-[#223740] tracking-[-1px]">
             Reportes y Analítica Avanzada
           </h1>
 
-          <p className="text-[15px] text-[#7A8D91] mt-2">
+          <p className="text-[16.5px] text-[#3a3a3a] mt-2 font-medium">
             Visualiza el rendimiento y compromisos en la plataforma.
           </p>
         </div>
@@ -150,7 +155,7 @@ export default function Reports() {
         </div>
 
         {/* Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 mt-8">
 
           {metric.map((m) => (
             <MetricCard
@@ -162,7 +167,7 @@ export default function Reports() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start mb-8">
 
           <div className="xl:col-span-2">
             <ActivityChart data={activity} />
@@ -174,6 +179,15 @@ export default function Reports() {
 
         </div>
 
+        {/*GA4 & GTM*/}
+        <div className="mb-8">
+          <SimulateEvents/>
+        </div>
+
+        {/* Gráfica embebida */}
+        <div className="mt-8 mb-8">
+          <GraphsLooker />
+        </div>
       </div>
     </div>
   );

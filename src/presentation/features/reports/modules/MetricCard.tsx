@@ -24,7 +24,7 @@ export default function MetricCard({
       className="
         bg-white
         border
-        border-[#E7EEF0]
+        border-l-5
         rounded-2xl
         p-4
         h-[160px]

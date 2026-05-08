@@ -1,5 +1,5 @@
 import React from 'react'
-import { useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 import Reports from "../presentation/features/reports/Reports";
 
@@ -13,26 +13,15 @@ import Reports from "../presentation/features/reports/Reports";
 //
 // Cada equipo debe crear sus propias rutas en sus carpetas asignadas
 
-export const AppRouter = () => {
-
-  const location = useLocation();
-
-  if (location.pathname === "/reports") {
-    return <Reports />;
-  }
+const Landing = () => {
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          Iush Platform
-        </h1>
-        <p className="text-gray-600 mb-4">
-          Plataforma Educativa LMS
-        </p>
-        <p className="text-sm text-gray-500">
-          Los equipos están trabajando en sus módulos específicos...
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Iush Platform</h1>
+        <p className="text-gray-600 mb-4">Plataforma Educativa LMS</p>
+        <p className="text-sm text-gray-500">Los equipos están trabajando en sus módulos específicos...</p>
         <div className="mt-8 p-4 bg-gray-100 rounded-lg">
           <h2 className="font-semibold mb-2">Equipos asignados:</h2>
           <div className="text-left text-sm space-y-1">
@@ -44,11 +33,28 @@ export const AppRouter = () => {
             <p>Equipo 6: Vista Docente</p>
             <p>Equipo 7: Competencias Socioemocionales</p>
             <p>Equipo 8: Auth, Usuarios, Roles</p>
-            <p>Equipo 9: Analytics y Reportes</p>
+            <div className="mt-3 p-3 bg-blue-100 rounded-md border border-blue-200">
+              <p className="font-medium text-[#000]">Equipo 9: Analytics y Reportes</p>
+              <button
+                onClick={() => navigate('/reports')}
+                className="mt-2 px-4 py-2 bg-[#5A878C] text-white text-sm font-medium rounded cursor-pointer transition-colors"
+              >
+                Ver Reportes
+              </button>
+            </div>
             <p>Equipo 10: Vista Estudiante</p>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export const AppRouter = () => {
+  return (
+    <Routes>
+      <Route index element={<Landing />} />
+      <Route path="/reports" element={<Reports />} />
+    </Routes>
+  );
+};
