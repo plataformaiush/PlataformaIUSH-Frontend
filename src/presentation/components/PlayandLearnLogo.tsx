@@ -71,23 +71,17 @@ export function PlayandLearnLogo({
       {/* ── Wordmark ──────────────────────────────────────────────── */}
       {variant === 'full' && (
         <div className="flex items-baseline gap-0 leading-none">
-          <span
-            style={{ color: textColor, fontSize: size * 0.52, letterSpacing: '-0.01em' }}
-            className="font-light tracking-tight"
-          >
-            Play
-          </span>
-          <span
-            style={{ color: accentColor, fontSize: size * 0.34 }}
-            className="font-light italic mx-0.5 opacity-90"
-          >
-            &amp;
-          </span>
+          {/*<span*/}
+          {/*  style={{ color: textColor, fontSize: size * 0.52, letterSpacing: '-0.01em' }}*/}
+          {/*  className="font-light tracking-tight"*/}
+          {/*>*/}
+          {/*  Profunsoft*/}
+          {/*</span>*/}
           <span
             style={{ color: textColor, fontSize: size * 0.52, letterSpacing: '-0.01em' }}
             className="font-extrabold tracking-tight"
           >
-            Learn
+            Profunsoft
           </span>
         </div>
       )}
