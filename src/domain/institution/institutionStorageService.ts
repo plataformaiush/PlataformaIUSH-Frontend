@@ -11,7 +11,6 @@ interface StoredInstitution {
 }
 
 const INSTITUTION_KEY = 'institution'
-const LOGO_KEY = 'institutionLogo' // Mantener para compatibilidad
 const COLORS_KEY = 'institutionColors'
 
 export const institutionStorageService = {
@@ -20,7 +19,7 @@ export const institutionStorageService = {
    */
   getLogo(): string {
     const stored = this.getInstitution()
-    return stored?.logo || localStorage.getItem(LOGO_KEY) || ''
+    return stored?.logo || ''
   },
 
   /**
@@ -33,8 +32,6 @@ export const institutionStorageService = {
       name: stored?.name || '',
     }
     this.setInstitution(data)
-    // Mantener compatibilidad con la clave antigua
-    localStorage.setItem(LOGO_KEY, logo)
   },
 
   /**
@@ -82,14 +79,13 @@ export const institutionStorageService = {
    */
   clearInstitution(): void {
     localStorage.removeItem(INSTITUTION_KEY)
-    localStorage.removeItem(LOGO_KEY)
   },
 
   /**
    * Verifica si hay datos de institución guardados
    */
   hasInstitution(): boolean {
-    return localStorage.getItem(INSTITUTION_KEY) !== null || localStorage.getItem(LOGO_KEY) !== null
+    return localStorage.getItem(INSTITUTION_KEY) !== null
   },
 
   /**
@@ -126,5 +122,5 @@ export const institutionStorageService = {
   clearAll(): void {
     this.clearInstitution()
     this.clearColors()
-  },
+  }
 }

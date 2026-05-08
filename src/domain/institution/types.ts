@@ -32,14 +32,14 @@ export interface InstitutionSettings {
 export const defaultInstitutionColors: InstitutionColors = {
   background: '#F8FAFC',
   textBase: '#0F172A',
-  primary: '#1E40AF',
-  secondary: '#0891B2',
-  tertiary: '#AEEDF2',
+  primary: '#223740',
+  secondary: '#5a878C',
+  tertiary: '#aeebf2',
   textSecondary: '#475569',
-  textTertiary: '#94A3B8',
+  textTertiary: '#f8f8ff',
   border: '#E2E8F0',
   input: '#FFFFFF',
-  textOnDark: '#FFFFFF',
+  textOnDark: '#F5F5F5',
 }
 
 export const generateCSSVariables = (colors: InstitutionColors) => ({

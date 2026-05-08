@@ -11,20 +11,6 @@ function authHeaders(): HeadersInit {
   }
 }
 
-/**
- * Normaliza la respuesta del backend a la estructura esperada por el frontend
- * Mapeo directo (sin duplicados):
- * - background_color → background (fondo principal)
- * - text_primary → textBase (texto principal)
- * - primary_color → primary (color principal)
- * - secondary_color → secondary (color secundario)
- * - tertiary_color → tertiary (color terciario)
- * - text_secondary → textSecondary (texto secundario)
- * - color_muted → textTertiary (texto tenue)
- * - border_color → border (bordes)
- * - input_color → input (inputs)
- * - text_on_dark → textOnDark (texto sobre fondos oscuros)
- */
 function normalizeInstitutionData(data: any): Institution {
   return {
     id: data.id || '',
