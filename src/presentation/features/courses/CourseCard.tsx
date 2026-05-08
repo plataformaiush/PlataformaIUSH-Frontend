@@ -1,93 +1,200 @@
 import { Link } from 'react-router-dom'
 import { Course } from '../../../domain/courses/types'
+import { CourseRepository } from '../../../domain/courses/courseRepository'
+import { Eye, Edit, Trash2, Plus, BookOpen, Users } from 'lucide-react'
 
 interface CourseCardProps {
   course: Course
   isLast?: boolean
+  onDelete?: (courseId: string) => void
+  onEdit?: (courseId: string) => void
+  onView?: (courseId: string) => void
+  onCourseUpdate?: () => void
 }
 
-export const CourseCard = ({ course, isLast }: CourseCardProps) => {
+export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onCourseUpdate }: CourseCardProps) => {
+  const isActive = course.status === 'active'
+
+  const handleToggleStatus = () => {
+    const newStatus = isActive ? 'inactive' : 'active'
+    CourseRepository.updateCourse(course.id, { status: newStatus })
+    onCourseUpdate?.()
+  }
   return (
-    <tr className={!isLast ? 'border-b border-gray-100' : ''}>
-      {/* Course name + description */}
-      <td className="px-6 py-4">
-        <Link
-          to={`/courses/${course.id}/modules`}
-          className="text-sm font-semibold hover:underline"
-          style={{ color: '#223740' }}
-        >
-          {course.title}
-        </Link>
-        <p className="mt-0.5 text-xs" style={{ color: '#5A878C' }}>
-          {course.description}
-        </p>
+    <>
+      {/* Nombre del curso + descripción */}
+      <td className="px-6 py-4" role="cell">
+        <div className="flex items-center gap-3 h-full" style={{ minHeight: '80px' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#AEEBF2' }}>
+            <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <button
+              onClick={() => onView?.(course.id)}
+              className="text-left font-semibold hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded transition-opacity"
+              style={{ 
+                color: '#223740',
+                fontSize: '14px'
+              }}
+              aria-label={`Ver detalles del curso: ${course.title}`}
+            >
+              <div className="truncate" style={{ maxWidth: '300px' }}>
+                {course.title}
+              </div>
+            </button>
+            <p className="text-sm truncate mt-2" style={{ 
+              color: '#6B7280', 
+              lineHeight: '1.5',
+              maxWidth: '300px',
+              maxHeight: '40px',
+              overflow: 'hidden'
+            }}>
+              {course.description}
+            </p>
+            <div className="flex items-center gap-4 mt-3" style={{ fontSize: '12px', color: '#6B7280' }}>
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {course.studentCount} estudiantes
+              </span>
+              <span className="flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />
+                {course.moduleIds?.length || 0} módulos
+              </span>
+            </div>
+          </div>
+        </div>
       </td>
 
-      {/* Modules */}
-      <td className="px-6 py-4 text-sm" style={{ color: '#223740' }}>
-        {course.moduleIds.length} módulos
-      </td>
-
-      {/* Students */}
-      <td className="px-6 py-4 text-sm" style={{ color: '#223740' }}>
-        {course.studentCount} est.
-      </td>
-
-      {/* Status badge */}
-      <td className="px-6 py-4">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-          style={
-            course.status === 'active'
-              ? { backgroundColor: '#AEEBF2', color: '#223740' }
-              : { backgroundColor: '#f3f4f6', color: '#6b7280' }
-          }
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{
-              backgroundColor: course.status === 'active' ? '#5A878C' : '#9ca3af'
-            }}
-          />
-          {course.status === 'active' ? 'Activo' : 'Inactivo'}
-        </span>
-      </td>
-
-      {/* Actions */}
-      <td className="px-6 py-4">
+      {/* Módulos */}
+      <td className="px-6 py-4" role="cell">
         <div className="flex items-center gap-2">
-          {/* Add module */}
-          <Link
-            to={`/courses/${course.id}/modules/new`}
-            className="flex h-7 w-7 items-center justify-center rounded border border-gray-200 text-gray-400 transition hover:border-gray-300 hover:text-gray-600"
-            title="Agregar módulo"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-          </Link>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#AEEBF2' }}>
+            <BookOpen className="w-4 h-4" style={{ color: '#5A878C' }} />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-sm font-semibold" style={{ color: '#223740' }}>
+              {course.moduleIds?.length || 0}
+            </span>
+            <span className="text-xs" style={{ color: '#6B7280' }}>módulos</span>
+          </div>
+        </div>
+      </td>
 
-          {/* Edit */}
+      {/* Estudiantes */}
+      <td className="px-6 py-4" role="cell">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#AEEBF2' }}>
+            <Users className="w-4 h-4" style={{ color: '#5A878C' }} />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-sm font-semibold" style={{ color: '#223740' }}>
+              {course.studentCount.toLocaleString()}
+            </span>
+            <span className="text-xs" style={{ color: '#6B7280' }}>estudiantes</span>
+          </div>
+        </div>
+      </td>
+
+      {/* Interruptor de estado + insignia */}
+      <td className="px-6 py-4" role="cell">
+        <div className="flex items-center gap-3">
+          {/* Interruptor */}
           <button
-            className="flex h-7 w-7 items-center justify-center rounded border border-gray-200 text-gray-400 transition hover:border-gray-300 hover:text-gray-600"
-            title="Editar curso"
+            className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              backgroundColor: isActive ? 'var(--color-secondary)' : 'var(--color-text-muted)',
+              '--tw-ring-color': 'var(--color-ring)' 
+            } as React.CSSProperties}
+            title={isActive ? 'Desactivar' : 'Activar'}
+            onClick={handleToggleStatus}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 2.828L11.828 13.828A2 2 0 019 14H8v-1a2 2 0 01.586-1.414z" />
-            </svg>
+            <span
+              className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
+              style={{ transform: isActive ? 'translateX(18px)' : 'translateX(2px)' }}
+            />
           </button>
 
-          {/* Delete */}
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded border border-red-100 text-red-400 transition hover:border-red-200 hover:text-red-600"
-            title="Eliminar curso"
+          {/* Insignia de estado */}
+          <span
+            className="inline-flex items-center gap-2 badge-pill text-body-sm font-medium"
+            style={{
+              backgroundColor: isActive ? 'var(--color-tertiary)' : '#f3f4f6',
+              color: isActive ? 'var(--color-primary)' : '#6b7280'
+            }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: isActive ? 'var(--color-secondary)' : '#9ca3af' }}
+            />
+            {isActive ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+      </td>
+
+      {/* Acciones */}
+      <td className="px-6 py-4" role="cell">
+        <div className="flex items-center gap-2" role="group" aria-label="Acciones del curso">
+          {/* Ver */}
+          <button
+            onClick={() => onView?.(course.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              color: '#6B7280'
+            }}
+            title="Ver curso"
+            aria-label={`Ver curso: ${course.title}`}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
+          {/* Agregar módulo */}
+          <button
+            onClick={() => window.location.href = `/courses/${course.id}/modules/new`}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              color: '#6B7280'
+            }}
+            title="Agregar módulo"
+            aria-label={`Agregar módulo a ${course.title}`}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+
+          {/* Editar */}
+          <button
+            onClick={() => onEdit?.(course.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF',
+              color: '#6B7280'
+            }}
+            title="Editar curso"
+            aria-label={`Editar curso: ${course.title}`}
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+
+          {/* Eliminar */}
+          <button
+            onClick={() => onDelete?.(course.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              borderColor: '#FEE2E2',
+              backgroundColor: '#FEF2F2',
+              color: '#DC2626'
+            }}
+            title="Eliminar curso"
+            aria-label={`Eliminar curso: ${course.title}`}
+          >
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </td>
-    </tr>
+    </>
   )
 }
