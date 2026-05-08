@@ -1,4 +1,7 @@
 import React from 'react'
+import { useLocation } from "react-router-dom";
+
+import Reports from "../presentation/features/reports/Reports";
 
 // Este es un placeholder temporal
 // Los equipos crearán sus rutas específicas según sus necesidades
@@ -11,6 +14,13 @@ import React from 'react'
 // Cada equipo debe crear sus propias rutas en sus carpetas asignadas
 
 export const AppRouter = () => {
+
+  const location = useLocation();
+
+  if (location.pathname === "/reports") {
+    return <Reports />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
