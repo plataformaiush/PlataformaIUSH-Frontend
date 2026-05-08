@@ -58,7 +58,7 @@
 
 body {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background-color: var(--color-surface-muted);
   color: var(--color-neutral);
   line-height: 1.6;
