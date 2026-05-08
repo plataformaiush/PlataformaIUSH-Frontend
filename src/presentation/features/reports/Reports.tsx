@@ -135,7 +135,13 @@ export default function Reports() {
 
   return (
     <div className="ml-[290px] min-h-screen bg-[#f6f6f6] font-['Plus_Jakarta_Sans'] select-none">
-      
+      {/* Sidebar Placeholder */}
+      <div className="fixed left-0 top-0 w-[250px] h-screen bg-[#223740] border-r border-[#1a2a2f] flex items-center justify-center z-10">
+        <div className="text-center px-4">
+          <p className="text-[#aeebf2] text-sm font-medium">Sidebar</p>
+        </div>
+      </div>
+
       <div className="px-10 py-8 max-w-[1400px]">
 
         {/* Header */}
