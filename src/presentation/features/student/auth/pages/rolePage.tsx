@@ -1,9 +1,17 @@
-// Este componente es solo un ejemplo para mostrar que se reconoce el rol del usuario después de iniciar sesión. Puedes personalizarlo según tus necesidades
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function RolePage() {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const rol = user?.roles?.[0] || "Sin rol";
+
+  useEffect(() => {
+    if (rol === "SuperAdmin" || rol === "SUPER_ADMIN") {
+      navigate("/super-admin", { replace: true });
+    }
+  }, [rol, navigate]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#AEEBF2] px-4 py-10">
