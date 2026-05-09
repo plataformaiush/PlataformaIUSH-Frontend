@@ -1,4 +1,5 @@
 import React from 'react'
+import FilesPage from '../presentation/features/files/app/pagePrueba'
 
 // Este es un placeholder temporal
 // Los equipos crearán sus rutas específicas según sus necesidades
@@ -39,6 +40,9 @@ export const AppRouter = () => {
           </div>
         </div>
       </div>
+      <FilesPage />
     </div>
+   
   )
+ 
 }

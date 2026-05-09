@@ -6,11 +6,6 @@ export interface Content {
   description: string
   type: ContentType  // Videos, Textos, Archivos
   url?: string
-  data?: string
-  metadata: ContentMetadata
-  moduleId: string
-  courseId: string
-  order: number
 }
 
 export type ContentType = 
@@ -73,9 +68,6 @@ export const createVideoContent = (
   description: '',
   type: 'video',
   url,
-  moduleId: '',
-  courseId: '',
-  order: 0,
   metadata: {
     duration,
     uploadedAt: new Date(),

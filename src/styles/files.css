@@ -1,0 +1,42 @@
+@import '../../../styles/globals.css';
+
+.btn-downloa{
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-preview {
+  background-color: var(--color-secondary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-upload {
+  background-color: var(--color-tertiary);
+  color: var(--color-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-delete {
+  background-color: var(--color-error);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background-color: var(--color-error);
+  opacity: 0.9;
+}
