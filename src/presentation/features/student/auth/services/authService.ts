@@ -11,7 +11,7 @@ interface LoginResponse {
     id: string;
     correo: string;
     nombre?: string;
-    rol?: string;
+    roles?: string[];
   };
   expiresIn?: number; // Segundos hasta expiración
 }

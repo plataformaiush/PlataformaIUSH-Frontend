@@ -1,7 +1,9 @@
-import { useRoutes } from "react-router-dom";
-import { authRoutes } from "./definitions/auth.routes";
+import React from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { allRoutes } from './definitions'
+
+const router = createBrowserRouter(allRoutes)
 
 export const AppRouter = () => {
-  const routes = useRoutes(authRoutes);
-  return routes;
-};
+  return <RouterProvider router={router} />
+}

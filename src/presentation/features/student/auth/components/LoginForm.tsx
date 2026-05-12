@@ -34,8 +34,24 @@ export default function LoginForm() {
       const expiresIn = response.expiresIn || 3600; // 1 hora por defecto
       setUser(response.user, response.token, expiresIn);
 
-      // Redirige al dashboard
-      navigate("/dashboard");
+      // Redirige según el rol del usuario
+      const userRoles = response.user.roles || [];
+      
+      if (userRoles.includes("SuperAdmin") || userRoles.includes("Admin")) {
+        navigate("/super-admin");
+      } else if (userRoles.includes("Estudiante")) {
+        navigate("/student");
+      } else {
+        const rolesText = userRoles.length > 0 ? userRoles.join(", ") : "ninguno";
+        const errorMessage = `No hay vista disponible para los roles: ${rolesText}`;
+        setErrorMsg(errorMessage);
+        setError(errorMessage);
+        // Limpiar el usuario si no tiene vista disponible
+        setTimeout(() => {
+          setUser({ id: "", correo: "" }, "", 0);
+          navigate("/login");
+        }, 2000);
+      }
     } catch (error) {
       console.error("Error login:", error);
       const errorMessage = "Credenciales incorrectas o error del servidor";
