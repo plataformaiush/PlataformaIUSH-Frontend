@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { loginRequest } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuthStore } from "../../../../stores/auth.store";
 
 type LoginData = {
   correo: string;
@@ -11,6 +12,7 @@ type LoginData = {
 export default function LoginForm() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
+  const { setUser, setLoading, setError } = useAuthStore();
 
   const {
     register,
@@ -20,19 +22,27 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginData) => {
     try {
+      setLoading(true);
+      setErrorMsg("");
+      setError("");
+
       const response = await loginRequest(data);
 
       console.log("LOGIN OK:", response);
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      // Guarda el token y usuario en el store y localStorage
+      const expiresIn = response.expiresIn || 3600; // 1 hora por defecto
+      setUser(response.user, response.token, expiresIn);
 
-      //redireccion
-      navigate("/role");
-
+      // Redirige al dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error login:", error);
-      setErrorMsg("Credenciales incorrectas o error del servidor");
+      const errorMessage = "Credenciales incorrectas o error del servidor";
+      setErrorMsg(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,7 +116,8 @@ export default function LoginForm() {
         {/* boton */}
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#223740] py-3 text-sm font-semibold text-white transition hover:bg-[#5A878C]"
+          className="w-full rounded-xl bg-[#223740] py-3 text-sm font-semibold text-white transition hover:bg-[#5A878C] disabled:opacity-50"
+          disabled={false}
         >
           Iniciar sesión
         </button>

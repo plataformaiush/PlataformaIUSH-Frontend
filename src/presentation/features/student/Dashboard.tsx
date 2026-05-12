@@ -1,8 +1,10 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Course, Certificate } from '../../../domain/student'
 import { useStudentData } from './hooks/useStudentData'
 
 export function StudentDashboard() {
+  const navigate = useNavigate()
   const { student, loading, error, refreshData } = useStudentData()
 
   // Estados de loading y error
@@ -47,7 +49,7 @@ export function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+      <div className="bg-linear-to-r from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between">
             {/* Perfil del estudiante */}
@@ -104,6 +106,12 @@ export function StudentDashboard() {
 
               <button className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                 Ver Todos los Cursos
+              </button>
+              <button
+                onClick={() => navigate('/users')}
+                className="mt-3 w-full border border-blue-600 text-blue-700 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Gestionar usuarios
               </button>
             </div>
           </div>
