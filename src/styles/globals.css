@@ -1,31 +1,38 @@
-/* CSS Variables for theme customization */
-:root {
-  --color-background: #ffffff;
-  --color-foreground: #060a0d;
-  --color-primary: #223740;
-  --color-secondary: #5a878c;
-  --color-tertiary: #aeebf2;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-  --color-input: #ffffff;
-  --color-ring: #223740;
+@import "tailwindcss";
+
+@theme {
+  /* Paleta "Nightmares: Creepy Insomnia" */
+  --color-neutral:   #060A0D;
+  --color-primary:   #223740;
+  --color-secondary: #58838C;
+  --color-mid:       #84B9BF;
+  --color-tertiary:  #AEEBF2;
+
+  /* Superficies y texto */
+  --color-surface:       #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border:        #84B9BF40;
+
+  /* Tipografía */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Radios personalizados */
+  --radius-card: 1rem;
+  --radius-btn:  0.625rem;
 }
 
-/* Dark theme variables */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #060a0d;
-    --color-foreground: #ffffff;
-    --color-primary: #aeebf2;
-    --color-secondary: #5a878c;
-    --color-tertiary: #223740;
-    --color-muted: #1e293b;
-    --color-muted-foreground: #94a3b8;
-    --color-border: #334155;
-    --color-input: #0f172a;
-    --color-ring: #aeebf2;
-  }
+:root {
+  --color-background: #FFFAFA;
+  --color-foreground: #0F172A;
+  --color-primary: #223740;
+  --color-secondary: #5a878C;
+  --color-tertiary: #aeebf2;
+  --color-muted: #f8f8ff;
+  --color-muted-foreground: #475569;
+  --color-border: #E2E8F0;
+  --color-input: #FFFFFF;
+  --color-text-on-dark: #F5F5F5;
+  --color-ring: #1E40AF;
 }
 
 /* Base styles */
@@ -33,10 +40,18 @@
   border-color: var(--color-border);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--color-surface-muted);
+  color: var(--color-neutral);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Utility classes */
@@ -98,4 +113,50 @@ body {
 .btn-tertiary:hover {
   background-color: var(--color-tertiary);
   opacity: 0.9;
+}
+
+/* ─── Reset y base ──────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ─── Safe area para iPhone con notch ───────────────────── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Animación barra de progreso ───────────────────────── */
+@keyframes progress-fill {
+  from { width: 0%; }
+  to   { width: var(--progress-value, 0%); }
+}
+
+.animate-progress {
+  animation: progress-fill 0.7s ease-out forwards;
+}
+
+/* ─── Línea punteada SVG (refuerzo CSS) ─────────────────── */
+.dashed-path {
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+}
+
+/* ─── Scroll suave en el mapa del curso ─────────────────── */
+.course-map-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
