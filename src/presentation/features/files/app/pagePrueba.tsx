@@ -1,168 +1,123 @@
-import React from 'react'
+// src/presentation/features/files/app/pagePrueba.tsx
+
+import React from 'react';
+
+import './files.css'
 
 import {
-  IconPDF,
-  IconDOC,
-  IconXLSX,
-  IconImage,
-} from '../../../../ui/icons/fileIcons'
+  DownloadButton,
+  UploadButton,
+  PreviewButton,
+  DeleteButton,
 
-import type { FileType } from '../../../../domain/files/types'
+  DownloadIconButton,
+  PreviewIconButton,
+  ShareIconButton,
+  ExpandIconButton,
+  DeleteIconButton,
+} from '../components/buttons'
 
-export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'tertiary'
-  | 'danger'
-  | 'ghost'
+import { ActionButton } from '../components/ActionButton'
 
-export type ButtonSize =
-  | 'xs'
-  | 'sm'
-  | 'md'
-  | 'lg'
-
-const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'btn-primary',
-
-  secondary: 'btn-secondary',
-
-  tertiary: 'btn-tertiary',
-
-  danger: 'btn-danger',
-
-  ghost: 'btn-ghost',
-}
-
-const SIZE_CLASSES: Record<ButtonSize, string> = {
-  xs: 'btn-xs',
-
-  sm: 'btn-sm',
-
-  md: 'btn-md',
-
-  lg: 'btn-lg',
-}
-
-interface ActionButtonProps {
-  variant?: ButtonVariant
-
-  size?: ButtonSize
-
-  icon?: React.ReactNode
-
-  children: React.ReactNode
-
-  onClick?: () => void
-
-  className?: string
-
-  disabled?: boolean
-}
-
-export function ActionButton({
-  variant = 'primary',
-
-  size = 'md',
-
-  icon,
-
-  children,
-
-  onClick,
-
-  className = '',
-
-  disabled = false,
-}: ActionButtonProps) {
+export default function FilesPage() {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        'btn-base',
+    <div className="files-page">
 
-        VARIANT_CLASSES[variant],
+      <div className="files-container">
 
-        SIZE_CLASSES[size],
+        <h1 className="files-title">
+          Sistema de Botones — Gestión de Archivos
+        </h1>
 
-        className,
-      ].join(' ')}
-    >
-      {icon}
+        {/* ───────────────────────────── */}
+        {/* ACTION BUTTONS */}
+        {/* ───────────────────────────── */}
+        <section className="files-card">
 
-      {children}
-    </button>
+          <h2 className="files-card-title">
+            Botones principales
+          </h2>
+
+          <div className="files-grid">
+
+            <DownloadButton
+              className="btn-download"
+              onClick={() => alert('Descargar')}
+            />
+
+            <PreviewButton
+              className="btn-preview"
+              onClick={() => alert('Vista previa')}
+            />
+
+            <UploadButton
+              className="btn-upload"
+              onClick={() => alert('Subir')}
+            />
+
+            <DeleteButton
+              className="btn-delete"
+              onClick={() => alert('Eliminar')}
+            />
+
+          </div>
+        </section>
+
+        {/* ───────────────────────────── */}
+        {/* SIZE DEMO */}
+        {/* ───────────────────────────── */}
+        <section className="files-card">
+
+          <h2 className="files-card-title">
+            Tamaños reutilizables
+          </h2>
+
+          <div className="demo-row">
+
+            <ActionButton size="xs">
+              XS
+            </ActionButton>
+
+            <ActionButton size="sm">
+              SM
+            </ActionButton>
+
+            <ActionButton size="md">
+              MD
+            </ActionButton>
+
+            <ActionButton size="lg">
+              LG
+            </ActionButton>
+
+          </div>
+        </section>
+
+        {/* ───────────────────────────── */}
+        {/* ICON BUTTONS */}
+        {/* ───────────────────────────── */}
+        <section className="files-card">
+
+          <h2 className="files-card-title">
+            Toolbar Buttons
+          </h2>
+
+          <div className="toolbar-row">
+
+            <DownloadIconButton />
+
+            <PreviewIconButton />
+
+            <ShareIconButton />
+
+            <ExpandIconButton />
+
+            <DeleteIconButton />
+
+          </div>
+        </section>
+
+      </div>
+    </div>
   )
-}
-
-interface IconButtonProps {
-  icon: React.ReactNode
-
-  title: string
-
-  onClick?: () => void
-
-  className?: string
-
-  variant?: 'default' | 'danger' | 'dark'
-}
-
-export function IconButton({
-  icon,
-
-  title,
-
-  onClick,
-
-  className = '',
-
-  variant = 'default',
-}: IconButtonProps) {
-
-  const variantClass = {
-    default: 'icon-btn-default',
-
-    danger: 'icon-btn-danger',
-
-    dark: 'icon-btn-dark',
-  }[variant]
-
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className={[
-        'icon-btn-base',
-
-        variantClass,
-
-        className,
-      ].join(' ')}
-    >
-      {icon}
-    </button>
-  )
-}
-
-export const fileIconMap: Record<
-  FileType,
-  React.FC<{ size?: number; color?: string }>
-> = {
-  pdf: IconPDF,
-
-  doc: IconDOC,
-
-  xlsx: IconXLSX,
-
-  image: IconImage,
-}
-
-// ─────────────────────────────────────────────────────────────
-// GET FILE ICON
-// ─────────────────────────────────────────────────────────────
-export function getFileIcon(type: FileType) {
-  const Icon = fileIconMap[type]
-
-  return <Icon size={18} />
 }
