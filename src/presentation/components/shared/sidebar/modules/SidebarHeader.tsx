@@ -12,22 +12,16 @@ const SidebarHeader = ({ showToggle = true }: SidebarProps) => {
   const logoSrc = logo || logoDefault
 
   return (
-    <div
-      className={`flex gap-1.5 w-full p-2 ${
+    <div className={`flex gap-1.5 w-full p-2 ${
         hiddenNav ? 'justify-center' : 'justify-between'
       }`}
     >
       {!hiddenNav && (
         <div className="flex-1 flex justify-center">
-          <img
-            src={logoSrc}
-            alt="Logo Institucional"
-            className="w-30 h-30 object-fill"
-          />
+          <img src={logoSrc} alt="Logo Institucional" className="w-30 h-30 object-fill"/>
         </div>
       )}
 
-      {/* Icon */}
       {showToggle && (
         <MenuOpenIcon
           onClick={toggleHiddenNav}

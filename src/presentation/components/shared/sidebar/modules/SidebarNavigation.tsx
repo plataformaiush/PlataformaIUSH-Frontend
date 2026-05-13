@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 import { definedSectionRole } from "../components/SidebarSections";
 import { Section } from "../types/Sidebar.types";
 import { useHiddenNavStore } from "../store/hiddenNavStore";
 
 const SidebarNavigation = () => {
+
     const navigate = useNavigate();
+    const location = useLocation();
+    
     const [sectionSelected, setSectionSelected] = useState("Dashboard");
     const [actuallySection, setActuallySection] = useState<Section[]>([]);
     const hiddenNav = useHiddenNavStore((state) => state.hiddenNav);
@@ -14,7 +17,15 @@ const SidebarNavigation = () => {
     useEffect(() => {
         const sectionByRol = definedSectionRole();
         setActuallySection(sectionByRol);
-    }, []);
+
+        const currentSection = sectionByRol.find(section => 
+            location.pathname.startsWith(section.path)
+        );
+        
+        if (currentSection) {
+            setSectionSelected(currentSection.label);
+        }
+    }, [location.pathname]);
 
     const handleNavigationClick = (label: string, path: string) => {
         setSectionSelected(label);
@@ -31,23 +42,16 @@ const SidebarNavigation = () => {
             >
             <nav onClick={() => handleNavigationClick(v.label, v.path)}
                 className={`flex items-center p-3 m-2 rounded-[7px] cursor-pointer transition-all ${
-                sectionSelected === v.label
-                    ? "opacity-100"
-                    : "hover:opacity-80 opacity-70"
+                sectionSelected === v.label ? "opacity-100 bg-black/20"
+                    : "hover:bg-black/20 hover:opacity-80 opacity-70 bg-transparent"
                 }`}
-                style={{
-                backgroundColor:
-                    sectionSelected === v.label
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
-                }}
             >
                 <div className={`flex items-center transition-all`}
                     style={{
                         color:
                         sectionSelected === v.label
                             ? "var(--color-text-on-dark)"
-                            : "var(--color-muted-foreground)",
+                            : "var(--color-foreground)",
                     }}
                     >
                     {v.icon}
@@ -59,7 +63,7 @@ const SidebarNavigation = () => {
                         color:
                             sectionSelected === v.label
                             ? "var(--color-text-on-dark)"
-                            : "var(--color-muted-foreground)",
+                            : "var(--color-foreground)",
                         }}
                     >
                         {v.label}

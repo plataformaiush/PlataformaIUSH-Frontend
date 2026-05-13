@@ -26,7 +26,7 @@ const SidebarFooter = () => {
         <Tooltip describeChild title="Ayuda" arrow placement="right" disableHoverListener={!hiddenNav}>
             <button aria-label="Ayuda"
               className={`flex items-center ${hiddenNav ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2.5'} rounded-lg text-[15px] font-medium transition-all w-full ${hiddenNav ? '' : 'text-left hover:bg-black/20'}`}
-              style={{ color: 'var(--color-muted-foreground)' }}
+              style={{ color: 'var(--color-foreground)' }}
             >
               <HelpCircle size={16}/>
               {!hiddenNav && <span>Ayuda</span>}
@@ -37,7 +37,7 @@ const SidebarFooter = () => {
         <Tooltip describeChild title="Cerrar Sesión" arrow placement="right" disableHoverListener={!hiddenNav}>
           <button aria-label="Cerrar sesión"
             className={`flex items-center ${hiddenNav ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2.5'} rounded-lg text-[15px] font-medium cursor-pointer w-full ${hiddenNav ? '' : 'text-left hover:bg-red-500/20'} transition-all`}
-            style={{ color: 'var(--color-muted-foreground)' }}
+            style={{ color: 'var(--color-foreground)' }}
             onClick={() => handleClose()}
           >
             <LogOut size={16} />
@@ -57,7 +57,7 @@ const SidebarFooter = () => {
           {!hiddenNav && (
             <div className="min-w-0">
               <p className="text-[15px] font-semibold truncate" style={{ color: 'var(--color-text-on-dark)' }}>{nombre}</p>
-              <p className="text-[13px]" style={{ color: 'var(--color-muted-foreground)' }}>{roles?.[0]}</p>
+              <p className="text-[13px] opacity-80" style={{ color: 'var(--color-text-on-dark)' }}>{roles?.[0]}</p>
             </div>
           )}
         </div>
