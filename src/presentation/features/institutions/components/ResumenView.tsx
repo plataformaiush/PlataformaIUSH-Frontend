@@ -85,11 +85,11 @@ function SessionLineChart() {
   )
 }
 
-export function ReportesView() {
+export function ResumenView() {
   return (
     <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--color-background)' }}>
       <div>
-        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Reportes</h1>
+        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Resumen</h1>
         <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Métricas de uso institucional</p>
       </div>
 
