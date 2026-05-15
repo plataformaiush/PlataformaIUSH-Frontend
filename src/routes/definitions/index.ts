@@ -6,6 +6,7 @@ import { reportsRoutes } from './reports.routes';
 import { superAdminRoutes } from './superadmin.routes';
 import { gradeRoutes } from './grades.routes';
 import ProfunSoft from '../../ProfunSoft'
+import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
  * Agregador central de rutas
@@ -24,6 +25,7 @@ import ProfunSoft from '../../ProfunSoft'
 export const allRoutes: RouteObject[] = [
     ...authRoutes,        // Equipo 1
     ...vistaEstudiantesRutas, // Equipo 7
+    ...archivosRoutes,    // Equipo 2 (Archivos)
     {
         path: '/',
         element: createElement(ProfunSoft),

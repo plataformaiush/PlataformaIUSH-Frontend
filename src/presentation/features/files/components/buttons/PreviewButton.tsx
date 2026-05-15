@@ -1,34 +1,48 @@
-import React from 'react'
-import { ActionButton } from '../ActionButton'
+// src/presentation/features/files/components/buttons/PreviewButton.tsx
+import React, { useState } from 'react'
+import { Maximize2, Play } from 'lucide-react'
+import { FilePreviewContainer } from '../vistas/Filepreviewcontainer'
 
-const PreviewIcon = () => (
-  <svg
-    className="w-4 h-4"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/>
-    <circle cx="12" cy="12" r="3"/>
-  </svg>
-)
+interface PreviewButtonProps {
+  id: string
+  /** Texto del botón. Default: 'Ver' */
+  label?: string
+  /** 'expand' muestra ícono de ampliar, 'play' muestra ícono de reproducir */
+  variant?: 'expand' | 'play'
+  className?: string
+}
 
 export function PreviewButton({
-  onClick,
-  className,
-}: {
-  onClick?: () => void
-  className?: string
-}) {
+  id,
+  label = 'Ver',
+  variant = 'expand',
+  className = '',
+}: PreviewButtonProps) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <ActionButton
-      variant="secondary"
-      icon={<PreviewIcon />}
-      onClick={onClick}
-      className={className}
-    >
-      Vista previa
-    </ActionButton>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        aria-label={label}
+        className={[
+          'inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium',
+          'border border-gray-200 bg-white text-[#223740]',
+          'hover:border-[#5A878C] hover:text-[#5A878C] transition-all duration-150',
+          'focus:outline-none focus:ring-2 focus:ring-[#AEEBF2]',
+          className,
+        ].join(' ')}
+      >
+        {variant === 'play'
+          ? <Play size={14} className="fill-current" />
+          : <Maximize2 size={14} />
+        }
+        {label}
+      </button>
+
+      {open && (
+        <FilePreviewContainer id={id} onClose={() => setOpen(false)} />
+      )}
+    </>
   )
 }
