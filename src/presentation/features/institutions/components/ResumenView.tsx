@@ -20,9 +20,9 @@ const maxVal = Math.max(...sesiones.map((s) => s.val))
 
 // Gráfica de línea suave para sesiones
 function SessionLineChart() {
-  const width = 400
+  const width = 1000
   const height = 180
-  const padding = 40
+  const padding = 15
   const graphWidth = width - padding * 2
   const graphHeight = height - padding * 2
 
@@ -74,22 +74,22 @@ function SessionLineChart() {
 
       {/* X-axis labels */}
       {points.map((p, i) => (
-        <text key={i} x={p.x} y={height - 10} textAnchor="middle" className="text-[11px] fill-muted-foreground font-medium">
+        <text key={i} x={p.x} y={height } textAnchor="middle" className="text-[11px] fill-muted-foreground font-medium">
           {p.dia}
         </text>
       ))}
 
       {/* Y-axis label */}
-      <text x={15} y={20} className="text-[11px] fill-muted-foreground font-medium">Sesiones</text>
+      <text x={15} y={9} className="text-[11px] fill-muted-foreground font-medium">Sesiones</text>
     </svg>
   )
 }
 
-export function ReportesView() {
+export function ResumenView() {
   return (
     <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--color-background)' }}>
       <div>
-        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Reportes</h1>
+        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Resumen</h1>
         <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Métricas de uso institucional</p>
       </div>
 

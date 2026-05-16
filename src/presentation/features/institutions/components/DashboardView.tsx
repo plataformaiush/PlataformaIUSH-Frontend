@@ -15,14 +15,6 @@ const sessionesSemanales = [
   { dia: 'Dom', val: 90 },
 ]
 
-const recentActivity = [
-  { text: 'Juan Pérez completó módulo 3', time: 'hace 5 min' },
-  { text: 'Nuevo docente registrado', time: 'hace 20 min' },
-  { text: 'Curso de Inglés actualizado', time: 'hace 1h' },
-  { text: 'María López obtuvo certificado', time: 'hace 2h' },
-  { text: 'Nuevo PDF subido en Física', time: 'hace 3h' },
-]
-
 const topCursos = [
   { nombre: 'Matemáticas', pct: 88 },
   { nombre: 'Programación', pct: 74 },
@@ -41,9 +33,9 @@ const contentTypes = [
 function SessionsChart() {
   const maxVal = Math.max(...sessionesSemanales.map((s) => s.val))
   
-  const width = 300
+  const width = 700
   const height = 150
-  const padding = 30
+  const padding = 10
   const graphWidth = width - padding * 2
   const graphHeight = height - padding * 2
 
@@ -234,7 +226,7 @@ export function DashboardView() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-96">
+      <div className="grid grid-cols-1 gap-6 xl:h-96">
         {/* Top Courses */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
@@ -258,38 +250,6 @@ export function DashboardView() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col"
-          style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
-            <p className="text-sm font-semibold uppercase tracking-wider">Actividad reciente</p>
-          </div>
-          <div style={{ backgroundColor: 'var(--color-muted)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="space-y-0 flex-1 overflow-y-auto px-4 py-4">
-              {recentActivity.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="text-3xl mb-2 text-muted-foreground">-</div>
-                  <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Sin actividad</p>
-                </div>
-              ) : (
-                recentActivity.map((a, i) => (
-                  <div key={i} className="group flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer"
-                    style={{
-                      borderBottomColor: 'var(--color-border)',
-                      borderBottomWidth: i < recentActivity.length - 1 ? '1px' : '0'
-                    }}>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 transition-transform duration-200 group-hover:scale-150" style={{ backgroundColor: 'var(--color-primary)' }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs leading-tight transition-colors" style={{ color: 'var(--color-foreground)' }}>{a.text}</p>
-                      <p className="text-[10px] mt-1 transition-colors" style={{ color: 'var(--color-muted-foreground)' }}>{a.time}</p>
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </div>
