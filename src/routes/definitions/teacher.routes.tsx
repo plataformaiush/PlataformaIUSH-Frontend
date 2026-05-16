@@ -3,11 +3,16 @@ import TeacherDashboard from "../../presentation/features/teacher/TeacherDashboa
 
 export const teacherRoutes: RouteObject[] = [
   {
-    path: "/teacher",
-    element: <Navigate to="/teacher/dashboard" replace />,
-  },
-  {
-    path: "/teacher/dashboard",
-    element: <TeacherDashboard />,
+    path: "teacher",
+    children: [
+      {
+        index: true,
+        element: <Navigate to="dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: <TeacherDashboard />,
+      },
+    ],
   },
 ];

@@ -111,10 +111,10 @@ export default function TeacherDashboard() {
   } = useTeacherStore();
 
   useEffect(() => {
-    if (!dashboard && !loading) {
-      void loadDashboard();
-    }
-  }, [dashboard, loading, loadDashboard]);
+  if (!dashboard && !loading && !error) {
+    void loadDashboard();
+  }
+}, [dashboard, loading, error, loadDashboard]);
 
   const teacher = dashboard?.teacher;
   const totals = dashboard?.totals;

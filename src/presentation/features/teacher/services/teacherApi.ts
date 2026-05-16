@@ -52,12 +52,12 @@ async function request<T>(endpoint: string): Promise<T> {
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: "GET",
-      credentials: "include",
-      signal: controller.signal,
-      headers: {
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    method: "GET",
+    mode: "cors",
+    signal: controller.signal,
+    headers: {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 

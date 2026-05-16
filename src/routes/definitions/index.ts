@@ -29,6 +29,7 @@ export const allRoutes: RouteObject[] = [
         path: '/',
         element: createElement(ProfunSoft),
         children: [
+            ...teacherRoutes,// Equipo 6 (Docente): ...teacherRoutes,
             ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
             ...superAdminRoutes,  // Equipo 3 (Institución)
             ...gradeRoutes,       // Equipo 5 (Notas)
@@ -38,7 +39,6 @@ export const allRoutes: RouteObject[] = [
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
     // Equipo 4 (Admin): ...adminRoutes,
-    ...teacherRoutes,// Equipo 6 (Docente): ...teacherRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
     // Equipo 9 (Analytics): ...analyticsRoutes,
     // Equipo 10 (Estudiante): ...studentRoutes,
