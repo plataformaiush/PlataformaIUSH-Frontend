@@ -1,18 +1,102 @@
-// Este archivo fue eliminado para evitar interferencia con los equipos
-// Cada equipo creará sus propios stores específicos según sus necesidades
-// 
-// Ejemplo para Equipo 8 (Auth, Usuarios, Roles):
-// - src/presentation/stores/auth.store.ts (autenticación)
-// - src/presentation/stores/user.store.ts (gestión de usuarios)
-// - src/presentation/stores/role.store.ts (gestión de roles)
-//
-// Ejemplo para Equipo 1 (Cursos, Módulos, Contenidos):
-// - src/presentation/stores/course.store.ts
-// - src/presentation/stores/module.store.ts
-// - src/presentation/stores/content.store.ts
-//
-// Los equipos deben seguir la arquitectura hexagonal:
-// - Stores solo en presentation layer
-// - Importar solo de domain layer para tipos
-// - No importar de infrastructure o application
-// - Usar Zustand con TypeScript estricto
+import { create } from "zustand";
+import { tokenManager } from "../services/tokenManager";
+
+export interface AuthUser {
+	id: string;
+	correo: string;
+	nombre?: string;
+	roles?: string[];
+}
+
+interface AuthState {
+	isAuthenticated: boolean;
+	user: AuthUser | null;
+	token: string | null;
+	isLoading: boolean;
+	error: string | null;
+	setUser: (user: AuthUser, token: string, expiresIn?: number) => void;
+	logout: () => void;
+	checkToken: () => boolean;
+	clearError: () => void;
+	setError: (error: string | null) => void;
+	setLoading: (loading: boolean) => void;
+	initializeAuth: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+	isAuthenticated: false,
+	user: null,
+	token: null,
+	isLoading: false,
+	error: null,
+
+	setUser: (user, token, expiresIn = 3600) => {
+		tokenManager.setToken(token, expiresIn);
+		tokenManager.setUser(user);
+
+		set({
+			isAuthenticated: true,
+			user,
+			token,
+			error: null,
+		});
+	},
+
+	logout: () => {
+		tokenManager.clearToken();
+		set({
+			isAuthenticated: false,
+			user: null,
+			token: null,
+			error: null,
+		});
+	},
+
+	checkToken: () => {
+		const token = tokenManager.getToken();
+		const isExpired = tokenManager.isTokenExpired();
+
+		if (!token || isExpired) {
+			set({
+				isAuthenticated: false,
+				user: null,
+				token: null,
+			});
+			return false;
+		}
+
+		const user = tokenManager.getUser() as AuthUser | null;
+		set({
+			isAuthenticated: true,
+			user,
+			token,
+		});
+		return true;
+	},
+
+	clearError: () => set({ error: null }),
+
+	setError: (error) => set({ error }),
+
+	setLoading: (loading) => set({ isLoading: loading }),
+
+	initializeAuth: () => {
+		const token = tokenManager.getToken();
+
+		if (token && !tokenManager.isTokenExpired()) {
+			const user = tokenManager.getUser() as AuthUser | null;
+			set({
+				isAuthenticated: true,
+				user,
+				token,
+			});
+			return;
+		}
+
+		set({
+			isAuthenticated: false,
+			user: null,
+			token: null,
+		});
+	},
+}));
