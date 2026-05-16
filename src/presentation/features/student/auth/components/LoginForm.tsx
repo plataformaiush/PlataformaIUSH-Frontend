@@ -41,6 +41,8 @@ export default function LoginForm() {
         navigate("/super-admin");
       } else if (userRoles.includes("Estudiante")) {
         navigate("/student");
+      } else if (userRoles.includes("Docente")) {
+        navigate("/teacher/dashboard");
       } else {
         const rolesText = userRoles.length > 0 ? userRoles.join(", ") : "ninguno";
         const errorMessage = `No hay vista disponible para los roles: ${rolesText}`;

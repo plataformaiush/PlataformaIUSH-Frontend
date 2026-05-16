@@ -4,6 +4,7 @@ import {vistaEstudiantesRutas} from "./vista-estudiante.routes";
 import { reportsRoutes } from './reports.routes';
 import { superAdminRoutes } from './superadmin.routes';
 import { gradeRoutes } from './grades.routes';
+import { teacherRoutes } from "./teacher.routes";
 
 /**
  * Agregador central de rutas
@@ -29,7 +30,7 @@ export const allRoutes: RouteObject[] = [
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
     // Equipo 4 (Admin): ...adminRoutes,
-    // Equipo 6 (Docente): ...teacherRoutes,
+    ...teacherRoutes,// Equipo 6 (Docente): ...teacherRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
     // Equipo 9 (Analytics): ...analyticsRoutes,
     // Equipo 10 (Estudiante): ...studentRoutes,
