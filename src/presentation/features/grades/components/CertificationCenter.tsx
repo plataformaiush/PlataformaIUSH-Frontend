@@ -1,9 +1,48 @@
 // src/presentation/features/grades/components/CertificationCenter.tsx
 
+import { useState } from 'react';
 import { Download, Lock, Star } from 'lucide-react';
 import { mockCertificates } from '../data/mock-grades';
+import { PdfPreviewModal } from './PdfPreviewModal';
+import { generateCertificatePdf, downloadPdf } from '../services/certificateService';
+import { Certificate } from '../../../../domain/grades';
+
 
 export function CertificationCenter() {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [currentCertificate, setCurrentCertificate] = useState<Certificate | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePreviewPdf = async (certificate: Certificate) => {
+    setCurrentCertificate(certificate);
+    setIsPreviewOpen(true);
+    setIsLoading(true);
+
+    try {
+      const url = await generateCertificatePdf(certificate);
+      setPdfUrl(url);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setPdfUrl('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (currentCertificate && pdfUrl) {
+      const fileName = `${currentCertificate.certificateId}.pdf`;
+      downloadPdf(pdfUrl, fileName);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsPreviewOpen(false);
+    setPdfUrl('');
+    setCurrentCertificate(null);
+  };
+
   return (
     <div className="w-full">
       {/* Title */}
@@ -116,6 +155,7 @@ export function CertificationCenter() {
                       ID: {cert.certificateId}
                     </div>
                     <button
+                      onClick={() => handlePreviewPdf(cert)}
                       className="w-full flex items-center justify-center gap-2 rounded-lg font-semibold transition-opacity hover:opacity-90"
                       style={{
                         backgroundColor: '#223740',
@@ -184,6 +224,18 @@ export function CertificationCenter() {
           );
         })}
       </div>
+
+      {/* PDF Preview Modal */}
+      {currentCertificate && (
+        <PdfPreviewModal
+          isOpen={isPreviewOpen}
+          pdfUrl={pdfUrl}
+          certificateId={currentCertificate.certificateId}
+          onClose={handleCloseModal}
+          onDownload={handleDownload}
+          loading={isLoading}
+        />
+      )}
     </div>
   );
 }
