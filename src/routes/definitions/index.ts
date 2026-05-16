@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { RouteObject } from 'react-router-dom'
 import { authRoutes } from './auth.routes'
 import {vistaEstudiantesRutas} from "./vista-estudiante.routes";
@@ -5,6 +6,7 @@ import { reportsRoutes } from './reports.routes';
 import { superAdminRoutes } from './superadmin.routes';
 import { gradeRoutes } from './grades.routes';
 import { teacherRoutes } from "./teacher.routes";
+import ProfunSoft from '../../ProfunSoft'
 
 /**
  * Agregador central de rutas
@@ -23,9 +25,15 @@ import { teacherRoutes } from "./teacher.routes";
 export const allRoutes: RouteObject[] = [
     ...authRoutes,        // Equipo 1
     ...vistaEstudiantesRutas, // Equipo 7
-    ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
-    ...superAdminRoutes,  // Equipo 3 (Institución)
-    ...gradeRoutes,       // Equipo 5 (Notas)
+    {
+        path: '/',
+        element: createElement(ProfunSoft),
+        children: [
+            ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
+            ...superAdminRoutes,  // Equipo 3 (Institución)
+            ...gradeRoutes,       // Equipo 5 (Notas)
+        ],
+    },
     // Equipo 1 (Cursos): ...plantillaRoutes,
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
