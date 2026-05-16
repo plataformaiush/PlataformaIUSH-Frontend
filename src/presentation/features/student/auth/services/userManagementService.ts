@@ -15,6 +15,15 @@ export interface CreateUserPayload {
   roles: string[];
 }
 
+export interface UpdateUserPayload {
+  nombre: string;
+  roles: string[];
+}
+
+const normalizeRole = (value: string) => value.trim().toLowerCase().replace(/[\s_]/g, "");
+
+const isRestrictedRole = (value: string) => normalizeRole(value) === "superadmin";
+
 interface RawUser {
   id?: string | number;
   _id?: string | number;
@@ -48,7 +57,7 @@ const normalizeUser = (raw: RawUser, index: number): ManagedUser => {
     id: String(rawId),
     nombre: raw.nombre ?? raw.name ?? "Sin nombre",
     correo: raw.correo ?? raw.email ?? "sin-correo@local",
-    roles,
+    roles: roles.filter((role) => !isRestrictedRole(role)),
     activo: typeof raw.activo === 'boolean' ? raw.activo : true,
   };
 };
@@ -93,7 +102,7 @@ export const getRoles = async (): Promise<string[]> => {
         ""
       );
     })
-    .filter((role) => role.length > 0);
+    .filter((role) => role.length > 0 && !isRestrictedRole(role));
 };
 
 export const createUser = async (
@@ -109,6 +118,25 @@ export const createUser = async (
     (created.data as RawUser | undefined) ??
     (created.user as RawUser | undefined) ??
     (created as RawUser)
+  );
+
+  return normalizeUser(rawCandidate, Date.now());
+};
+
+export const updateUser = async (
+  id: string,
+  payload: UpdateUserPayload
+): Promise<ManagedUser> => {
+  const response = await axiosInstance.put(`/api/users/${id}`, payload);
+
+  const updated = response.data && typeof response.data === "object"
+    ? (response.data as Record<string, unknown>)
+    : {};
+
+  const rawCandidate = (
+    (updated.data as RawUser | undefined) ??
+    (updated.user as RawUser | undefined) ??
+    (updated as RawUser)
   );
 
   return normalizeUser(rawCandidate, Date.now());
