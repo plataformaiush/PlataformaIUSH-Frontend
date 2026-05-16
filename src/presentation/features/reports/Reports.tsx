@@ -9,7 +9,7 @@ import { IoPersonOutline } from "react-icons/io5";
 import { TfiBlackboard } from "react-icons/tfi";
 import { LiaCertificateSolid } from "react-icons/lia";
 import { FaRegClock } from "react-icons/fa6";
-import SimulateEvents from './modules/gtm/simulateEvents';
+import SimulateEvents from './modules/gtm/SimulateEvents';
 
 
 const filters: FilterOption[] = [
