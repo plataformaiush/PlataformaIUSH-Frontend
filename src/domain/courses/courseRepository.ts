@@ -29,4 +29,32 @@ export class CourseRepository {
   static getCourseById(courseId: string): Course | undefined {
     return this.getAllCourses().find((course) => course.id === courseId)
   }
+
+  static createCourse(course: Omit<Course, 'id'>): Course {
+    const newCourse: Course = {
+      ...course,
+      id: `course-${Date.now()}`
+    }
+    return newCourse
+  }
+
+  static updateCourse(courseId: string, updates: Partial<Course>): Course | null {
+    const courses = this.getAllCourses()
+    const index = courses.findIndex((c) => c.id === courseId)
+    if (index !== -1) {
+      const updatedCourse = { ...courses[index], ...updates }
+      return updatedCourse
+    }
+    return null
+  }
+
+  static deleteCourse(courseId: string): boolean {
+    const courses = this.getAllCourses()
+    const index = courses.findIndex((c) => c.id === courseId)
+    if (index !== -1) {
+      courses.splice(index, 1)
+      return true
+    }
+    return false
+  }
 }

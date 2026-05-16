@@ -261,52 +261,156 @@ export const CourseListPage = () => {
 
         {/* Vista Tabla/Cuadrícula */}
         {viewMode === 'table' ? (
-          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: `1px solid #E5E7EB`, backgroundColor: '#FAFAFA' }}>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      Curso
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      Módulos
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      Estudiantes
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      Estado
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCourses.map((course, idx) => (
-                    <tr
-                      key={course.id}
-                      className="transition-colors hover:bg-gray-50"
-                      style={{ 
-                        borderBottom: idx !== filteredCourses.length - 1 ? `1px solid #E5E7EB` : 'none'
-                      }}
-                    >
-                      <CourseCard 
-                        key={`${course.id}-${refreshKey}`}
-                        course={course} 
-                        isLast={idx === filteredCourses.length - 1}
-                        onDelete={handleDeleteCourse}
-                        onEdit={handleEditCourse}
-                        onView={handleViewCourse}
-                        onCourseUpdate={handleCourseUpdate}
-                      />
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid #E5E7EB`, backgroundColor: '#FAFAFA' }}>
+                      <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                        Curso
+                      </th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                        Módulos
+                      </th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                        Estudiantes
+                      </th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                        Estado
+                      </th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                        Acciones
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredCourses.map((course, idx) => (
+                      <tr
+                        key={course.id}
+                        className="transition-colors hover:bg-gray-50"
+                        style={{ 
+                          borderBottom: idx !== filteredCourses.length - 1 ? `1px solid #E5E7EB` : 'none'
+                        }}
+                      >
+                        <CourseCard 
+                          key={`${course.id}-${refreshKey}`}
+                          course={course} 
+                          isLast={idx === filteredCourses.length - 1}
+                          onDelete={handleDeleteCourse}
+                          onEdit={handleEditCourse}
+                          onView={handleViewCourse}
+                          onCourseUpdate={handleCourseUpdate}
+                        />
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Mobile Card View (Table Mode) */}
+            <div className="md:hidden space-y-4">
+              {filteredCourses.map((course, idx) => (
+                <div
+                  key={`${course.id}-${refreshKey}`}
+                  className="rounded-2xl border overflow-hidden transition-all hover:shadow-sm"
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}
+                >
+                  <div className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#AEEBF2' }}>
+                        <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <button
+                          onClick={() => handleViewCourse(course.id)}
+                          className="text-left font-semibold hover:opacity-80 focus:outline-none"
+                          style={{ color: '#223740', fontSize: '14px' }}
+                        >
+                          <div className="truncate">{course.title}</div>
+                        </button>
+                        <p className="text-sm truncate mt-1" style={{ color: '#6B7280', maxWidth: '250px' }}>
+                          {course.description}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mb-3 text-sm" style={{ color: '#6B7280' }}>
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-4 h-4" />
+                        {course.moduleIds?.length || 0} módulos
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {course.studentCount} estudiantes
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const newStatus = course.status === 'active' ? 'inactive' : 'active'
+                            CourseRepository.updateCourse(course.id, { status: newStatus })
+                            handleCourseUpdate()
+                          }}
+                          className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none"
+                          style={{ backgroundColor: course.status === 'active' ? '#5A878C' : '#9CA3AF' }}
+                        >
+                          <span
+                            className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
+                            style={{ transform: course.status === 'active' ? 'translateX(18px)' : 'translateX(2px)' }}
+                          />
+                        </button>
+                        <span
+                          className="text-xs font-medium px-2 py-1 rounded-full"
+                          style={{
+                            backgroundColor: course.status === 'active' ? '#AEEBF2' : '#F3F4F6',
+                            color: course.status === 'active' ? '#5A878C' : '#6B7280'
+                          }}
+                        >
+                          {course.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleViewCourse(course.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+                          style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => window.location.href = `/courses/${course.id}/modules/new`}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+                          style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditCourse(course.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+                          style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCourse(course.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:opacity-80"
+                          style={{ backgroundColor: '#FEF2F2', borderColor: '#FEE2E2', color: '#DC2626' }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course, idx) => (
