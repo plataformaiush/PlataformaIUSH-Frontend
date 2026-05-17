@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { useUsersViewPreference } from "../../../../../context/UsersViewPreferenceContext";
 import {
   createUser,
   CreateUserPayload,
@@ -30,6 +31,7 @@ export default function UserManagementPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const { viewType, setViewType } = useUsersViewPreference();
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -191,8 +193,22 @@ export default function UserManagementPage() {
                 Crea, edita y activa usuarios desde una interfaz unificada con el diseño global del proyecto.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
-              {loading ? "Cargando datos..." : `${users.length} usuarios cargados`}
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <div className="rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+                {loading ? "Cargando datos..." : `${users.length} usuarios cargados`}
+              </div>
+              <button
+                onClick={() => setViewType(viewType === 'management' ? 'original' : 'management')}
+                className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                style={{
+                  backgroundColor: 'var(--color-primary)',
+                  color: 'white',
+                  borderColor: 'var(--color-primary)'
+                }}
+                title={`Cambiar a vista ${viewType === 'management' ? 'original' : 'de gestión'}`}
+              >
+                Cambiar Vista
+              </button>
             </div>
           </div>
         </header>
@@ -273,9 +289,10 @@ export default function UserManagementPage() {
                       onClick={() => toggleRole(role)}
                       className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
                         selected
-                          ? "border-primary bg-primary text-text-on-dark"
+                          ? "border-primary bg-primary"
                           : "border-border bg-surface text-foreground hover:border-secondary hover:bg-tertiary/30"
                       }`}
+                      style={selected ? { color: 'var(--color-text-on-dark)' } : {}}
                     >
                       {role}
                     </button>
@@ -288,7 +305,11 @@ export default function UserManagementPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-text-on-dark transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  backgroundColor: 'var(--color-primary)',
+                  color: 'var(--color-text-on-dark)'
+                }}
               >
                 {creating ? "Creando..." : "Crear usuario"}
               </button>
@@ -372,9 +393,10 @@ export default function UserManagementPage() {
                           onClick={() => toggleEditRole(role)}
                           className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
                             selected
-                              ? "border-primary bg-primary text-text-on-dark"
+                              ? "border-primary bg-primary"
                               : "border-border bg-surface text-foreground hover:border-secondary hover:bg-tertiary/30"
                           }`}
+                          style={selected ? { color: 'var(--color-text-on-dark)' } : {}}
                         >
                           {role}
                         </button>
@@ -387,7 +409,11 @@ export default function UserManagementPage() {
                   <button
                     type="submit"
                     disabled={updating}
-                    className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-text-on-dark transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-xl px-5 py-2.5 text-sm font-semibold transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      backgroundColor: 'var(--color-primary)',
+                      color: 'var(--color-text-on-dark)'
+                    }}
                   >
                     {updating ? "Guardando cambios..." : "Confirmar cambios"}
                   </button>

@@ -23,6 +23,14 @@ const topCursos = [
   { nombre: 'Historia', pct: 30 },
 ]
 
+const topDocentes = [
+  { nombre: 'Carlos Ruiz', estudiantes: 320, cursos: 3 },
+  { nombre: 'Pedro Suárez', estudiantes: 280, cursos: 2 },
+  { nombre: 'María Torres', estudiantes: 210, cursos: 2 },
+  { nombre: 'Luis Gómez', estudiantes: 180, cursos: 1 },
+  { nombre: 'Camila Reyes', estudiantes: 140, cursos: 2 },
+]
+
 const contentTypes = [
   { type: 'Video', pct: 45, color: 'var(--color-primary)' },
   { type: 'Texto', pct: 35, color: 'var(--color-secondary)' },
@@ -200,6 +208,31 @@ export function DashboardView() {
         ))}
       </div>
 
+      {/* Alertas de atención */}
+      <div className="border-2 border-amber-300 rounded-xl bg-amber-50 p-6 shadow-md"
+        style={{ borderColor: 'var(--color-warning)', backgroundColor: 'var(--color-muted)' }}>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>Elementos que requieren atención</h3>
+            <p className="text-xs mt-1 mb-4" style={{ color: 'var(--color-muted-foreground)' }}>Hay algunos problemas que podrían afectar la plataforma</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white/60 rounded-lg p-3 border" style={{ borderColor: 'var(--color-border)' }}>
+                <p className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>4</p>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Docentes inactivos</p>
+              </div>
+              <div className="bg-white/60 rounded-lg p-3 border" style={{ borderColor: 'var(--color-border)' }}>
+                <p className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>3</p>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Cursos sin inscripciones</p>
+              </div>
+              <div className="bg-white/60 rounded-lg p-3 border" style={{ borderColor: 'var(--color-border)' }}>
+                <p className="text-2xl font-bold" style={{ color: 'var(--color-foreground)' }}>6</p>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Cursos sin contenido</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Sessions Chart */}
@@ -226,12 +259,12 @@ export function DashboardView() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 gap-6 xl:h-96">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Top Courses */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
-            <p className="text-sm font-semibold uppercase tracking-wider">Cursos más visitados</p>
+            <p className="text-sm font-semibold uppercase tracking-wider">Cursos con mayor completitud</p>
           </div>
           <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
             <div className="space-y-4">
@@ -245,6 +278,39 @@ export function DashboardView() {
                     <div className="h-full rounded-full transition-all duration-500" style={{ 
                       background: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`,
                       width: `${c.pct}%`,
+                      boxShadow: `0 0 10px rgba(0, 0, 0, 0.1)`
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Teachers */}
+        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
+          style={{ borderColor: 'var(--color-border)' }}>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-secondary), var(--color-primary))', color: 'var(--color-text-on-dark)' }}>
+            <p className="text-sm font-semibold uppercase tracking-wider">Top docentes</p>
+          </div>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
+            <div className="space-y-4">
+              {topDocentes.map((d, idx) => (
+                <div key={d.nombre} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer border" style={{ borderColor: 'var(--color-border)' }}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>{idx + 1}. {d.nombre}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--color-muted-foreground)' }}>{d.cursos} {d.cursos === 1 ? 'curso' : 'cursos'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold" style={{ color: 'var(--color-secondary)' }}>{d.estudiantes}</p>
+                      <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>estudiantes</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ 
+                      background: `linear-gradient(to right, var(--color-secondary), var(--color-primary))`,
+                      width: `${(d.estudiantes / 320) * 100}%`,
                       boxShadow: `0 0 10px rgba(0, 0, 0, 0.1)`
                     }} />
                   </div>
