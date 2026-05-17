@@ -7,6 +7,7 @@ import { superAdminRoutes } from './superadmin.routes';
 import { gradeRoutes } from './grades.routes';
 import { teacherRoutes } from "./teacher.routes";
 import ProfunSoft from '../../ProfunSoft'
+import RequireAuth from '../guards/RequireAuth'
 
 /**
  * Agregador central de rutas
@@ -23,16 +24,21 @@ import ProfunSoft from '../../ProfunSoft'
  */
 
 export const allRoutes: RouteObject[] = [
-    ...authRoutes,        // Equipo 1
-    ...vistaEstudiantesRutas, // Equipo 7
+    ...authRoutes,
     {
-        path: '/',
-        element: createElement(ProfunSoft),
+        element: createElement(RequireAuth),
         children: [
-            ...teacherRoutes,// Equipo 6 (Docente): ...teacherRoutes,
-            ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
-            ...superAdminRoutes,  // Equipo 3 (Institución)
-            ...gradeRoutes,       // Equipo 5 (Notas)
+            ...vistaEstudiantesRutas,
+            {
+                path: '/',
+                element: createElement(ProfunSoft),
+                children: [
+                    ...teacherRoutes,
+                    ...reportsRoutes,
+                    ...superAdminRoutes,
+                    ...gradeRoutes,
+                ],
+            },
         ],
     },
     // Equipo 1 (Cursos): ...plantillaRoutes,
