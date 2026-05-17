@@ -1,10 +1,11 @@
 import { createElement } from 'react'
 import { RouteObject } from 'react-router-dom'
 import { authRoutes } from './auth.routes'
-import { vistaEstudiantesRutas } from './vista-estudiante.routes'
-import { reportsRoutes } from './reports.routes'
-import { superAdminRoutes } from './superadmin.routes'
-import { gradeRoutes } from './grades.routes'
+import {vistaEstudiantesRutas} from "./vista-estudiante.routes";
+import { reportsRoutes } from './reports.routes';
+import { superAdminRoutes } from './superadmin.routes';
+import { gradeRoutes } from './grades.routes';
+import { teacherRoutes } from "./teacher.routes";
 import ProfunSoft from '../../ProfunSoft'
 import RequireAuth from '../guards/RequireAuth'
 
@@ -32,6 +33,7 @@ export const allRoutes: RouteObject[] = [
                 path: '/',
                 element: createElement(ProfunSoft),
                 children: [
+                    ...teacherRoutes,
                     ...reportsRoutes,
                     ...superAdminRoutes,
                     ...gradeRoutes,
@@ -43,7 +45,6 @@ export const allRoutes: RouteObject[] = [
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
     // Equipo 4 (Admin): ...adminRoutes,
-    // Equipo 6 (Docente): ...teacherRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
     // Equipo 9 (Analytics): ...analyticsRoutes,
     // Equipo 10 (Estudiante): ...studentRoutes,
