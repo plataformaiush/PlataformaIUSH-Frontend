@@ -10,7 +10,7 @@ const MOCK_MODE = true
 export interface Documento {
   id: string
   nombre: string
-  tipo: 'pdf' | 'docx' | 'xlsx' | 'png' | 'jpg' | 'mp4' | string
+  tipo: 'pdf' | 'docx' | 'xlsx' | 'png' | 'jpg' | string
   tamaño: number
   url?: string
   creadoEn?: string
@@ -57,7 +57,7 @@ const mockDB: Documento[] = [
     nombre: 'clase_01_introduccion_programacion.mp4',
     tipo: 'mp4',
     tamaño: 134217728,
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    url: 'https://youtu.be/RBaSiVjtKR4',
     creadoEn: '2025-04-01T07:00:00Z',
   },
 ]

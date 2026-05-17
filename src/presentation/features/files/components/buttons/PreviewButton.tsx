@@ -27,9 +27,10 @@ export function PreviewButton({
         aria-label={label}
         className={[
           'inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium',
-          'border border-gray-200 bg-white text-[#223740]',
-          'hover:border-[#5A878C] hover:text-[#5A878C] transition-all duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-[#AEEBF2]',
+          'border [border-color:var(--color-border)] bg-white [color:var(--color-primary)]',
+          'hover:[border-color:var(--color-secondary)] hover:[color:var(--color-secondary)]',
+          'transition-all duration-150',
+          'focus:outline-none focus:ring-2 [--tw-ring-color:var(--color-tertiary)]',
           className,
         ].join(' ')}
       >

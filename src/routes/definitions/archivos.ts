@@ -1,10 +1,10 @@
 import { createElement } from 'react'
 import { RouteObject } from 'react-router-dom'
-import { VistasArchivos } from '../../presentation/features/files/components/vistas/vistasArchivos'
+import PagePrueba from '../../presentation/features/files/app/pagePrueba'
 
 export const archivosRoutes: RouteObject[] = [
   {
     path: '/archivos',
-    element: createElement(VistasArchivos),
+    element: createElement(PagePrueba),
   },
 ]

@@ -20,8 +20,8 @@ export function UploadButton({ onUploaded, className = '' }: UploadButtonProps) 
         aria-label="Subir archivo"
         className={[
           'inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm',
-          'bg-[#AEEBF2] text-[#223740] hover:bg-[#9adde5]',
-          'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#5A878C]',
+          '[background-color:var(--color-tertiary)] [color:var(--color-primary)] hover:opacity-85',
+          'transition-all duration-200 focus:outline-none focus:ring-2 [--tw-ring-color:var(--color-secondary)]',
           className,
         ].join(' ')}
       >

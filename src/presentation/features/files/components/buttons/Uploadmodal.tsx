@@ -92,7 +92,6 @@ export function UploadModal({ open, onClose, onUploaded }: UploadModalProps) {
   if (!open) return null
 
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(6,10,13,0.6)', backdropFilter: 'blur(4px)' }}
