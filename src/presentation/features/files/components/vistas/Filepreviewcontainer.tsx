@@ -79,9 +79,6 @@ function PreviewBody({
   const isImage = [
     'png',
     'jpg',
-    'jpeg',
-    'webp',
-    'gif',
   ].includes(type)
 
   const isWord = ['doc', 'docx'].includes(type)
