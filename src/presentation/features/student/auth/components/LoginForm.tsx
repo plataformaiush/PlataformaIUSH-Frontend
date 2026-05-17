@@ -12,6 +12,7 @@ type LoginData = {
 export default function LoginForm() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { setUser, setLoading, setError } = useAuthStore();
 
   const {
@@ -65,10 +66,10 @@ export default function LoginForm() {
   return (
     <div className="rounded-3xl bg-transparent px-2 md:px-4">
       <div className="mb-8">
-        <h2 className="text-4xl font-bold tracking-tight text-[#223740]">
+        <h2 className="text-4xl font-bold tracking-tight text-primary">
           Bienvenido
         </h2>
-        <p className="mt-2 text-sm text-[#5A878C]">
+        <p className="mt-2 text-sm text-muted-foreground">
           Inicia sesión para acceder a tus cursos, seguir tu progreso y descubrir nuevas oportunidades de aprendizaje con nosotros.
         </p>
       </div>
@@ -77,14 +78,14 @@ export default function LoginForm() {
         
         {/* ERROR GENERAL */}
         {errorMsg && (
-          <div className="rounded-lg bg-[#AEEBF2] text-[#223740] text-sm p-2 text-center border border-[#5A878C]/40">
+          <div className="rounded-lg bg-tertiary text-primary text-sm p-2 text-center border border-primary/40">
             {errorMsg}
           </div>
         )}
 
         {/* CORREO */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#223740]">
+          <label className="mb-2 block text-sm font-medium text-primary">
             Correo electrónico
           </label>
           <input
@@ -93,10 +94,10 @@ export default function LoginForm() {
             {...register("correo", {
               required: "El correo es obligatorio",
             })}
-            className="w-full rounded-xl border border-[#5A878C]/50 bg-white px-4 py-3 text-sm text-[#223740] outline-none transition placeholder:text-[#5A878C]/70 focus:border-[#5A878C] focus:ring-2 focus:ring-[#AEEBF2]"
+            className="w-full rounded-xl border border-primary/50 bg-white px-4 py-3 text-sm text-primary outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-tertiary"
           />
           {errors.correo && (
-            <p className="mt-1 text-sm text-[#223740]">
+            <p className="mt-1 text-sm text-primary">
               {errors.correo.message}
             </p>
           )}
@@ -104,35 +105,44 @@ export default function LoginForm() {
 
         {/* CONTRASEÑA */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#223740]">
+          <label className="mb-2 block text-sm font-medium text-primary">
             Contraseña
           </label>
-          <input
-            type="password"
-            placeholder="Ingresa tu contraseña"
-            {...register("contrasena", {
-              required: "La contraseña es obligatoria",
-            })}
-            className="w-full rounded-xl border border-[#5A878C]/50 bg-white px-4 py-3 text-sm text-[#223740] outline-none transition placeholder:text-[#5A878C]/70 focus:border-[#5A878C] focus:ring-2 focus:ring-[#AEEBF2]"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Ingresa tu contraseña"
+              {...register("contrasena", {
+                required: "La contraseña es obligatoria",
+              })}
+              className="w-full rounded-xl border border-primary/50 bg-white px-4 py-3 pr-24 text-sm text-primary outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-tertiary"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-semibold text-primary transition hover:bg-tertiary"
+            >
+              {showPassword ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
           {errors.contrasena && (
-            <p className="mt-1 text-sm text-[#223740]">
+            <p className="mt-1 text-sm text-primary">
               {errors.contrasena.message}
             </p>
           )}
         </div>
 
         {/* DIVIDER */}
-        <div className="flex items-center gap-3 py-1 text-xs text-[#5A878C]">
-          <div className="h-px flex-1 bg-[#AEEBF2]" />
+        <div className="flex items-center gap-3 py-1 text-xs text-muted-foreground">
+          <div className="h-px flex-1 bg-tertiary" />
           <span>o</span>
-          <div className="h-px flex-1 bg-[#AEEBF2]" />
+          <div className="h-px flex-1 bg-tertiary" />
         </div>
 
         {/* boton */}
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#223740] py-3 text-sm font-semibold text-white transition hover:bg-[#5A878C] disabled:opacity-50"
+          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
           disabled={false}
         >
           Iniciar sesión

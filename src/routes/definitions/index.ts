@@ -1,11 +1,12 @@
 import { createElement } from 'react'
 import { RouteObject } from 'react-router-dom'
 import { authRoutes } from './auth.routes'
-import {vistaEstudiantesRutas} from "./vista-estudiante.routes";
-import { reportsRoutes } from './reports.routes';
-import { superAdminRoutes } from './superadmin.routes';
-import { gradeRoutes } from './grades.routes';
+import { vistaEstudiantesRutas } from './vista-estudiante.routes'
+import { reportsRoutes } from './reports.routes'
+import { superAdminRoutes } from './superadmin.routes'
+import { gradeRoutes } from './grades.routes'
 import ProfunSoft from '../../ProfunSoft'
+import RequireAuth from '../guards/RequireAuth'
 import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
@@ -23,16 +24,23 @@ import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
  */
 
 export const allRoutes: RouteObject[] = [
+    ...authRoutes,
     ...authRoutes,        // Equipo 1
     ...vistaEstudiantesRutas, // Equipo 7
     ...archivosRoutes,    // Equipo 2 (Archivos)
     {
-        path: '/',
-        element: createElement(ProfunSoft),
+        element: createElement(RequireAuth),
         children: [
-            ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
-            ...superAdminRoutes,  // Equipo 3 (Institución)
-            ...gradeRoutes,       // Equipo 5 (Notas)
+            ...vistaEstudiantesRutas,
+            {
+                path: '/',
+                element: createElement(ProfunSoft),
+                children: [
+                    ...reportsRoutes,
+                    ...superAdminRoutes,
+                    ...gradeRoutes,
+                ],
+            },
         ],
     },
     // Equipo 1 (Cursos): ...plantillaRoutes,

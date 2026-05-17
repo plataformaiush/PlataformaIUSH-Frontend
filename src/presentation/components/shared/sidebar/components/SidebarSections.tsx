@@ -8,23 +8,23 @@ import SettingsIcon from "@mui/icons-material/Settings"
 
 const selectSectionByRole: Record<Role, Section[]> = {
     SuperAdmin: [
-        { path: "/super-admin", label: "Dashboard", icon: <DashboardIcon /> },
-        { path: "/super-admin", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/super-admin", label: "Cursos", icon: <SchoolIcon /> },
-        { path: "/reports", label: "Reportes", icon: <DescriptionIcon /> },
-        { path: "/super-admin", label: "Personalización", icon: <SettingsIcon /> },
+        { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+        { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
+        { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
+        { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
+        { path: "/super-admin/personalizacion", label: "Personalización", icon: <SettingsIcon /> },
     ],
 
     Admin: [
-        { path: "/super-admin", label: "Dashboard", icon: <DashboardIcon /> },
-        { path: "/super-admin", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/super-admin", label: "Cursos", icon: <SchoolIcon /> },
-        { path: "/reports", label: "Reportes", icon: <DescriptionIcon /> },
+        { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+        { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
+        { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
+        { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
     ],
 
     Docente: [
-        { path: "/super-admin", label: "Dashboard", icon: <DashboardIcon /> },
-        { path: "/super-admin", label: "Cursos", icon: <SchoolIcon /> },
+        { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+        { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
     ],
 
     Estudiante: [], //No tiene sidebar
