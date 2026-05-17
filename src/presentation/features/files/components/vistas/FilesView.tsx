@@ -1,4 +1,3 @@
-// src/presentation/features/files/components/vistas/FilesView.tsx
 import React, { useEffect, useState } from 'react'
 import { filesApi, type Documento } from './../../../../../domain/files/Filesapi'
 import { UploadButton } from '../buttons/UploadButton'
@@ -10,12 +9,8 @@ export function FilesView() {
   const [documents, setDocuments] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  // ID of the document currently open in the preview panel
-  // null = no file selected, panel is hidden
   const [previewId, setPreviewId] = useState<string | null>(null)
 
-  // ── Data fetching ──────────────────────────
   const fetchDocuments = async () => {
     try {
       setLoading(true)
@@ -30,19 +25,14 @@ export function FilesView() {
 
   useEffect(() => { fetchDocuments() }, [])
 
-  // ── Handlers ──────────────────────────────
-  // Remove deleted file from local state — no refetch needed
   const handleDeleted = (id: string) => {
     setDocuments((prev) => prev.filter((d) => d.id !== id))
-    // Close preview if the deleted file was open
     if (previewId === id) setPreviewId(null)
   }
 
-  // Prepend uploaded file to the list — no refetch needed
   const handleUploaded = (doc: Documento) =>
     setDocuments((prev) => [doc, ...prev])
 
-  // Toggle preview: clicking the same row again closes it
   const handleSelectPreview = (id: string) =>
     setPreviewId((prev) => (prev === id ? null : id))
 

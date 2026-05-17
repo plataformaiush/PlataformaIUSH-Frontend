@@ -1,4 +1,3 @@
-// src/presentation/features/files/UploadModal.tsx
 import React, { useCallback, useRef, useState } from 'react'
 import { Upload, RefreshCw, Check, X } from 'lucide-react'
 import { filesApi, type Documento } from '../../../../../domain/files/Filesapi'

@@ -1,6 +1,10 @@
 // src/presentation/features/files/components/vistas/Filepreviewcontainer.tsx
 
-import React, { useEffect, useState } from 'react'
+import React, {
+  useEffect,
+  useState,
+} from 'react'
+
 import {
   X,
   Download,
@@ -8,6 +12,9 @@ import {
   ChevronRight,
   FileText,
 } from 'lucide-react'
+
+import * as XLSX from 'xlsx'
+import { renderAsync } from 'docx-preview'
 
 import {
   filesApi,
@@ -49,7 +56,285 @@ function youTubeEmbed(url: string): string {
 
 function inferTipo(url: string): string {
   return (
-    url.split('.').pop()?.split('?')[0]?.toLowerCase() || ''
+    url.split('.').pop()?.split('?')[0]?.toLowerCase() ||
+    ''
+  )
+}
+
+// ─────────────────────────────────────────────
+// EXCEL VIEWER (SheetJS)
+// ─────────────────────────────────────────────
+
+function ExcelViewer({
+  url,
+}: {
+  url: string
+}) {
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
+
+  const [sheetNames, setSheetNames] =
+    useState<string[]>([])
+
+  const [activeSheet, setActiveSheet] =
+    useState('')
+
+  const [data, setData] = useState<any[][]>(
+    []
+  )
+
+  const [workbook, setWorkbook] =
+    useState<XLSX.WorkBook | null>(null)
+
+  useEffect(() => {
+    async function loadExcel() {
+      try {
+        setLoading(true)
+
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error(
+            'No se pudo descargar el archivo'
+          )
+        }
+
+        const arrayBuffer =
+          await response.arrayBuffer()
+
+        const wb = XLSX.read(arrayBuffer, {
+          type: 'array',
+        })
+
+        setWorkbook(wb)
+
+        setSheetNames(wb.SheetNames)
+
+        const firstSheet =
+          wb.SheetNames[0]
+
+        setActiveSheet(firstSheet)
+
+        const worksheet =
+          wb.Sheets[firstSheet]
+
+        const json =
+          XLSX.utils.sheet_to_json(
+            worksheet,
+            {
+              header: 1,
+              defval: '',
+            }
+          ) as any[][]
+
+        setData(json)
+
+        setLoading(false)
+      } catch (err) {
+        console.error(err)
+
+        setError(
+          'No se pudo cargar el archivo Excel.'
+        )
+
+        setLoading(false)
+      }
+    }
+
+    loadExcel()
+  }, [url])
+
+  function changeSheet(
+    sheetName: string
+  ) {
+    if (!workbook) return
+
+    setActiveSheet(sheetName)
+
+    const worksheet =
+      workbook.Sheets[sheetName]
+
+    const json =
+      XLSX.utils.sheet_to_json(
+        worksheet,
+        {
+          header: 1,
+          defval: '',
+        }
+      ) as any[][]
+
+    setData(json)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
+        <div className="w-10 h-10 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
+
+        <p className="text-sm">
+          Cargando Excel...
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-2 p-8 text-red-500">
+        <X size={32} />
+
+        <p className="text-sm font-medium">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden bg-white">
+      {/* SHEETS */}
+      <div className="flex gap-2 p-3 border-b border-gray-200 overflow-x-auto bg-gray-50">
+        {sheetNames.map((sheet) => (
+          <button
+            key={sheet}
+            onClick={() =>
+              changeSheet(sheet)
+            }
+            className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition ${
+              activeSheet === sheet
+                ? 'bg-[#223740] text-white'
+                : 'bg-white border border-gray-200 hover:bg-gray-100'
+            }`}
+          >
+            {sheet}
+          </button>
+        ))}
+      </div>
+
+      {/* TABLE */}
+      <div className="flex-1 overflow-auto">
+        <table className="min-w-full border-collapse text-sm">
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map(
+                  (cell, cellIndex) => (
+                    <td
+                      key={cellIndex}
+                      className="border border-gray-200 px-3 py-2 whitespace-nowrap"
+                    >
+                      {cell?.toString() || ''}
+                    </td>
+                  )
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+function WordViewer({
+  url,
+}: {
+  url: string
+}) {
+  const containerRef =
+    React.useRef<HTMLDivElement | null>(
+      null
+    )
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
+
+  useEffect(() => {
+    async function loadDocx() {
+      try {
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          throw new Error(
+            'No se pudo descargar el documento'
+          )
+        }
+
+        const blob =
+          await response.blob()
+
+        if (!containerRef.current) return
+
+        containerRef.current.innerHTML =
+          ''
+
+        await renderAsync(
+          blob,
+          containerRef.current,
+          undefined,
+          {
+            className: 'docx-preview',
+            inWrapper: true,
+            ignoreWidth: false,
+            ignoreHeight: false,
+            ignoreFonts: false,
+            breakPages: true,
+            renderHeaders: true,
+            renderFooters: true,
+            renderFootnotes: true,
+          }
+        )
+
+        setLoading(false)
+      } catch (err) {
+        console.error(err)
+
+        setError(
+          'No se pudo cargar el documento Word.'
+        )
+
+        setLoading(false)
+      }
+    }
+
+    loadDocx()
+  }, [url])
+
+  return (
+    <div className="relative w-full h-full overflow-auto bg-[#525659] p-6">
+      {/* LOADING */}
+      {loading && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/80">
+          <div className="w-10 h-10 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
+
+          <p className="text-sm text-gray-500">
+            Cargando documento...
+          </p>
+        </div>
+      )}
+
+      {/* ERROR */}
+      {error && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white text-red-500">
+          <X size={32} />
+
+          <p className="text-sm font-medium">
+            {error}
+          </p>
+        </div>
+      )}
+
+      {/* DOCX */}
+      <div
+        ref={containerRef}
+        className="flex justify-center"
+      />
+    </div>
   )
 }
 
@@ -72,7 +357,8 @@ function PreviewBody({
     React.SetStateAction<number>
   >
 }) {
-  const type = doc?.tipo?.toLowerCase() || ''
+  const type =
+    doc?.tipo?.toLowerCase() || ''
 
   const isPdf = type === 'pdf'
 
@@ -81,9 +367,13 @@ function PreviewBody({
     'jpg',
   ].includes(type)
 
-  const isWord = ['doc', 'docx'].includes(type)
+  const isWord = ['doc', 'docx'].includes(
+    type
+  )
 
-  const isExcel = ['xls', 'xlsx'].includes(type)
+  const isExcel = ['xls', 'xlsx'].includes(
+    type
+  )
 
   const isYoutube =
     !!doc?.url && isYouTube(doc.url)
@@ -130,7 +420,9 @@ function PreviewBody({
           <div className="flex gap-1">
             <button
               onClick={() =>
-                setPdfPage((p) => Math.max(1, p - 1))
+                setPdfPage((p) =>
+                  Math.max(1, p - 1)
+                )
               }
               disabled={pdfPage <= 1}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
@@ -181,28 +473,16 @@ function PreviewBody({
   }
 
   // ───────────────── WORD
-  if (isWord && doc.url) {
-    return (
-      <iframe
-        src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
-          doc.url
-        )}`}
-        title={doc.nombre}
-        className="w-full h-full border-0"
-      />
-    )
-  }
+if (isWord && doc.url) {
+  return (
+    <WordViewer url={doc.url} />
+  )
+}
 
   // ───────────────── EXCEL
   if (isExcel && doc.url) {
     return (
-      <iframe
-        src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
-          doc.url
-        )}`}
-        title={doc.nombre}
-        className="w-full h-full border-0"
-      />
+      <ExcelViewer url={doc.url} />
     )
   }
 
@@ -243,7 +523,7 @@ export function FilePreviewContainer({
     useState(1)
 
   useEffect(() => {
-    // ───────────────── URL DIRECTA
+    // URL DIRECTA
     if (url) {
       setDoc({
         id: 'preview-directo',
@@ -257,10 +537,11 @@ export function FilePreviewContainer({
       })
 
       setLoading(false)
+
       return
     }
 
-    // ───────────────── API POR ID
+    // API POR ID
     if (id) {
       setLoading(true)
 
@@ -341,7 +622,7 @@ export function FilePreviewContainer({
     </div>
   )
 
-  // ───────────────── EMBEDDED
+  // EMBEDDED
   if (embedded) {
     return (
       <div className="w-full h-[600px] rounded-xl overflow-hidden border border-gray-200">
@@ -350,7 +631,7 @@ export function FilePreviewContainer({
     )
   }
 
-  // ───────────────── MODAL
+  // MODAL
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"

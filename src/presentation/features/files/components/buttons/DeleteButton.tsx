@@ -1,4 +1,3 @@
-// src/presentation/features/files/components/buttons/DeleteButton.tsx
 import React, { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { filesApi } from '../../../../../domain/files/Filesapi'

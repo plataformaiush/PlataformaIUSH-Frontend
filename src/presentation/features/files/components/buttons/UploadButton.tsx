@@ -1,11 +1,9 @@
-// src/presentation/features/files/buttons/UploadButton.tsx
 import React, { useState } from 'react'
 import { Upload } from 'lucide-react'
 import { UploadModal } from './Uploadmodal'
 import type { Documento } from '../../../../../domain/files/Filesapi'
 
 interface UploadButtonProps {
-  /** Callback con el documento subido */
   onUploaded?: (doc: Documento) => void
   className?: string
 }

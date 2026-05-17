@@ -64,21 +64,12 @@ function FileTypeBadge({ type }: { type: string }) {
 // Props
 // ─────────────────────────────────────────────
 interface FileListProps {
-  /** Array of documents to display */
   documents: Documento[]
-  /** Section heading. Default: "Course files" */
   heading?: string
-  /** Called when a file is deleted */
   onDeleted: (id: string) => void
-  /** Show delete button. Default: true */
   showDelete?: boolean
 }
 
-// ─────────────────────────────────────────────
-// FileList — pure display component
-// Botón Ver siempre abre modal (PreviewButton)
-// No API calls, no internal state
-// ─────────────────────────────────────────────
 export function FileList({
   documents,
   heading = 'Course files',
