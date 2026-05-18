@@ -1,5 +1,4 @@
-import axios from 'axios'
-import { TokenManager } from '../auth/types'
+import { createAxiosInstance } from '../../presentation/services/axiosInterceptor'
 
 const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:3000'
 
@@ -8,7 +7,7 @@ const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env
 // ─────────────────────────────────────────────
 const MOCK_MODE = false
 
-export type Carpeta = 'documentos' | 'imagenes' | 'reportes'
+export type Carpeta = 'documentos' | 'imagenes'
 
 export interface Documento {
   id: string       // ruta relativa: "documentos/1747123456789_mi_archivo.pdf"
@@ -24,7 +23,7 @@ export interface Documento {
 // Extensiones que van a la carpeta "imagenes"
 // Todo lo demás va a "documentos"
 // ─────────────────────────────────────────────
-const EXTENSIONES_IMAGEN = new Set(['png', 'jpg', 'jpeg'])
+const EXTENSIONES_IMAGEN = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])
 
 export function inferirCarpeta(nombreArchivo: string): Carpeta {
   const ext = nombreArchivo.split('.').pop()?.toLowerCase() || ''
@@ -54,13 +53,13 @@ const mockDB: Documento[] = [
     carpeta: 'documentos',
   },
   {
-    id: 'reportes/1747100000003_Notas_Semestre_I_2025.xlsx',
+    id: 'documentos/1747100000003_Notas_Semestre_I_2025.xlsx',
     nombre: 'Notas_Semestre_I_2025.xlsx',
     tipo: 'xlsx',
     tamaño: 353280,
     url: 'https://file-examples.com/storage/fe6b5a5b7b6209b519e6fc7/2017/02/file_example_XLS_10.xlsx',
     creadoEn: '2025-03-20T08:00:00Z',
-    carpeta: 'reportes',
+    carpeta: 'documentos',
   },
   {
     id: 'imagenes/1747100000004_banner_evento_graduacion.png',
@@ -82,7 +81,7 @@ const mockDB: Documento[] = [
   },
 ]
 
-
+// Simula delay de red (ms)
 const delay = (ms = 600) => new Promise((r) => setTimeout(r, ms))
 
 // ─────────────────────────────────────────────
@@ -149,15 +148,10 @@ const mock = {
 
 // ─────────────────────────────────────────────
 // Implementaciones reales con axios
+// Usa createAxiosInstance para heredar el interceptor global
+// (token 'token' en localStorage + manejo automático de 401)
 // ─────────────────────────────────────────────
-const api = axios.create({ baseURL: API_BASE })
-
-api.interceptors.request.use((config) => {
-  // Usa TokenManager para consistencia con el sistema de auth
-  const headers = TokenManager.getAuthHeaders()
-  if (headers.Authorization) config.headers.Authorization = headers.Authorization
-  return config
-})
+const api = createAxiosInstance(API_BASE)
 
 const real = {
   // GET /api/documentos                    → todos los archivos
@@ -213,10 +207,12 @@ const real = {
     return data
   },
 
+  // DELETE /api/documentos/:id  (id codificado en la URL)
   eliminar: async (id: string): Promise<void> => {
     await api.delete(`/api/documentos/${encodeURIComponent(id)}`)
   },
 
+  // GET /api/documentos/:id/descargar  (id codificado en la URL)
   descargarUrl: (id: string): string =>
     `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`,
 }
