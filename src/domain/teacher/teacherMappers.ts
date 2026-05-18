@@ -89,32 +89,81 @@ function mapCourseInsight(value: unknown): TeacherCourseInsight {
 
   const status = item.status ?? item.estado;
 
+  const modulesCount = asNumber(
+    item.modulesCount ??
+      item.modulosCount ??
+      item.total_modulos ??
+      item.modulos ??
+      item.modules
+  );
+
+  const contentsCount = asNumber(
+    item.contentsCount ??
+      item.contenidosCount ??
+      item.total_contenidos ??
+      item.contenidos ??
+      item.contents
+  );
+
   return {
-    id: asString(item.id) || asString(item.courseId),
+    id:
+      asString(item.id) ||
+      asString(item.courseId) ||
+      asString(item.id_curso),
+
     title:
       asString(item.title) ||
       asString(item.name) ||
       asString(item.courseTitle) ||
-      asString(item.nombre),
-    code: asOptionalString(item.code) || asOptionalString(item.codigo),
-    modulesCount: asNumber(item.modulesCount ?? item.modulosCount ?? item.modules),
-    contentsCount: asNumber(
-      item.contentsCount ?? item.contenidosCount ?? item.contents
-    ),
+      asString(item.nombre) ||
+      asString(item.titulo),
+
+    code:
+      asOptionalString(item.code) ||
+      asOptionalString(item.codigo) ||
+      asOptionalString(item.codigo_curso),
+
+    modulesCount,
+
+    contentsCount,
+
     enrolledStudents: asNumber(
-      item.enrolledStudents ?? item.studentsCount ?? item.inscritos
+      item.enrolledStudents ??
+        item.studentsCount ??
+        item.inscritos ??
+        item.total_estudiantes ??
+        item.estudiantes_inscritos
     ),
+
     completedStudents: asNumber(
-      item.completedStudents ?? item.completedCount ?? item.completados
+      item.completedStudents ??
+        item.completedCount ??
+        item.completados ??
+        item.total_completados ??
+        item.estudiantes_completados
     ),
+
     progressPercentage:
       item.progressPercentage !== undefined
         ? asNumber(item.progressPercentage)
         : item.percentage !== undefined
           ? asNumber(item.percentage)
-          : null,
-    status: isTeacherCourseStatus(status) ? status : null,
-    detailUrl: asOptionalString(item.detailUrl) || asOptionalString(item.url),
+          : item.avance !== undefined
+            ? asNumber(item.avance)
+            : null,
+
+    status: isTeacherCourseStatus(status)
+      ? status
+      : modulesCount === 0
+        ? "Sin módulos"
+        : contentsCount === 0
+          ? "Sin contenidos"
+          : "Publicado",
+
+    detailUrl:
+      asOptionalString(item.detailUrl) ||
+      asOptionalString(item.url) ||
+      asOptionalString(item.ruta),
   };
 }
 
@@ -168,42 +217,120 @@ export function mapTeacherDashboardSummaryResponse(
   const data = unwrapPayload(payload);
 
   const teacherPayload = data.teacher ?? data.user ?? data.docente;
-  const quickActions = isRecord(data.quickActions) ? data.quickActions : {};
-  const totals = isRecord(data.totals) ? data.totals : data;
+  const quickActions = isRecord(data.quickActions)
+    ? data.quickActions
+    : isRecord(data.accionesRapidas)
+      ? data.accionesRapidas
+      : {};
+
+  const totals = isRecord(data.totals)
+    ? data.totals
+    : isRecord(data.totales)
+      ? data.totales
+      : data;
+
+  const rawCourses = asArray(
+    data.courses ??
+      data.cursos ??
+      data.assignedCourses ??
+      data.cursos_asignados
+  );
+
+  const mappedCourses = rawCourses.map(mapCourseInsight);
+
+  const coursesInCreationSource = asArray(
+    data.coursesInCreation ??
+      data.cursosInCreation ??
+      data.cursosEnCreacion ??
+      data.cursos_en_creacion
+  );
+
+  const coursesInCreation =
+    coursesInCreationSource.length > 0
+      ? coursesInCreationSource.map(mapCourseInsight)
+      : mappedCourses.filter(
+          (course) => course.modulesCount === 0 || course.contentsCount === 0
+        );
 
   return {
     teacher: mapTeacher(teacherPayload),
+
     quickActions: {
       createCourseUrl:
         asOptionalString(quickActions.createCourseUrl) ||
-        asOptionalString(data.createCourseUrl),
+        asOptionalString(quickActions.crearCursoUrl) ||
+        asOptionalString(data.createCourseUrl) ||
+        asOptionalString(data.crear_curso_url),
+
       createContentUrl:
         asOptionalString(quickActions.createContentUrl) ||
-        asOptionalString(data.createContentUrl),
+        asOptionalString(quickActions.crearContenidoUrl) ||
+        asOptionalString(data.createContentUrl) ||
+        asOptionalString(data.crear_contenido_url),
+
       coursesUrl:
         asOptionalString(quickActions.coursesUrl) ||
-        asOptionalString(data.coursesUrl),
+        asOptionalString(quickActions.misCursosUrl) ||
+        asOptionalString(data.coursesUrl) ||
+        asOptionalString(data.cursos_url),
     },
+
     totals: {
-      students: asNumber(totals.students ?? totals.totalStudents),
-      courses: asNumber(totals.courses ?? totals.totalCourses),
-      modules: asNumber(totals.modules ?? totals.totalModules),
-      contents: asNumber(totals.contents ?? totals.totalContents),
+      students: asNumber(
+        totals.students ??
+          totals.totalStudents ??
+          totals.total_estudiantes ??
+          totals.estudiantes ??
+          totals.estudiantes_matriculados
+      ),
+
+      courses: asNumber(
+        totals.courses ??
+          totals.totalCourses ??
+          totals.total_cursos ??
+          totals.cursos
+      ),
+
+      modules: asNumber(
+        totals.modules ??
+          totals.totalModules ??
+          totals.total_modulos ??
+          totals.modulos
+      ),
+
+      contents: asNumber(
+        totals.contents ??
+          totals.totalContents ??
+          totals.total_contenidos ??
+          totals.contenidos
+      ),
     },
-    coursesInCreation: asArray(
-      data.coursesInCreation ?? data.cursosEnCreacion
-    ).map(mapCourseInsight),
+
+    coursesInCreation,
+
     topCompletedCourses: asArray(
-      data.topCompletedCourses ?? data.cursosMasCompletados
+      data.topCompletedCourses ??
+        data.cursosMasCompletados ??
+        data.cursos_mas_completados
     ).map(mapCourseInsight),
+
     topEnrolledCourses: asArray(
-      data.topEnrolledCourses ?? data.cursosMasInscritos
+      data.topEnrolledCourses ??
+        data.cursosMasInscritos ??
+        data.cursos_mas_inscritos
     ).map(mapCourseInsight),
+
     lowEnrolledCourses: asArray(
-      data.lowEnrolledCourses ?? data.cursosMenosInscritos
+      data.lowEnrolledCourses ??
+        data.cursosMenosInscritos ??
+        data.cursos_menos_inscritos
     ).map(mapCourseInsight),
+
     recentEnrollments: asArray(
-      data.recentEnrollments ?? data.ultimosInscritos
+      data.recentEnrollments ??
+        data.ultimosInscritos ??
+        data.ultimos_inscritos ??
+        data.estudiantes_recientes
     ).map(mapRecentEnrollment),
   };
 }

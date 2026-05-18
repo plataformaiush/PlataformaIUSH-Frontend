@@ -42,8 +42,8 @@ function CourseSection({
 }) {
   return (
     <section className="rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-6 shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
           {icon}
         </div>
 
@@ -61,7 +61,7 @@ function CourseSection({
       </div>
 
       {courses.length > 0 ? (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
           {courses.map((course) => (
             <TeacherCourseInsightCard
               key={course.id}
@@ -130,12 +130,15 @@ export default function TeacherDashboard() {
   const teacher = dashboard?.teacher;
   const totals = dashboard?.totals;
 
+  const createCourseUrl = dashboard?.quickActions.createCourseUrl || "/courses/new";
+  const myCoursesUrl = dashboard?.quickActions.coursesUrl || "/courses";
+
   return (
     <main
       style={teacherThemeVars}
-      className="min-h-screen bg-[var(--teacher-bg)] px-5 py-7 text-[var(--teacher-text)] lg:px-8"
+      className="min-h-screen w-full overflow-x-hidden bg-[var(--teacher-bg)] px-4 py-6 text-[var(--teacher-text)] sm:px-5 lg:px-8"
     >
-      <div className="mx-auto max-w-[1240px] space-y-7">
+      <div className="mx-auto w-full max-w-[1240px] space-y-7">
         <section className="overflow-hidden rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] via-[var(--teacher-secondary)] to-[var(--teacher-accent)] p-7 text-[var(--teacher-text-on-dark)] shadow-[0_24px_60px_rgba(21,55,68,0.24)] md:p-9">
           <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
             <div className="max-w-2xl">
@@ -156,16 +159,16 @@ export default function TeacherDashboard() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <button
                 type="button"
                 onClick={() =>
                   goToExternalModule(
-                    dashboard?.quickActions.createCourseUrl,
+                    createCourseUrl,
                     "La URL para crear curso aún no ha sido suministrada por el módulo de Cursos."
                   )
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5 sm:w-auto"
               >
                 <PlusCircle size={18} />
                 <span>Crear curso</span>
@@ -175,11 +178,11 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() =>
                   goToExternalModule(
-                    dashboard?.quickActions.coursesUrl,
+                    myCoursesUrl,
                     "La URL para ver mis cursos aún no ha sido suministrada por el módulo de Cursos."
                   )
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--teacher-text-on-dark)_22%,transparent)] bg-[color:color-mix(in_srgb,var(--teacher-text-on-dark)_12%,transparent)] px-5 py-3.5 text-sm font-black text-[var(--teacher-text-on-dark)] backdrop-blur transition hover:-translate-y-0.5"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5 sm:w-auto"
               >
                 <span>Ver mis cursos</span>
                 <ArrowRight size={18} />
@@ -189,7 +192,7 @@ export default function TeacherDashboard() {
         </section>
 
         {loading ? (
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
@@ -285,7 +288,7 @@ export default function TeacherDashboard() {
               emptyDescription="Cuando existan cursos sin módulos o sin contenidos, aparecerán en esta sección."
             />
 
-            <section className="grid gap-7 xl:grid-cols-2">
+            <section className="grid grid-cols-1 gap-7 xl:grid-cols-2">
               <CourseSection
                 title="Cursos con más inscritos"
                 subtitle="Cursos del docente con mayor cantidad de estudiantes."
@@ -317,7 +320,7 @@ export default function TeacherDashboard() {
               emptyDescription="Esta sección depende del módulo de certificaciones y progreso."
             />
 
-            <section className="rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-6 shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
+            <section className="w-full overflow-hidden rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-4 shadow-[0_18px_38px_rgba(22,55,68,0.08)] sm:p-6">
               <div className="mb-6 flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
                   <GraduationCap size={24} />
