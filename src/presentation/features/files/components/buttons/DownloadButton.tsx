@@ -8,6 +8,15 @@ interface DownloadButtonProps {
   className?: string
 }
 
+// Extrae el nombre legible del archivo a partir del id (ruta relativa).
+// "documentos/1747123456789_mi_archivo.pdf" → "mi_archivo.pdf"
+// Si el nombre tiene prefijo timestamp (números_), lo elimina.
+function extractFileName(id: string, fallback?: string): string {
+  if (fallback) return fallback
+  const segment = id.split('/').pop() || id          // último segmento de la ruta
+  return segment.replace(/^\d+_/, '')                // quita el prefijo "timestamp_"
+}
+
 export function DownloadButton({ id, fileName, className = '' }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -15,7 +24,7 @@ export function DownloadButton({ id, fileName, className = '' }: DownloadButtonP
     setLoading(true)
     try {
       const url = filesApi.descargarUrl(id)
-      const name = fileName || `file_${id}`
+      const name = extractFileName(id, fileName)
 
       try {
         const response = await fetch(url)
@@ -30,12 +39,12 @@ export function DownloadButton({ id, fileName, className = '' }: DownloadButtonP
         link.remove()
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
       } catch {
-        // Fallback: open in new tab if CORS blocks the fetch
+        // Fallback: abrir en pestaña nueva si CORS bloquea el fetch
         window.open(url, '_blank')
       }
     } catch (err) {
       console.error('Download error:', err)
-      alert('Could not download the file.')
+      alert('No se pudo descargar el archivo.')
     } finally {
       setLoading(false)
     }
@@ -45,7 +54,7 @@ export function DownloadButton({ id, fileName, className = '' }: DownloadButtonP
     <button
       onClick={handleDownload}
       disabled={loading}
-      aria-label="Download file"
+      aria-label="Descargar archivo"
       className={[
         'inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm',
         '[background-color:var(--color-primary)] text-white hover:opacity-85',
@@ -55,7 +64,7 @@ export function DownloadButton({ id, fileName, className = '' }: DownloadButtonP
       ].join(' ')}
     >
       <Download size={15} />
-      {loading ? 'Downloading…' : 'Download'}
+      {loading ? 'Descargando…' : 'Descargar'}
     </button>
   )
 }

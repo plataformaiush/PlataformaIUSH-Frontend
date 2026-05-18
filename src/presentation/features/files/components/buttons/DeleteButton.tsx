@@ -31,6 +31,8 @@ export function DeleteButton({
   const handleConfirm = async () => {
     try {
       setLoading(true)
+      // id es la ruta relativa: "documentos/1747123456789_mi_archivo.pdf"
+      // filesApi.eliminar se encarga de codificarlo para la URL
       await filesApi.eliminar(id)
       onDeleted?.(id)
     } catch {
@@ -59,7 +61,6 @@ export function DeleteButton({
       ].join(' ')}
     >
       <Trash2 size={15} />
-      {/* En modo iconOnly no muestra texto, en modo normal sí */}
       {!iconOnly && (loading ? 'Eliminando…' : confirmando ? '¿Confirmar?' : 'Eliminar')}
     </button>
   )
