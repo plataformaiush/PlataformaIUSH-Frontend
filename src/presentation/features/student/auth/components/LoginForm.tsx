@@ -3,6 +3,7 @@ import { loginRequest } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore } from "../../../../stores/auth.store";
+import { useInstitution } from "../../../../../context/InstitutionContext";
 
 type LoginData = {
   correo: string;
@@ -13,6 +14,7 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const { colors } = useInstitution();
   const { setUser, setLoading, setError } = useAuthStore();
 
   const {
@@ -68,10 +70,10 @@ export default function LoginForm() {
   return (
     <div className="rounded-3xl bg-transparent px-2 md:px-4">
       <div className="mb-8">
-        <h2 className="text-4xl font-bold tracking-tight text-primary">
+        <h2 className="text-4xl font-bold tracking-tight" style={{ color: colors.primary }}>
           Bienvenido
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
           Inicia sesión para acceder a tus cursos, seguir tu progreso y descubrir nuevas oportunidades de aprendizaje con nosotros.
         </p>
       </div>
@@ -80,14 +82,21 @@ export default function LoginForm() {
         
         {/* ERROR GENERAL */}
         {errorMsg && (
-          <div className="rounded-lg bg-tertiary text-primary text-sm p-2 text-center border border-primary/40">
+          <div
+            className="rounded-lg text-sm p-2 text-center"
+            style={{
+              backgroundColor: colors.tertiary,
+              color: colors.primary,
+              border: `1px solid ${colors.primary}66`,
+            }}
+          >
             {errorMsg}
           </div>
         )}
 
         {/* CORREO */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-primary">
+          <label className="mb-2 block text-sm font-medium" style={{ color: colors.primary }}>
             Correo electrónico
           </label>
           <input
@@ -96,10 +105,15 @@ export default function LoginForm() {
             {...register("correo", {
               required: "El correo es obligatorio",
             })}
-            className="w-full rounded-xl border border-primary/50 bg-white px-4 py-3 text-sm text-primary outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-tertiary"
+            className="w-full rounded-xl px-4 py-3 text-sm outline-none transition"
+            style={{
+              backgroundColor: colors.input,
+              color: colors.primary,
+              border: `1px solid ${colors.border}`,
+            }}
           />
           {errors.correo && (
-            <p className="mt-1 text-sm text-primary">
+            <p className="mt-1 text-sm" style={{ color: colors.primary }}>
               {errors.correo.message}
             </p>
           )}
@@ -107,7 +121,7 @@ export default function LoginForm() {
 
         {/* CONTRASEÑA */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-primary">
+          <label className="mb-2 block text-sm font-medium" style={{ color: colors.primary }}>
             Contraseña
           </label>
           <div className="relative">
@@ -117,34 +131,41 @@ export default function LoginForm() {
               {...register("contrasena", {
                 required: "La contraseña es obligatoria",
               })}
-              className="w-full rounded-xl border border-primary/50 bg-white px-4 py-3 pr-24 text-sm text-primary outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-tertiary"
+              className="w-full rounded-xl px-4 py-3 pr-24 text-sm outline-none transition"
+              style={{
+                backgroundColor: colors.input,
+                color: colors.primary,
+                border: `1px solid ${colors.border}`,
+              }}
             />
             <button
               type="button"
               onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-semibold text-primary transition hover:bg-tertiary"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-semibold transition"
+              style={{ color: colors.primary }}
             >
               {showPassword ? "Ocultar" : "Mostrar"}
             </button>
           </div>
           {errors.contrasena && (
-            <p className="mt-1 text-sm text-primary">
+            <p className="mt-1 text-sm" style={{ color: colors.primary }}>
               {errors.contrasena.message}
             </p>
           )}
         </div>
 
         {/* DIVIDER */}
-        <div className="flex items-center gap-3 py-1 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-tertiary" />
+        <div className="flex items-center gap-3 py-1 text-xs" style={{ color: colors.textSecondary }}>
+          <div className="h-px flex-1" style={{ backgroundColor: colors.tertiary }} />
           <span>o</span>
-          <div className="h-px flex-1 bg-tertiary" />
+          <div className="h-px flex-1" style={{ backgroundColor: colors.tertiary }} />
         </div>
 
         {/* boton */}
         <button
           type="submit"
-          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
+          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+          style={{ backgroundColor: colors.primary }}
           disabled={false}
         >
           Iniciar sesión
