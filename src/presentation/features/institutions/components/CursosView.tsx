@@ -8,11 +8,15 @@ const allCursos = [
   { nombre: 'Historia', docente: 'Luis Gómez', modulos: 5, estudiantes: 180, estado: 'Activo' },
   { nombre: 'Química', docente: '—', modulos: 0, estudiantes: 0, estado: 'Sin contenido' },
   { nombre: 'Biología', docente: 'Camila Reyes', modulos: 4, estudiantes: 140, estado: 'Activo' },
+  { nombre: 'Derecho Civil', docente: 'Juan López', modulos: 7, estudiantes: 0, estado: 'Sin inscripciones' },
+  { nombre: 'Literatura Clásica', docente: 'Sofia García', modulos: 6, estudiantes: 0, estado: 'Sin inscripciones' },
+  { nombre: 'Estadística', docente: 'Roberto Díaz', modulos: 9, estudiantes: 0, estado: 'Sin inscripciones' },
 ]
 
 const pillStyle: Record<string, string> = {
   Activo: 'bg-green-100 text-green-800',
   'Sin contenido': 'bg-muted text-muted-foreground',
+  'Sin inscripciones': 'bg-yellow-100 text-yellow-800',
   Borrador: 'bg-amber-100 text-amber-700',
 }
 
@@ -39,8 +43,8 @@ export function CursosView() {
         <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>32 cursos en la plataforma</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {[['Total', '32'], ['Con contenido', '26'], ['Sin contenido', '6']].map(([l, v]) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[['Cursos Activos', '32'], ['Con contenido', '26'], ['Sin contenido', '6'], ['Sin inscripciones', '3']].map(([l, v]) => (
           <div key={l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{
               background: 'var(--color-muted)',
@@ -86,7 +90,7 @@ export function CursosView() {
             } as React.CSSProperties}
           />
           <div className="flex gap-1 flex-wrap mt-4 mb-6">
-            {['Todos', 'Activo', 'Sin contenido'].map((f) => (
+            {['Todos', 'Activo', 'Sin contenido', 'Sin inscripciones'].map((f) => (
               <button
                 key={f}
                 onClick={() => { setEstadoFilter(f); setPage(1) }}
