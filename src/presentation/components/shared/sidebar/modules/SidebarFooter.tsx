@@ -2,21 +2,22 @@ import { HelpCircle, LogOut } from 'lucide-react'
 import { useHiddenNavStore } from '../store/hiddenNavStore'
 import Tooltip from '@mui/material/Tooltip';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../../../stores/auth.store'
 
 const SidebarFooter = () => {
   
   const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout)
 
   const MOCK_STUDENT = {avatar: 'https://api.dicebear.com/9.x/icons/svg?seed=Jessica',}
   const hiddenNav = useHiddenNavStore((state) => state.hiddenNav)
 
-  const getUserStorage = JSON.parse(localStorage.getItem('user') ?? "");
-  const {roles, nombre} = getUserStorage 
+  const getUserStorage = JSON.parse(localStorage.getItem('user') ?? 'null') ?? {};
+  const {roles, nombre} = getUserStorage as { roles?: string[]; nombre?: string }
 
   const handleClose = () => {
-    navigate("/")
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
+    logout()
+    navigate("/login")
   }
 
   return (
