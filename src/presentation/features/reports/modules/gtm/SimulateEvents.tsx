@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 declare global {
   interface Window {
@@ -8,7 +8,7 @@ declare global {
 
 const SimulateEvents = () => {
 
-    const [evalChecked, setEvalChecked] = useState(false);
+  const [evalChecked, setEvalChecked] = useState(false);
   const [certChecked, setCertChecked] = useState(false);
 
   const handleSimulateEval = () => {
