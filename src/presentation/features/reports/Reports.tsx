@@ -1,9 +1,8 @@
 import { useState } from 'react';
-
 import GraphsLooker from "./modules/lookerStudio/GraphsLooker";
 import SimulateEvents from './modules/gtm/simulateEvents';
 
-export default function Reports() {
+const Reports = () => {
 
   return (
     <div className="min-h-full w-full bg-[#f6f6f6] font-['Plus_Jakarta_Sans'] select-none">
@@ -52,3 +51,5 @@ export default function Reports() {
     </div>
   );
 }
+
+export default Reports;
