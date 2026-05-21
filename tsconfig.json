@@ -1,0 +1,9 @@
+{
+  "extends": "./config/tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src", "config", "global.d.ts"]
+}

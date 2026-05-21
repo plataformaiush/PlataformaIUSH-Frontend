@@ -1,46 +1,45 @@
-import { createElement } from 'react'
-import { RouteObject } from 'react-router-dom'
-import { authRoutes } from './auth.routes'
-import {vistaEstudiantesRutas} from "./vista-estudiante.routes";
-import { reportsRoutes } from './reports.routes';
-import { superAdminRoutes } from './superadmin.routes';
-import { gradeRoutes } from './grades.routes';
-import { teacherRoutes } from "./teacher.routes";
+﻿import { createElement } from 'react'
+import { type RouteObject } from 'react-router-dom'
+
 import ProfunSoft from '../../ProfunSoft'
 import RequireAuth from '../guards/RequireAuth'
+import { adminRoutes } from './admin.routes'
+import { authRoutes } from './auth.routes'
+import { gradeRoutes } from './grades.routes'
+import { reportsRoutes } from './reports.routes'
+import { superAdminRoutes } from './superadmin.routes'
+import { teacherRoutes } from './teacher.routes.tsx'
+import { vistaEstudiantesRutas } from './vista-estudiante.routes'
 import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
  * Agregador central de rutas
- * Cada equipo debe crear su archivo {modulo}.routes.ts y agregarlo aquí
+ * Define la estructura base de la aplicación
+ * Equipo 2: Centralización de rutas
  *
- * Patrón para agregar rutas:
- * 1. Equipo crea: src/routes/definitions/{modulo}.routes.ts
- * 2. Exporta: export const {modulo}Routes: RouteObject[] = [...]
- * 3. Importa aquí y agrega a allRoutes
- *
- * Ejemplo para Equipo 1 (Cursos):
- * import { plantillaRoutes } from './course.routes'
- * y luego descomenta ...plantillaRoutes en allRoutes
+ * @example
+ * export const allRoutes: RouteObject[] = [
+ *     ...authRoutes,
+ *     ...dashboardRoutes
+ * ];
  */
 
 export const allRoutes: RouteObject[] = [
-    ...authRoutes,
-    ...authRoutes,        // Equipo 1
-    ...vistaEstudiantesRutas, // Equipo 7
-    ...archivosRoutes,    // Equipo 2 (Archivos)
+    ...authRoutes, // Equipo 1
+    ...archivosRoutes,
     {
         element: createElement(RequireAuth),
         children: [
-            ...vistaEstudiantesRutas,
+            ...vistaEstudiantesRutas, // Equipo 7
+            ...adminRoutes, // Equipo 4
             {
                 path: '/',
                 element: createElement(ProfunSoft),
                 children: [
-                    ...teacherRoutes,
-                    ...reportsRoutes,
-                    ...superAdminRoutes,
-                    ...gradeRoutes,
+                    ...teacherRoutes, // Equipo 6
+                    ...reportsRoutes, // Equipo 9
+                    ...superAdminRoutes, // Equipo 3
+                    ...gradeRoutes, // Equipo 5
                 ],
             },
         ],
@@ -48,8 +47,6 @@ export const allRoutes: RouteObject[] = [
     // Equipo 1 (Cursos): ...plantillaRoutes,
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
-    // Equipo 4 (Admin): ...adminRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
     // Equipo 9 (Analytics): ...analyticsRoutes,
-    // Equipo 10 (Estudiante): ...studentRoutes,
 ]

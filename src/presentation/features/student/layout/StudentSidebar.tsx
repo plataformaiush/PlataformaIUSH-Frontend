@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Award, HelpCircle, LogOut, Bell, X } from 'lucide-react'
 import { PlayandLearnLogo } from '@presentation/components/PlayandLearnLogo'
+import { useAuthStore } from '../../../stores/auth.store'
+import { useNavigate } from 'react-router-dom'
 
 const NAV_ITEMS = [
   { to: '/student/dashboard', label: 'Dashboard',    icon: LayoutDashboard },
@@ -19,6 +21,14 @@ interface StudentSidebarProps {
 }
 
 export function StudentSidebar({ isOpen, onToggle }: StudentSidebarProps) {
+  const navigate = useNavigate()
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
     <>
       {/* Backdrop para móvil */}
@@ -43,7 +53,7 @@ export function StudentSidebar({ isOpen, onToggle }: StudentSidebarProps) {
         <div className="px-4 pt-6 pb-5 border-b border-mid/20 flex items-start justify-between">
           <div>
             <PlayandLearnLogo size={36} theme="dark" variant="full" />
-            <p className="text-[11px] text-mid mt-1.5 pl-[46px]">Educational Portal</p>
+            <p className="text-[11px] text-mid mt-1.5 pl-11.5">Educational Portal</p>
           </div>
           <button
             onClick={onToggle}
@@ -97,6 +107,7 @@ export function StudentSidebar({ isOpen, onToggle }: StudentSidebarProps) {
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                        text-secondary hover:bg-red-50 hover:text-red-500
                        transition-colors w-full text-left"
+            onClick={handleLogout}
           >
             <LogOut size={16} />
             Cerrar sesión
