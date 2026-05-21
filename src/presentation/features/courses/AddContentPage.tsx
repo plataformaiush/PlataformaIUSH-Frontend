@@ -2,12 +2,15 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ModuleRepository } from '../../../domain/modules/moduleRepository'
-import { CourseRepository } from '../../../domain/courses/courseRepository'
-import { ContentRepository } from '../../../domain/contents/contentRepository'
+import { fetchCursoById } from '../../services/courseService'
+import { fetchModuloById } from '../../services/moduleService'
+import { createContenido } from '../../services/contentService'
 import { ContentType } from '../../../domain/contents/types'
-import { useState } from 'react'
+import type { Course } from '../../../domain/courses/types'
+import type { Module } from '../../../domain/modules/types'
+import { useState, useEffect } from 'react'
 import { BookOpen, Save, RotateCcw, CheckCircle2 } from 'lucide-react'
+import { logger } from '../../utils/logger'
 
 const contentSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
@@ -63,10 +66,22 @@ const contentTypes = [
 export const AddContentPage = () => {
   const { courseId, moduleId } = useParams<{ courseId: string; moduleId: string }>()
   const navigate = useNavigate()
-  const course = courseId ? CourseRepository.getCourseById(courseId) : null
-  const module = moduleId ? ModuleRepository.getModuleById(moduleId) : null
+  const [course, setCourse] = useState<Course | null>(null)
+  const [module, setModule] = useState<Module | null>(null)
+  const [pageLoading, setPageLoading] = useState(true)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showSaveIndicator, setShowSaveIndicator] = useState(false)
+
+  useEffect(() => {
+    if (!courseId || !moduleId) return
+    Promise.all([
+      fetchCursoById(courseId),
+      fetchModuloById(courseId, moduleId)
+    ])
+      .then(([c, m]) => { setCourse(c); setModule(m) })
+      .catch(err => logger.error('Error al cargar datos', { error: err, courseId, moduleId }))
+      .finally(() => setPageLoading(false))
+  }, [courseId, moduleId])
 
   const {
     register,
@@ -87,29 +102,28 @@ export const AddContentPage = () => {
     if (!moduleId) return
     
     try {
-      const newContent = ContentRepository.createContent({
+      const newContent = await createContenido(moduleId, {
         moduleId,
         title: data.title,
         description: data.description,
         type: data.type,
         status: data.status === 'active' ? 'active' : 'draft',
         resourceUrl: data.resourceUrl || undefined,
-        durationMinutes: data.durationMinutes,
         order: data.order
       })
       
-      console.log('Contenido creado exitosamente:', newContent)
+      logger.info('Contenido creado exitosamente', { contentId: newContent.id, moduleId, courseId })
       navigate(`/courses/${courseId}/modules/${moduleId}/contents`)
     } catch (error) {
-      console.error('Error al crear contenido:', error)
-      // TODO: Show error message to user
+      logger.error('Error al crear contenido', { error, moduleId, courseId })
+      alert('Error al crear el contenido. Por favor intenta nuevamente.')
     }
   }
 
   if (!course || !module) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-sm" style={{ color: '#5A878C' }}>Curso o módulo no encontrado.</p>
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+        <p className="text-sm" style={{ color: '#6B7280' }}>Curso o módulo no encontrado.</p>
       </main>
     )
   }
@@ -200,7 +214,10 @@ export const AddContentPage = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Basic info */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg shadow-gray-100/50 transition-all hover:shadow-xl">
+            <div className="rounded-2xl border p-8 shadow-sm hover:shadow-md transition-all" style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF'
+            }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
                 <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
@@ -211,15 +228,20 @@ export const AddContentPage = () => {
               <div className="space-y-6">
                 <div>
                   <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>
-                    Título del contenido <span className="text-red-500">*</span>
+                    Título del contenido <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <input
                     {...register('title')}
                     type="text"
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition-all focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-xl border-2 px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:border-blue-400"
+                    style={{ 
+                      borderColor: '#E5E7EB',
+                      backgroundColor: '#FAFAFA',
+                      color: '#223740'
+                    }}
                     placeholder="Ej: Introducción a los principios visuales"
                   />
-                  {errors.title && <p className="mt-2 text-xs text-red-500 flex items-center gap-1"><span className="text-red-400">⚠</span> {errors.title.message}</p>}
+                  {errors.title && <p className="mt-2 text-xs font-medium flex items-center gap-1" style={{ color: '#DC2626' }}><span style={{ color: '#DC2626' }}>⚠</span> {errors.title.message}</p>}
                 </div>
 
                 <div>
@@ -229,16 +251,24 @@ export const AddContentPage = () => {
                   <textarea
                     {...register('description')}
                     rows={4}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition-all focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+                    className="w-full rounded-xl border-2 px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:border-blue-400 resize-none"
+                    style={{ 
+                      borderColor: '#E5E7EB',
+                      backgroundColor: '#FAFAFA',
+                      color: '#223740'
+                    }}
                     placeholder="Describe brevemente de qué trata este contenido..."
                   />
-                  {errors.description && <p className="mt-2 text-xs text-red-500 flex items-center gap-1"><span className="text-red-400">⚠</span> {errors.description.message}</p>}
+                  {errors.description && <p className="mt-2 text-xs font-medium flex items-center gap-1" style={{ color: '#DC2626' }}><span style={{ color: '#DC2626' }}>⚠</span> {errors.description.message}</p>}
                 </div>
               </div>
             </div>
 
             {/* Content type selector */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg shadow-gray-100/50">
+            <div className="rounded-2xl border p-8 shadow-sm hover:shadow-md transition-all" style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF'
+            }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
                 <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
@@ -256,8 +286,8 @@ export const AddContentPage = () => {
                       className="group relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all hover:scale-105 hover:shadow-lg"
                       style={
                         isSelected
-                          ? { borderColor: '#5A878C', backgroundColor: '#f0fafa', color: '#223740', boxShadow: '0 0 0 3px rgba(90, 135, 140, 0.1)' }
-                          : { borderColor: '#e5e7eb', backgroundColor: 'white', color: '#9ca3af' }
+                          ? { borderColor: '#5A878C', backgroundColor: '#AEEBF2', color: '#223740', boxShadow: '0 0 0 3px rgba(90, 135, 140, 0.1)' }
+                          : { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#9CA3AF' }
                       }
                     >
                       {isSelected && (
@@ -276,7 +306,10 @@ export const AddContentPage = () => {
             </div>
 
             {/* File upload + URL */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg shadow-gray-100/50">
+            <div className="rounded-2xl border p-8 shadow-sm hover:shadow-md transition-all" style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF'
+            }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
                 <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
@@ -297,7 +330,7 @@ export const AddContentPage = () => {
                   <p className="text-base font-semibold" style={{ color: '#5A878C' }}>
                     Arrastra tu archivo aquí
                   </p>
-                  <p className="mt-2 text-sm text-gray-500">MP4, PDF, PNG, JPG hasta 500 MB</p>
+                  <p className="mt-2 text-sm" style={{ color: '#6B7280' }}>MP4, PDF, PNG, JPG hasta 500 MB</p>
                   <button className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold transition-all hover:scale-105" style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
                     O selecciona un archivo
                   </button>
@@ -306,10 +339,10 @@ export const AddContentPage = () => {
 
               <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
+                  <div className="w-full border-t" style={{ borderColor: '#E5E7EB' }}></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-4 text-gray-500">o</span>
+                  <span className="px-4" style={{ backgroundColor: '#FFFFFF', color: '#6B7280' }}>o</span>
                 </div>
               </div>
 
@@ -321,10 +354,15 @@ export const AddContentPage = () => {
                   <input
                     {...register('resourceUrl')}
                     type="url"
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition-all focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-xl border-2 px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:border-blue-400"
+                    style={{ 
+                      borderColor: '#E5E7EB',
+                      backgroundColor: '#FAFAFA',
+                      color: '#223740'
+                    }}
                     placeholder="https://youtube.com/watch?v=..."
                   />
-                  {errors.resourceUrl && <p className="mt-2 text-xs text-red-500 flex items-center gap-1"><span className="text-red-400">⚠</span> {errors.resourceUrl.message}</p>}
+                  {errors.resourceUrl && <p className="mt-2 text-xs font-medium flex items-center gap-1" style={{ color: '#DC2626' }}><span style={{ color: '#DC2626' }}>⚠</span> {errors.resourceUrl.message}</p>}
                 </div>
 
                 {selectedType === ContentType.VIDEO && (
@@ -336,7 +374,12 @@ export const AddContentPage = () => {
                       {...register('durationMinutes', { valueAsNumber: true })}
                       type="number"
                       min="1"
-                      className="w-40 rounded-xl border border-gray-200 px-4 py-3 text-sm transition-all focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-40 rounded-xl border-2 px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:border-blue-400"
+                      style={{ 
+                        borderColor: '#E5E7EB',
+                        backgroundColor: '#FAFAFA',
+                        color: '#223740'
+                      }}
                     />
                   </div>
                 )}
@@ -344,30 +387,33 @@ export const AddContentPage = () => {
             </div>
 
             {/* Publication status */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg shadow-gray-100/50">
+            <div className="rounded-2xl border p-8 shadow-sm hover:shadow-md transition-all" style={{ 
+              borderColor: '#E5E7EB',
+              backgroundColor: '#FFFFFF'
+            }}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
                 <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
                   Estado de Publicación
                 </h2>
               </div>
-              <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-inner">
+              <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-xl border shadow-inner" style={{ borderColor: '#E5E7EB' }}>
                 <label className="group cursor-pointer">
                   <input {...register('status')} type="radio" value="active" className="sr-only" />
                   <div
                     className="relative py-4 text-center text-sm font-bold transition-all"
                     style={
                       watchedStatus === 'active'
-                        ? { backgroundColor: '#223740', color: 'white' }
-                        : { backgroundColor: 'white', color: '#223740' }
+                        ? { backgroundColor: '#223740', color: '#FFFFFF' }
+                        : { backgroundColor: '#FFFFFF', color: '#223740' }
                     }
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${watchedStatus === 'active' ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: watchedStatus === 'active' ? '#22C55E' : '#D1D5DB' }}></div>
                       <span>Activo</span>
                     </div>
                     {watchedStatus === 'active' && (
-                      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-green-400 to-blue-400"></div>
+                      <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: '#22C55E' }}></div>
                     )}
                   </div>
                 </label>
@@ -377,16 +423,16 @@ export const AddContentPage = () => {
                     className="relative py-4 text-center text-sm font-medium transition-all"
                     style={
                       watchedStatus === 'draft'
-                        ? { backgroundColor: '#223740', color: 'white' }
-                        : { backgroundColor: 'white', color: '#223740' }
+                        ? { backgroundColor: '#223740', color: '#FFFFFF' }
+                        : { backgroundColor: '#FFFFFF', color: '#223740' }
                     }
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${watchedStatus === 'draft' ? 'bg-yellow-400' : 'bg-gray-300'}`}></div>
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: watchedStatus === 'draft' ? '#EAB308' : '#D1D5DB' }}></div>
                       <span>Borrador</span>
                     </div>
                     {watchedStatus === 'draft' && (
-                      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
+                      <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: '#EAB308' }}></div>
                     )}
                   </div>
                 </label>
@@ -397,10 +443,19 @@ export const AddContentPage = () => {
             <div className="flex gap-4">
               <Link
                 to={`/courses/${courseId}/modules/${moduleId}/contents`}
-                className="flex-1 rounded-xl border-2 border-gray-200 py-4 text-center text-sm font-semibold transition-all hover:border-gray-300 hover:bg-gray-50"
-                style={{ color: '#223740' }}
+                className="flex-1 rounded-xl border-2 py-4 text-center text-sm font-semibold transition-all hover:shadow-lg hover:scale-[1.02]"
+                style={{ 
+                  borderColor: '#E5E7EB',
+                  backgroundColor: '#FFFFFF',
+                  color: '#6B7280'
+                }}
               >
-                Cancelar
+                <span className="flex items-center justify-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancelar
+                </span>
               </Link>
               <button
                 type="submit"
@@ -432,7 +487,10 @@ export const AddContentPage = () => {
         {/* Sidebar */}
         <div className="w-80 shrink-0 space-y-6">
           {/* Preview */}
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg shadow-gray-100/50">
+          <div className="overflow-hidden rounded-2xl border shadow-sm hover:shadow-md transition-all" style={{ 
+            borderColor: '#E5E7EB',
+            backgroundColor: '#FFFFFF'
+          }}>
             <div
               className="relative h-32 flex items-center justify-center"
               style={{ backgroundColor: '#5A878C' }}
@@ -443,7 +501,7 @@ export const AddContentPage = () => {
               </svg>
             </div>
             <div className="p-6">
-              <p className="text-base font-semibold mb-2" style={{ color: watchedTitle ? '#223740' : '#9ca3af' }}>
+              <p className="text-base font-semibold mb-2" style={{ color: watchedTitle ? '#223740' : '#9CA3AF' }}>
                 {watchedTitle || 'Sin título aún...'}
               </p>
               <p className="text-sm mb-3" style={{ color: '#5A878C' }}>
@@ -454,10 +512,10 @@ export const AddContentPage = () => {
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium"
                   style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
                 >
-                  <div className={`h-2 w-2 rounded-full ${watchedStatus === 'active' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`}></div>
+                  <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: watchedStatus === 'active' ? '#22C55E' : '#EAB308' }}></div>
                   {watchedStatus === 'active' ? 'Activo' : 'Borrador'}
                 </span>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs" style={{ color: '#9CA3AF' }}>
                   {selectedType === ContentType.VIDEO && '📹'}
                   {selectedType === ContentType.DOCUMENT && '📄'}
                   {selectedType === ContentType.IMAGE && '🖼️'}
@@ -468,7 +526,10 @@ export const AddContentPage = () => {
           </div>
 
           {/* System flow */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-lg shadow-gray-100/50">
+          <div className="rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all" style={{ 
+            borderColor: '#E5E7EB',
+            backgroundColor: '#FFFFFF'
+          }}>
             <div className="flex items-center gap-3 mb-6">
               <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
               <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
@@ -493,12 +554,12 @@ export const AddContentPage = () => {
                           ? '#AEEBF2'
                           : active
                           ? '#223740'
-                          : '#f3f4f6',
+                          : '#F3F4F6',
                         color: done
                           ? '#223740'
                           : active
-                          ? 'white'
-                          : '#9ca3af'
+                          ? '#FFFFFF'
+                          : '#9CA3AF'
                       }}
                     >
                       {done ? (
@@ -511,7 +572,7 @@ export const AddContentPage = () => {
                     </div>
                     <div className="flex-1 pt-1">
                       <p className="text-sm font-semibold" style={{ color: '#223740' }}>{label}</p>
-                      <p className="text-xs mt-1" style={{ color: done || active ? '#5A878C' : '#9ca3af' }}>{sub}</p>
+                      <p className="text-xs mt-1" style={{ color: done || active ? '#5A878C' : '#9CA3AF' }}>{sub}</p>
                     </div>
                   </div>
                 </div>

@@ -2,11 +2,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { CourseRepository } from '../../../domain/courses/courseRepository'
+import { createCurso } from '../../services/courseService'
 import { Course } from '../../../domain/courses/types'
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Circle, Sparkles, BookOpen, Users, Target, Zap, ChevronRight, Plus, X, Save, RotateCcw } from 'lucide-react'
+import { CheckCircle2, BookOpen, Users, Target, Plus, Save, RotateCcw } from 'lucide-react'
+import { logger } from '../../utils/logger'
 
 const courseSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(100, 'El título no puede exceder 100 caracteres').regex(/^[a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ.,-]+$/, 'El título contiene caracteres inválidos'),
@@ -34,7 +34,7 @@ const loadDraftData = (): Partial<CourseFormData> & { instructorTags: string[] }
       return JSON.parse(saved)
     }
   } catch (error) {
-    console.warn('Error al cargar datos del borrador:', error)
+    logger.warn('Error al cargar datos del borrador', { error })
   }
   return { instructorTags: [] }
 }
@@ -47,7 +47,7 @@ const saveDraftData = (data: Partial<CourseFormData>, instructorTags: string[]) 
       savedAt: new Date().toISOString()
     }))
   } catch (error) {
-    console.warn('Error al guardar datos del borrador:', error)
+    logger.warn('Error al guardar datos del borrador', { error })
   }
 }
 
@@ -55,7 +55,7 @@ const clearDraftData = () => {
   try {
     localStorage.removeItem(STORAGE_KEY)
   } catch (error) {
-    console.warn('Error al limpiar datos del borrador:', error)
+    logger.warn('Error al limpiar datos del borrador', { error })
   }
 }
 
@@ -222,8 +222,11 @@ export const CreateCoursePage = () => {
         studentCount: 0
       }
       
-      const createdCourse = CourseRepository.createCourse(newCourse)
-      console.log('Curso creado exitosamente:', createdCourse)
+      // TODO: reemplazar por el id del usuario autenticado (auth context)
+      // Usuario placeholder para desarrollo (seed insertado en BD)
+      const idUsuario = '00000000-0000-0000-0000-000000000001'
+      const createdCourse = await createCurso(newCourse, idUsuario)
+      logger.info('Curso creado exitosamente', { courseId: createdCourse.id })
       
       // Limpiar borrador después de creación exitosa
       clearDraftData()
@@ -233,7 +236,7 @@ export const CreateCoursePage = () => {
         navigate(`/courses/${createdCourse.id}/modules/new`)
       }, 1500) // Esperar 1.5s para mostrar el éxito antes de navegar
     } catch (error) {
-      console.error('Error al crear curso:', error)
+      logger.error('Error al crear curso', { error })
       alert('Error al crear el curso. Por favor intenta nuevamente.')
     }
   }
@@ -588,8 +591,8 @@ export const CreateCoursePage = () => {
 
                   <div className="grid md:grid-cols-2 gap-4">
                     { [
-                      { value: 'draft', label: 'Borrador', desc: 'No visible para estudiantes', icon: '📝' },
-                      { value: 'active', label: 'Publicado', desc: 'Visible para estudiantes', icon: '🚀' }
+                      { value: 'inactive', label: 'Inactivo', desc: 'No visible para estudiantes', icon: '📝' },
+                      { value: 'active', label: 'Activo', desc: 'Visible para estudiantes', icon: '🚀' }
                     ].map((option) => (
                       <label key={option.value} className="relative cursor-pointer group">
                         <input

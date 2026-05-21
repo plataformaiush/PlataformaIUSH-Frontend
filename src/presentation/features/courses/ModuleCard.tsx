@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Module } from '../../../domain/modules/types'
-import { ModuleRepository } from '../../../domain/modules/moduleRepository'
+import { toggleModuloActivo, deleteModulo, fetchModulos } from '../../services/moduleService'
+import { toggleCursoActivo, fetchCursoById } from '../../services/courseService'
+import { logger } from '../../utils/logger'
 
 interface ModuleCardProps {
   module: Module
@@ -12,61 +14,106 @@ interface ModuleCardProps {
 export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleCardProps) => {
   const isActive = module.status === 'active'
 
-  const handleToggleStatus = () => {
-    const newStatus = isActive ? 'inactive' : 'active'
-    ModuleRepository.updateModule(module.id, { status: newStatus })
-    onModuleUpdate?.()
+  const handleToggleStatus = async () => {
+    // Si se va a desactivar el módulo, verificar si es el último activo
+    if (isActive) {
+      try {
+        const allModules = await fetchModulos(courseId)
+        const activeModules = allModules.filter(m => m.status === 'active')
+        
+        // Si es el último módulo activo, advertir y desactivar el curso
+        if (activeModules.length === 1) {
+          const confirmed = window.confirm(
+            `¿Estás seguro de que quieres desactivar este módulo?\n\n` +
+            `Este es el último módulo activo del curso. Al desactivarlo, el curso también se desactivará automáticamente.\n\n` +
+            `El curso y sus módulos no serán visibles para los estudiantes.`
+          )
+          
+          if (!confirmed) {
+            return
+          }
+
+          // Desactivar el curso después de desactivar el módulo
+          await toggleCursoActivo(courseId, false)
+          logger.info('Curso desactivado por falta de módulos activos', { courseId })
+        }
+      } catch (error) {
+        logger.error('Error al verificar módulos activos o desactivar curso', { error, courseId })
+      }
+    } else {
+      // Si se va a activar el módulo, verificar si el curso está inactivo
+      try {
+        const course = await fetchCursoById(courseId)
+        if (course && course.status === 'inactive') {
+          const confirmed = window.confirm(
+            `¿Estás seguro de que quieres activar este módulo?\n\n` +
+            `El curso está actualmente inactivo. Al activar este módulo, el curso también se activará automáticamente.\n\n` +
+            `El curso y sus módulos serán visibles para los estudiantes.`
+          )
+          
+          if (!confirmed) {
+            return
+          }
+
+          // Activar el curso antes de activar el módulo
+          await toggleCursoActivo(courseId, true)
+          logger.info('Curso activado al activar módulo', { courseId })
+        }
+      } catch (error) {
+        logger.error('Error al verificar estado del curso o activarlo', { error, courseId })
+      }
+    }
+
+    try {
+      await toggleModuloActivo(module.courseId, module.id, !isActive)
+      onModuleUpdate?.()
+    } catch (error) {
+      logger.error('Error al cambiar estado del módulo', { error, moduleId: module.id, courseId })
+    }
   }
 
   return (
     <tr 
       className="transition-colors hover:bg-gray-50" 
       style={{ 
-        borderBottom: !isLast ? '1px solid var(--color-borders)' : 'none',
-        backgroundColor: 'transparent'
+        borderBottom: !isLast ? '1px solid #E5E7EB' : 'none'
       }}
     >
       {/* Module name */}
-      <td className="px-6 py-5" role="cell">
+      <td className="px-6 py-5">
         <Link
           to={`/courses/${courseId}/modules/${module.id}/contents`}
-          className="text-card-title hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
-          style={{ 
-            color: 'var(--color-text-primary)', 
-            '--tw-ring-color': 'var(--color-ring)' 
-          } as React.CSSProperties}
+          className="font-semibold hover:underline focus:outline-none transition-colors"
+          style={{ color: '#223740', fontSize: '14px' }}
         >
           {module.title}
         </Link>
-        <p className="mt-1 text-body-sm" style={{ color: 'var(--color-text-secondary)' }}>
+        <p className="mt-1 text-xs" style={{ color: '#6B7280' }}>
           Módulo {String(module.order).padStart(2, '0')}
         </p>
       </td>
 
       {/* Content count */}
-      <td className="px-6 py-5" role="cell">
+      <td className="px-6 py-5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--color-tertiary)' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" style={{ color: 'var(--color-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#AEEBF2' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" style={{ color: '#223740' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <span className="text-body-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+          <span className="text-sm font-medium" style={{ color: '#223740' }}>
             {module.contentIds.length} contenidos
           </span>
         </div>
       </td>
 
       {/* Status toggle + badge */}
-      <td className="px-6 py-5" role="cell">
+      <td className="px-6 py-5">
         <div className="flex items-center gap-3">
           {/* Toggle switch */}
           <button
-            className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ 
-              backgroundColor: isActive ? 'var(--color-secondary)' : 'var(--color-text-muted)',
-              '--tw-ring-color': 'var(--color-ring)' 
-            } as React.CSSProperties}
+            className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none"
+            style={{ backgroundColor: isActive ? '#5A878C' : '#9CA3AF' }}
             title={isActive ? 'Desactivar' : 'Activar'}
             onClick={handleToggleStatus}
           >
@@ -78,15 +125,15 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleC
 
           {/* Status badge */}
           <span
-            className="inline-flex items-center gap-2 badge-pill text-body-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: isActive ? 'var(--color-tertiary)' : '#f3f4f6',
-              color: isActive ? 'var(--color-primary)' : '#6b7280'
+              backgroundColor: isActive ? '#AEEBF2' : '#F3F4F6',
+              color: isActive ? '#5A878C' : '#6B7280'
             }}
           >
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: isActive ? 'var(--color-secondary)' : '#9ca3af' }}
+              style={{ backgroundColor: isActive ? '#5A878C' : '#9CA3AF' }}
             />
             {isActive ? 'Activo' : 'Inactivo'}
           </span>
@@ -94,17 +141,13 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleC
       </td>
 
       {/* Actions */}
-      <td className="px-6 py-5" role="cell">
-        <div className="flex items-center gap-2" role="group" aria-label="Acciones del módulo">
+      <td className="px-6 py-5">
+        <div className="flex items-center gap-2">
           {/* View contents */}
           <Link
             to={`/courses/${courseId}/modules/${module.id}/contents`}
-            className="flex h-8 w-8 items-center justify-center badge border-subtle transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ 
-              borderColor: 'var(--color-borders)',
-              color: 'var(--color-text-secondary)',
-              '--tw-ring-color': 'var(--color-ring)' 
-            } as React.CSSProperties}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+            style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
             title="Ver contenidos"
             aria-label={`Ver contenidos de ${module.title}`}
           >
@@ -115,12 +158,18 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleC
 
           {/* Delete */}
           <button
-            className="flex h-8 w-8 items-center justify-center badge transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            style={{ 
-              borderColor: '#fecaca',
-              color: '#ef4444',
-              backgroundColor: '#fef2f2'
+            onClick={async () => {
+              if (window.confirm('¿Estás seguro de que quieres eliminar este módulo? Esta acción no se puede deshacer.')) {
+                try {
+                  await deleteModulo(courseId, module.id)
+                  onModuleUpdate?.()
+                } catch (error) {
+                  logger.error('Error al eliminar módulo', { error, moduleId: module.id, courseId })
+                }
+              }
             }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-all hover:opacity-80"
+            style={{ borderColor: '#FECACA', color: '#EF4444', backgroundColor: '#FEF2F2' }}
             title="Eliminar módulo"
             aria-label={`Eliminar módulo: ${module.title}`}
           >

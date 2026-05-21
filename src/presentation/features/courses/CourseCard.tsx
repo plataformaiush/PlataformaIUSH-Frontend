@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Course } from '../../../domain/courses/types'
-import { CourseRepository } from '../../../domain/courses/courseRepository'
-import { Eye, Edit, Trash2, Plus, BookOpen, Users } from 'lucide-react'
+import { Eye, Edit, Trash2, Plus, BookOpen, Users, Loader2 } from 'lucide-react'
 
 interface CourseCardProps {
   course: Course
@@ -9,16 +8,16 @@ interface CourseCardProps {
   onDelete?: (courseId: string) => void
   onEdit?: (courseId: string) => void
   onView?: (courseId: string) => void
-  onCourseUpdate?: () => void
+  onToggleStatus?: (courseId: string, currentStatus: string) => void
+  onAddModule?: (courseId: string) => void
+  isToggling?: boolean
 }
 
-export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onCourseUpdate }: CourseCardProps) => {
+export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onToggleStatus, onAddModule, isToggling }: CourseCardProps) => {
   const isActive = course.status === 'active'
 
   const handleToggleStatus = () => {
-    const newStatus = isActive ? 'inactive' : 'active'
-    CourseRepository.updateCourse(course.id, { status: newStatus })
-    onCourseUpdate?.()
+    onToggleStatus?.(course.id, course.status)
   }
   return (
     <>
@@ -100,31 +99,33 @@ export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onCourseU
         <div className="flex items-center gap-3">
           {/* Interruptor */}
           <button
-            className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ 
-              backgroundColor: isActive ? 'var(--color-secondary)' : 'var(--color-text-muted)',
-              '--tw-ring-color': 'var(--color-ring)' 
-            } as React.CSSProperties}
+            className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: isActive ? '#5A878C' : '#9CA3AF' }}
             title={isActive ? 'Desactivar' : 'Activar'}
             onClick={handleToggleStatus}
+            disabled={isToggling}
           >
-            <span
-              className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
-              style={{ transform: isActive ? 'translateX(18px)' : 'translateX(2px)' }}
-            />
+            {isToggling ? (
+              <Loader2 className="absolute inset-0 m-auto h-3 w-3 animate-spin text-white" />
+            ) : (
+              <span
+                className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform"
+                style={{ transform: isActive ? 'translateX(18px)' : 'translateX(2px)' }}
+              />
+            )}
           </button>
 
           {/* Insignia de estado */}
           <span
-            className="inline-flex items-center gap-2 badge-pill text-body-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: isActive ? 'var(--color-tertiary)' : '#f3f4f6',
-              color: isActive ? 'var(--color-primary)' : '#6b7280'
+              backgroundColor: isActive ? '#AEEBF2' : '#F3F4F6',
+              color: isActive ? '#5A878C' : '#6B7280'
             }}
           >
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: isActive ? 'var(--color-secondary)' : '#9ca3af' }}
+              style={{ backgroundColor: isActive ? '#5A878C' : '#9CA3AF' }}
             />
             {isActive ? 'Activo' : 'Inactivo'}
           </span>
@@ -151,9 +152,9 @@ export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onCourseU
 
           {/* Agregar módulo */}
           <button
-            onClick={() => window.location.href = `/courses/${course.id}/modules/new`}
+            onClick={() => onAddModule?.(course.id)}
             className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ 
+            style={{
               borderColor: '#E5E7EB',
               backgroundColor: '#FFFFFF',
               color: '#6B7280'

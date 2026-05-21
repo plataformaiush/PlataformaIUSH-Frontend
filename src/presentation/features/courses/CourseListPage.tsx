@@ -1,9 +1,11 @@
-import { CourseRepository } from '../../../domain/courses/courseRepository'
 import { CourseCard } from './CourseCard'
 import { Link, useNavigate } from 'react-router-dom'
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Search, BookOpen, Users, TrendingUp, Plus, Filter, Grid, List, MoreVertical, Edit, Trash2, Eye } from 'lucide-react'
+import { fetchCursos, toggleCursoActivo, deleteCurso } from '../../services/courseService'
+import { fetchModulos, toggleModuloActivo } from '../../services/moduleService'
+import type { Course } from '../../../domain/courses/types'
+import { logger } from '../../utils/logger'
 
 export const CourseListPage = () => {
   const navigate = useNavigate()
@@ -11,11 +13,113 @@ export const CourseListPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [courses, setCourses] = useState(CourseRepository.getAllCourses())
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+  const [togglingCourse, setTogglingCourse] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadCourses = useCallback(async () => {
+    try {
+      setError(null)
+      const data = await fetchCursos()
+      setCourses(data)
+    } catch (error) {
+      logger.error('Error al cargar cursos', { error })
+      setError('No se pudieron cargar los cursos. Por favor intenta nuevamente.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCourses()
+  }, [loadCourses])
 
   const handleCourseUpdate = () => {
     setRefreshKey(prev => prev + 1)
-    setCourses(CourseRepository.getAllCourses())
+    loadCourses()
+  }
+
+  const handleToggleStatus = async (courseId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    
+    // Si se va a desactivar el curso, mostrar advertencia y desactivar módulos en cascada
+    if (newStatus === 'inactive') {
+      try {
+        const modules = await fetchModulos(courseId)
+        const activeModules = modules.filter(m => m.status === 'active')
+        
+        const confirmed = window.confirm(
+          `¿Estás seguro de que quieres desactivar este curso?\n\n` +
+          `Esta acción también desactivará ${activeModules.length} módulo(s) activo(s) asociado(s) al curso.\n\n` +
+          `El curso y sus módulos no serán visibles para los estudiantes.`
+        )
+        
+        if (!confirmed) {
+          return
+        }
+
+        setTogglingCourse(courseId)
+        
+        // Optimistic update
+        setCourses(prev => prev.map(c => 
+          c.id === courseId 
+            ? { ...c, status: newStatus }
+            : c
+        ))
+
+        // Primero desactivar el curso
+        await toggleCursoActivo(courseId, false)
+        logger.info('Curso desactivado', { courseId })
+
+        // Luego desactivar todos los módulos activos en cascada
+        if (activeModules.length > 0) {
+          await Promise.all(
+            activeModules.map(module => toggleModuloActivo(courseId, module.id, false))
+          )
+          logger.info('Módulos desactivados en cascada', { courseId, moduleCount: activeModules.length })
+        }
+
+        setError(null)
+        return
+      } catch (error) {
+        logger.error('Error al desactivar curso o módulos', { error, courseId })
+        setError('No se pudo desactivar el curso. Por favor intenta nuevamente.')
+        // Revert optimistic update
+        setCourses(prev => prev.map(c => 
+          c.id === courseId 
+            ? { ...c, status: currentStatus as 'active' | 'inactive' }
+            : c
+        ))
+        setTogglingCourse(null)
+        return
+      }
+    }
+
+    setTogglingCourse(courseId)
+    
+    // Optimistic update
+    setCourses(prev => prev.map(c => 
+      c.id === courseId 
+        ? { ...c, status: newStatus }
+        : c
+    ))
+
+    try {
+      await toggleCursoActivo(courseId, newStatus === 'active')
+      setError(null)
+    } catch (error) {
+      logger.error('Error al cambiar estado del curso', { error, courseId })
+      setError('No se pudo cambiar el estado del curso. Por favor intenta nuevamente.')
+      // Revert optimistic update
+      setCourses(prev => prev.map(c => 
+        c.id === courseId 
+          ? { ...c, status: currentStatus as 'active' | 'inactive' }
+          : c
+      ))
+    } finally {
+      setTogglingCourse(null)
+    }
   }
   
   const filteredCourses = useMemo(() => {
@@ -39,10 +143,16 @@ export const CourseListPage = () => {
   const totalStudents = useMemo(() => courses.reduce((sum, c) => sum + c.studentCount, 0), [courses])
   const newThisMonth = useMemo(() => Math.floor(Math.random() * 5) + 1, []) // Simulated data
   
-  const handleDeleteCourse = (courseId: string) => {
+  const handleDeleteCourse = async (courseId: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este curso? Esta acción no se puede deshacer.')) {
-      CourseRepository.deleteCourse(courseId)
-      setCourses(CourseRepository.getAllCourses())
+      try {
+        setError(null)
+        await deleteCurso(courseId)
+        loadCourses()
+      } catch (error) {
+        logger.error('Error al eliminar curso', { error, courseId })
+        setError('No se pudo eliminar el curso. Por favor intenta nuevamente.')
+      }
     }
   }
   
@@ -52,6 +162,21 @@ export const CourseListPage = () => {
   
   const handleViewCourse = (courseId: string) => {
     navigate(`/courses/${courseId}/modules`)
+  }
+
+  const handleAddModule = (courseId: string) => {
+    navigate(`/courses/${courseId}/modules/new`)
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" style={{ borderColor: '#5A878C', borderTopColor: '#223740' }} />
+          <p className="text-sm" style={{ color: '#6B7280' }}>Cargando cursos...</p>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -138,6 +263,26 @@ export const CourseListPage = () => {
       </div>
 
       <div className="px-8 py-8">
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl border flex items-center gap-3" style={{ 
+            backgroundColor: '#FEF2F2',
+            borderColor: '#FECACA'
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" style={{ color: '#DC2626' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium" style={{ color: '#DC2626' }}>{error}</p>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto hover:opacity-70 transition-opacity"
+              style={{ color: '#DC2626' }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Tarjetas de estadísticas */}
         <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="p-6 rounded-2xl border" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
@@ -294,14 +439,16 @@ export const CourseListPage = () => {
                           borderBottom: idx !== filteredCourses.length - 1 ? `1px solid #E5E7EB` : 'none'
                         }}
                       >
-                        <CourseCard 
+                        <CourseCard
                           key={`${course.id}-${refreshKey}`}
-                          course={course} 
+                          course={course}
                           isLast={idx === filteredCourses.length - 1}
                           onDelete={handleDeleteCourse}
                           onEdit={handleEditCourse}
                           onView={handleViewCourse}
-                          onCourseUpdate={handleCourseUpdate}
+                          onToggleStatus={handleToggleStatus}
+                          onAddModule={handleAddModule}
+                          isToggling={togglingCourse === course.id}
                         />
                       </tr>
                     ))}
@@ -351,10 +498,14 @@ export const CourseListPage = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => {
-                            const newStatus = course.status === 'active' ? 'inactive' : 'active'
-                            CourseRepository.updateCourse(course.id, { status: newStatus })
-                            handleCourseUpdate()
+                          onClick={async () => {
+                            const newActivo = course.status !== 'active'
+                            try {
+                              await toggleCursoActivo(course.id, newActivo)
+                              loadCourses()
+                            } catch (error) {
+                              logger.error('Error al cambiar estado', { error, courseId: course.id })
+                            }
                           }}
                           className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none"
                           style={{ backgroundColor: course.status === 'active' ? '#5A878C' : '#9CA3AF' }}
@@ -384,7 +535,7 @@ export const CourseListPage = () => {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => window.location.href = `/courses/${course.id}/modules/new`}
+                          onClick={() => handleAddModule(course.id)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
                           style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
                         >

@@ -22,7 +22,7 @@ export default function LoginForm() {
     try {
       const response = await loginRequest(data);
 
-      console.log("LOGIN OK:", response);
+      console.log("LOGIN EXITOSO:", response);
 
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(response.user));
@@ -31,7 +31,7 @@ export default function LoginForm() {
       navigate("/role");
 
     } catch (error) {
-      console.error("Error login:", error);
+      console.error("Error en login:", error);
       setErrorMsg("Credenciales incorrectas o error del servidor");
     }
   };
