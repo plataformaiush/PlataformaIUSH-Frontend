@@ -15,7 +15,7 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
-import { CSSProperties, ReactNode, useEffect } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { TeacherCourseInsight } from "../../../domain/teacher/teacherTypes";
 import { TeacherCourseInsightCard } from "./components/TeacherCourseInsightCard";
 import { TeacherEmptyState } from "./components/TeacherEmptyState";
@@ -42,8 +42,8 @@ function CourseSection({
 }) {
   return (
     <section className="rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-6 shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
           {icon}
         </div>
 
@@ -61,7 +61,7 @@ function CourseSection({
       </div>
 
       {courses.length > 0 ? (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
           {courses.map((course) => (
             <TeacherCourseInsightCard
               key={course.id}
@@ -81,19 +81,30 @@ function CourseSection({
   );
 }
 const teacherThemeVars = {
-  "--teacher-bg": "var(--color-surface-muted, #f1f5f9)",
-  "--teacher-card": "var(--color-surface, #ffffff)",
-  "--teacher-card-soft": "var(--color-surface, #ffffff)",
-  "--teacher-soft": "color-mix(in srgb, var(--color-tertiary, #AEEBF2) 28%, white)",
-  "--teacher-track": "color-mix(in srgb, var(--color-mid, #84B9BF) 28%, white)",
+  "--teacher-bg": "var(--color-background, #FFFAFA)",
+  "--teacher-card": "var(--color-input, #ffffff)",
+  "--teacher-card-soft": "var(--color-input, #ffffff)",
+
+  "--teacher-soft":
+    "color-mix(in srgb, var(--color-tertiary, #AEEBF2) 24%, var(--color-input, #ffffff))",
+
+  "--teacher-track":
+    "color-mix(in srgb, var(--color-secondary, #5A878C) 22%, var(--color-input, #ffffff))",
+
   "--teacher-border": "var(--color-border, #E2E8F0)",
+
   "--teacher-primary": "var(--color-primary, #223740)",
-  "--teacher-secondary": "var(--color-secondary, #58838C)",
-  "--teacher-accent": "var(--color-mid, #84B9BF)",
-  "--teacher-text": "var(--color-primary, #223740)",
+  "--teacher-secondary": "var(--color-secondary, #5A878C)",
+  "--teacher-accent": "var(--color-tertiary, #AEEBF2)",
+
+  "--teacher-text": "var(--color-foreground, #0F172A)",
   "--teacher-muted": "var(--color-muted-foreground, #475569)",
-  "--teacher-success": "var(--color-secondary, #58838C)",
-  "--teacher-success-soft": "color-mix(in srgb, var(--color-tertiary, #AEEBF2) 35%, white)",
+  "--teacher-text-on-dark": "var(--color-text-on-dark, #F5F5F5)",
+
+  "--teacher-success": "var(--color-secondary, #5A878C)",
+  "--teacher-success-soft":
+    "color-mix(in srgb, var(--color-tertiary, #AEEBF2) 35%, var(--color-input, #ffffff))",
+
   "--teacher-danger": "#ef6b7a",
   "--teacher-warning": "#f5b84b",
 } as CSSProperties;
@@ -119,58 +130,61 @@ export default function TeacherDashboard() {
   const teacher = dashboard?.teacher;
   const totals = dashboard?.totals;
 
+  const createCourseUrl = dashboard?.quickActions.createCourseUrl || "/courses/new";
+  const myCoursesUrl = dashboard?.quickActions.coursesUrl || "/courses";
+
   return (
     <main
       style={teacherThemeVars}
-      className="min-h-screen bg-[var(--teacher-bg)] px-5 py-7 text-[var(--teacher-text)] lg:px-8"
+      className="min-h-screen w-full overflow-x-hidden bg-[var(--teacher-bg)] px-4 py-6 text-[var(--teacher-text)] sm:px-5 lg:px-8"
     >
-      <div className="mx-auto max-w-[1240px] space-y-7">
-        <section className="overflow-hidden rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] via-[var(--teacher-secondary)] to-[var(--teacher-accent)] p-7 text-white shadow-[0_24px_60px_rgba(21,55,68,0.24)] md:p-9">
+      <div className="mx-auto w-full max-w-[1240px] space-y-7">
+        <section className="overflow-hidden rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] via-[var(--teacher-secondary)] to-[var(--teacher-accent)] p-7 text-[var(--teacher-text-on-dark)] shadow-[0_24px_60px_rgba(21,55,68,0.24)] md:p-9">
           <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
             <div className="max-w-2xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white/85 backdrop-blur">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--teacher-text-on-dark)_18%,transparent)] bg-[color:color-mix(in_srgb,var(--teacher-text-on-dark)_12%,transparent)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--teacher-text-on-dark)] backdrop-blur">
                 <Sparkles size={16} />
                 Vista docente
               </div>
 
               <h1 className="text-4xl font-black tracking-tight md:text-5xl">
                 {teacher?.name
-                  ? `Bienvenida, ${teacher.name}`
-                  : "Bienvenida, docente"}
+                  ? `Bienvenid@, ${teacher.name}`
+                  : "Bienvenid@, docente"}
               </h1>
 
-              <p className="mt-4 max-w-xl text-base font-medium leading-7 text-white/78">
+              <p className="mt-4 max-w-xl text-base font-medium leading-7 text-[var(--teacher-text-on-dark)] opacity-80">
                 Consulta el estado de tus cursos, estudiantes inscritos,
                 contenidos, módulos y avances académicos desde un único tablero.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <button
                 type="button"
                 onClick={() =>
                   goToExternalModule(
-                    dashboard?.quickActions.createCourseUrl,
+                    createCourseUrl,
                     "La URL para crear curso aún no ha sido suministrada por el módulo de Cursos."
                   )
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5 sm:w-auto"
               >
                 <PlusCircle size={18} />
-                Crear curso
+                <span>Crear curso</span>
               </button>
 
               <button
                 type="button"
                 onClick={() =>
                   goToExternalModule(
-                    dashboard?.quickActions.coursesUrl,
+                    myCoursesUrl,
                     "La URL para ver mis cursos aún no ha sido suministrada por el módulo de Cursos."
                   )
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3.5 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3.5 text-sm font-black text-[var(--teacher-primary)] shadow-[0_18px_35px_rgba(0,0,0,0.14)] transition hover:-translate-y-0.5 sm:w-auto"
               >
-                Ver mis cursos
+                <span>Ver mis cursos</span>
                 <ArrowRight size={18} />
               </button>
             </div>
@@ -178,7 +192,7 @@ export default function TeacherDashboard() {
         </section>
 
         {loading ? (
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
@@ -274,7 +288,7 @@ export default function TeacherDashboard() {
               emptyDescription="Cuando existan cursos sin módulos o sin contenidos, aparecerán en esta sección."
             />
 
-            <section className="grid gap-7 xl:grid-cols-2">
+            <section className="grid grid-cols-1 gap-7 xl:grid-cols-2">
               <CourseSection
                 title="Cursos con más inscritos"
                 subtitle="Cursos del docente con mayor cantidad de estudiantes."
@@ -306,7 +320,7 @@ export default function TeacherDashboard() {
               emptyDescription="Esta sección depende del módulo de certificaciones y progreso."
             />
 
-            <section className="rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-6 shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
+            <section className="w-full overflow-hidden rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-4 shadow-[0_18px_38px_rgba(22,55,68,0.08)] sm:p-6">
               <div className="mb-6 flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
                   <GraduationCap size={24} />
@@ -343,10 +357,10 @@ export default function TeacherDashboard() {
               )}
             </section>
 
-            <section className="rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] to-[var(--teacher-secondary)] p-6 text-white shadow-[0_18px_38px_rgba(22,55,68,0.18)]">
+            <section className="rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] to-[var(--teacher-secondary)] p-6 text-[var(--teacher-text-on-dark)] shadow-[0_18px_38px_rgba(22,55,68,0.18)]">
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/65">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--teacher-text-on-dark)] opacity-70">
                     Integración
                   </p>
 
@@ -354,7 +368,7 @@ export default function TeacherDashboard() {
                     Dashboard conectado al resumen docente
                   </h3>
 
-                  <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-white/75">
+                  <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--teacher-text-on-dark)] opacity-80">
                     Esta vista consume el endpoint{" "}
                     <span className="font-black">
                       /api/teacher/dashboard/summary
@@ -367,7 +381,7 @@ export default function TeacherDashboard() {
                 <button
                   type="button"
                   onClick={() => void refreshDashboard()}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[var(--teacher-primary)]"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--teacher-card)] px-5 py-3 text-sm font-black text-[var(--teacher-primary)]"
                 >
                   <RefreshCcw size={17} />
                   Actualizar datos

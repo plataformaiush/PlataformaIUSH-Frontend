@@ -33,10 +33,10 @@ export function TeacherCourseInsightCard({
         : "Inscritos";
 
   return (
-    <article className="rounded-[26px] border border-[var(--teacher-border)] bg-[var(--teacher-card-soft)] p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <article className="min-w-0 overflow-hidden rounded-[26px] border border-[var(--teacher-border)] bg-[var(--teacher-card-soft)] p-4 transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(22,55,68,0.08)] sm:p-5">
+      <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="truncate text-lg font-black text-[var(--teacher-text)]">
+          <h3 className="max-w-full truncate text-base font-black text-[var(--teacher-text)] sm:text-lg">
             {course.title || "Curso sin nombre"}
           </h3>
 
@@ -45,12 +45,12 @@ export function TeacherCourseInsightCard({
           </p>
         </div>
 
-        <span className="shrink-0 rounded-full bg-[var(--teacher-success-soft)] px-3 py-1 text-xs font-black text-[var(--teacher-success)]">
+        <span className="w-fit shrink-0 rounded-full bg-[var(--teacher-success-soft)] px-3 py-1 text-xs font-black text-[var(--teacher-success)]">
           {course.status || "Pendiente"}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-[var(--teacher-soft)] p-3">
           <p className="text-xs font-bold text-[var(--teacher-muted)]">
             {mainLabel}
@@ -100,7 +100,7 @@ export function TeacherCourseInsightCard({
       {course.detailUrl ? (
         <a
           href={course.detailUrl}
-          className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-[var(--teacher-border)] bg-white px-4 py-3 text-sm font-black text-[var(--teacher-muted)] transition hover:bg-[var(--teacher-soft)] hover:text-[var(--teacher-text)]"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--teacher-border)] bg-[var(--teacher-card)] px-4 py-3 text-sm font-black text-[var(--teacher-muted)] transition hover:bg-[var(--teacher-soft)] hover:text-[var(--teacher-text)] sm:w-auto"
         >
           Ver detalle
           <ArrowRight size={16} />
