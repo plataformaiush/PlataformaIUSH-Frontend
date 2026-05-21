@@ -8,3 +8,4 @@ export const adminRoutes: RouteObject[] = [
     element: createElement(AdminPage),
   },
 ]
+
