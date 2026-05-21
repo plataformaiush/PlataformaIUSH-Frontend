@@ -1,0 +1,50 @@
+﻿import { createElement } from 'react'
+import { type RouteObject } from 'react-router-dom'
+
+import ProfunSoft from '../../ProfunSoft'
+import RequireAuth from '../guards/RequireAuth'
+import { adminRoutes } from './admin.routes'
+import { authRoutes } from './auth.routes'
+import { gradeRoutes } from './grades.routes'
+import { reportsRoutes } from './reports.routes'
+import { superAdminRoutes } from './superadmin.routes'
+import { teacherRoutes } from './teacher.routes.tsx'
+import { vistaEstudiantesRutas } from './vista-estudiante.routes'
+
+/**
+ * Agregador central de rutas
+ * Define la estructura base de la aplicación
+ * Equipo 2: Centralización de rutas
+ * 
+ * @example
+ * export const allRoutes: RouteObject[] = [
+ *     ...authRoutes,
+ *     ...dashboardRoutes
+ * ];
+ */
+
+export const allRoutes: RouteObject[] = [
+    ...authRoutes, // Equipo 1
+    {
+        element: createElement(RequireAuth),
+        children: [
+            ...vistaEstudiantesRutas, // Equipo 7
+            ...adminRoutes, // Equipo 4
+            {
+                path: '/',
+                element: createElement(ProfunSoft),
+                children: [
+                    ...teacherRoutes, // Equipo 6
+                    ...reportsRoutes, // Equipo 9
+                    ...superAdminRoutes, // Equipo 3
+                    ...gradeRoutes, // Equipo 5
+                ],
+            },
+        ],
+    },
+    // Equipo 1 (Cursos): ...plantillaRoutes,
+    // Equipo 2 (Archivos): ...fileRoutes,
+    // Equipo 3 (Institución): ...institutionRoutes,
+    // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
+    // Equipo 9 (Analytics): ...analyticsRoutes,
+]
