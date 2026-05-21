@@ -5,7 +5,6 @@ import StudentDashboard from '../../presentation/features/student/pages/StudentD
 import CursoDetallePage from '../../presentation/features/student/pages/CursoDetallePage'
 import ModuloDetallePage from '../../presentation/features/student/pages/ModuloDetallePage'
 import ContenidoDetallePage from '../../presentation/features/student/pages/ContenidoDetallePage'
-import MisCertificadosPage from '../../presentation/features/student/pages/MisCertificadosPage'
 import RequireAuth from '../guards/RequireAuth'
 
 export const studentRoutes: RouteObject[] = [
@@ -28,10 +27,6 @@ export const studentRoutes: RouteObject[] = [
       {
         path: 'curso/:cursoId/modulo/:moduloId/contenido/:contenidoId',
         element: createElement(ContenidoDetallePage),
-      },
-      {
-        path: 'certificados',
-        element: createElement(MisCertificadosPage),
       },
     ],
   },

@@ -1,29 +1,20 @@
 import {useMemo, useState, useEffect} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {
-    ArrowRight, Target, Trophy,
-    Play, GraduationCap, CheckCircle2, Loader,
+    ArrowRight, Trophy,
+    Play, GraduationCap, Loader, Award,
 } from 'lucide-react'
-import {EmptyCoursesState} from './components/EmptyCoursesState'
+// ...existing code... (EmptyCoursesState removed on purpose)
 import {studentService, type MisCursos} from '../services/studentService'
 
 const STREAK_DAYS = 14
-const WEEKLY_DONE = 4
-const WEEKLY_TOTAL = 5
-const CIRC = 2 * Math.PI * 40   // ≈ 251.3
-
-type CourseStatus = 'locked' | 'progress' | 'approved'
 
 interface EnrichedCourse extends MisCursos {
     displayTitle: string
     displayDescription: string
 }
 
-function statusOf(progress: number): CourseStatus {
-    if (progress === 0) return 'locked'
-    if (progress === 100) return 'approved'
-    return 'progress'
-}
+// statusOf removed: dashboard view no longer relies on course progress/status
 
 /* ═══════════════════════════════════════════════════════════════════
    Página principal
@@ -34,6 +25,43 @@ export function StudentDashboardPage() {
     const [studentName, setStudentName] = useState<string>('Estudiante')
     const [enrichedCourses, setEnrichedCourses] = useState<EnrichedCourse[]>([])
     const [isLoadingCourses, setIsLoadingCourses] = useState(false)
+
+    // Función reutilizable para cargar cursos y filtrar los creados por el usuario logueado
+    const loadCourses = async () => {
+        setIsLoadingCourses(true)
+        try {
+            const cursos = await studentService.getAllCursos()
+            const userId = localStorage.getItem('user')
+                ? JSON.parse(localStorage.getItem('user') || '{}').id
+                : null
+
+            // Excluir cursos donde idUsuario === id del usuario logueado Y mostrar solo activos
+            const filtered = cursos.filter((c: any) => {
+                const isNotCreatedByUser = !userId || c.idUsuario !== userId
+                const isActive = c.activo === true
+                return isNotCreatedByUser && isActive
+            })
+
+            const normalizedCourses = filtered.map((curso: any) => ({
+                idCurso: curso.idCurso,
+                titulo: curso.titulo,
+                descripcion: curso.descripcion,
+                thumbnail: (curso as any).thumbnail || undefined,
+                modulosTotal: curso.modulosCount ?? 0,
+                modulosCompletados: 0,
+                porcentajeProgreso: 0, // en el catálogo no mostramos progreso
+                displayTitle: curso.titulo,
+                displayDescription: curso.descripcion || 'Sin descripción disponible',
+            }))
+
+            setEnrichedCourses(normalizedCourses)
+        } catch (err) {
+            console.error('Error loading courses:', err)
+            setEnrichedCourses([])
+        } finally {
+            setIsLoadingCourses(false)
+        }
+    }
 
     // Obtener nombre del estudiante desde localStorage
     useEffect(() => {
@@ -50,26 +78,6 @@ export function StudentDashboardPage() {
 
     // Cargar todos los cursos desde la API
     useEffect(() => {
-        const loadCourses = async () => {
-            setIsLoadingCourses(true)
-            try {
-                const cursos = await studentService.getAllCursos()
-
-                const normalizedCourses = cursos.map((curso) => ({
-                    ...curso,
-                    displayTitle: curso.titulo,
-                    displayDescription: curso.descripcion || 'Sin descripción disponible',
-                }))
-
-                setEnrichedCourses(normalizedCourses)
-            } catch (err) {
-                console.error('Error loading courses:', err)
-                setEnrichedCourses([])
-            } finally {
-                setIsLoadingCourses(false)
-            }
-        }
-
         loadCourses()
     }, [])
 
@@ -99,12 +107,14 @@ export function StudentDashboardPage() {
 
     if (!hasEnrolled) {
         return (
-            <div className="px-6 md:px-8 py-6 md:py-8">
-                {/*
-                  Como ya no usamos el store global para datos falsos,
-                  aquí deberías redirigir a un catálogo o llamar a tu API real de matriculación.
-                */}
-                <EmptyCoursesState onEnroll={() => console.log("Aquí debes implementar la lógica hacia la API para matricular un curso")} />
+            <div className="px-6 md:px-8 py-6 md:py-8 text-center">
+                <p className="text-secondary mb-4">No hay cursos disponibles para mostrar.</p>
+                <button
+                    onClick={loadCourses}
+                    className="inline-flex items-center gap-2.5 min-h-[40px] px-6 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
+                >
+                    Actualizar
+                </button>
             </div>
         )
     }
@@ -112,7 +122,7 @@ export function StudentDashboardPage() {
     return (
         <div className="w-full px-6 md:px-8 py-4 md:py-6 space-y-6 max-w-6xl mx-auto">
 
-            {/* Fila 1: Hero + Weekly Goal */}
+            {/* Fila 1: Hero + Certificados */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
                 <HeroBanner
                     name={studentName}
@@ -120,7 +130,7 @@ export function StudentDashboardPage() {
                     courseName={inProgress?.displayTitle ?? null}
                     onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
                 />
-                <WeeklyGoalCard done={WEEKLY_DONE} total={WEEKLY_TOTAL}/>
+                <CertificatesCard onNavigate={() => navigate('/grades')}/>
             </div>
 
             {/* Fila 2: In Progress + Up Next */}
@@ -185,49 +195,39 @@ function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
 }
 
 /* ── Weekly Goal ────────────────────────────────────────────────── */
-function WeeklyGoalCard({done, total}: { done: number; total: number }) {
-    const dash = (done / total) * CIRC
-
+function CertificatesCard({onNavigate}: {onNavigate: () => void}) {
     return (
         <div className="bg-surface rounded-2xl border border-mid/20 p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-primary">Meta semanal</h2>
-                <Target size={18} className="text-secondary"/>
+                <h2 className="text-base font-bold text-primary">Mis certificados</h2>
+                <Award size={18} className="text-secondary"/>
             </div>
 
-            {/* Anillo SVG */}
-            <div className="relative flex items-center justify-center">
-                <svg viewBox="0 0 104 104" className="w-32 h-32">
-                    <circle cx="52" cy="52" r="40" fill="none"
-                            stroke="currentColor" strokeWidth="8"
-                            className="text-mid/25"/>
-                    <circle cx="52" cy="52" r="40" fill="none"
-                            stroke="currentColor" strokeWidth="8"
-                            strokeLinecap="round"
-                            className="text-primary transition-all duration-700"
-                            style={{
-                                strokeDasharray: `${dash} ${CIRC}`,
-                                transform: 'rotate(-90deg)',
-                                transformOrigin: '52px 52px',
-                            }}/>
-                </svg>
-                <div className="absolute flex flex-col items-center pointer-events-none">
-                    <span className="text-2xl font-black text-primary leading-none">{done}/{total}</span>
-                    <span className="text-xs text-secondary mt-0.5">Módulos</span>
+            {/* Ícono decorativo */}
+            <div className="flex justify-center py-4">
+                <div className="w-16 h-16 rounded-full bg-secondary/15 flex items-center justify-center">
+                    <Award size={32} className="text-secondary"/>
                 </div>
             </div>
 
-            {/* Sub-card motivacional */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted">
-                <Trophy size={20} className="text-secondary shrink-0"/>
-                <div>
-                    <p className="text-sm font-bold text-primary">¡Casi lo logras!</p>
-                    <p className="text-xs text-secondary">
-                        Te {total - done === 1 ? 'falta' : 'faltan'} {total - done} módulo{total - done !== 1 ? 's' : ''} para
-                        tu meta.
-                    </p>
-                </div>
+            {/* Texto motivacional */}
+            <div className="text-center">
+                <p className="text-sm font-semibold text-primary mb-1">
+                    Tus logros certificados
+                </p>
+                <p className="text-xs text-secondary">
+                    Visualiza y descarga todos tus certificados completados.
+                </p>
             </div>
+
+            {/* Botón */}
+            <button
+                onClick={onNavigate}
+                className="w-full py-2 px-4 rounded-lg bg-secondary text-white font-semibold text-sm
+                         hover:bg-secondary/90 transition-colors mt-2"
+            >
+                Ver certificados
+            </button>
         </div>
     )
 }
@@ -314,9 +314,9 @@ function LearningPathSection({
     return (
         <section className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-primary">Tu ruta de aprendizaje</h2>
+                <h2 className="text-xl font-bold text-primary">Catálogo de cursos</h2>
                 <button className="text-sm font-semibold text-secondary hover:text-primary transition-colors">
-                    Ver todos
+                    Mis cursos
                 </button>
             </div>
 
@@ -341,8 +341,6 @@ function CourseGridCard({
     course: EnrichedCourse
     onClick: () => void
 }) {
-    const status = statusOf(course.porcentajeProgreso)
-
     return (
         <div
             onClick={onClick}
@@ -375,57 +373,18 @@ function CourseGridCard({
                 <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.displayTitle}</p>
                 <p className="text-xs text-secondary line-clamp-2">{course.displayDescription}</p>
 
-                {/* Footer estado con botones dinámicos */}
+                {/* Footer: botón de inscripción (solo imprime id del curso por ahora) */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
-                    {status === 'locked' && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onClick()
-                            }}
-                            className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-mid hover:bg-mid/90 transition-colors"
-                        >
-                            Empezar curso
-                        </button>
-                    )}
-                    {status === 'progress' && (
-                        <>
-                            <div className="w-full">
-                                <p className="text-[11px] font-semibold text-secondary mb-1">{course.porcentajeProgreso}%</p>
-                                <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full bg-secondary transition-all duration-700"
-                                        style={{width: `${course.porcentajeProgreso}%`}}
-                                    />
-                                </div>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onClick()
-                                }}
-                                className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                         bg-secondary hover:bg-secondary/90 transition-colors"
-                            >
-                                Continuar viendo
-                            </button>
-                        </>
-                    )}
-                    {status === 'approved' && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onClick()
-                            }}
-                            className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-secondary hover:bg-secondary/90 transition-colors
-                                     flex items-center justify-center gap-2"
-                        >
-                            <CheckCircle2 size={16} />
-                            Ver certificado
-                        </button>
-                    )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            console.log('Inscribirse curso:', course.idCurso)
+                        }}
+                        className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
+                                     bg-secondary hover:bg-secondary/90 transition-colors"
+                    >
+                        Inscribirse
+                    </button>
                 </div>
             </div>
         </div>
