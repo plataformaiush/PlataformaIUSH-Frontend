@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GraphsLooker from "./modules/lookerStudio/GraphsLooker";
 import { IoPersonOutline } from "react-icons/io5";
 import { TfiBlackboard } from "react-icons/tfi";

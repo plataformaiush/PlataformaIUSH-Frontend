@@ -1,6 +1,5 @@
 import { createAxiosInstance } from "../../../services/axiosInterceptor";
 
-const BASE_URL_API = import.meta.env.VITE_BASE_URL
+const BASE_URL_API = import.meta.env.VITE_BASE_URL;
 
 export const axiosInstance = createAxiosInstance(BASE_URL_API);
-
