@@ -113,7 +113,7 @@ export function FileList({
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <FileTypeIcon type={doc.tipo} />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#223740] truncate">
+                  <p className="text-sm font-semibold text-[var(--color-primary)] truncate">
                     {doc.nombre}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">

@@ -5,7 +5,7 @@ const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env
 // ─────────────────────────────────────────────
 // Pon en true para usar datos falsos sin backend
 // ─────────────────────────────────────────────
-const MOCK_MODE = false
+const MOCK_MODE = true
 
 export type Carpeta = 'documentos' | 'imagenes'
 
@@ -23,7 +23,7 @@ export interface Documento {
 // Extensiones que van a la carpeta "imagenes"
 // Todo lo demás va a "documentos"
 // ─────────────────────────────────────────────
-const EXTENSIONES_IMAGEN = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])
+const EXTENSIONES_IMAGEN = new Set(['png', 'jpg', 'jpeg'])
 
 export function inferirCarpeta(nombreArchivo: string): Carpeta {
   const ext = nombreArchivo.split('.').pop()?.toLowerCase() || ''

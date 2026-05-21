@@ -21,14 +21,15 @@ import {
   type Documento,
 } from '../../../../../domain/files/Filesapi'
 
-interface FilePreviewContainerProps {
-  id?: string
-  url?: string
+type FilePreviewContainerProps = {
   tipo?: string
   nombre?: string
   onClose: () => void
   embedded?: boolean
-}
+} & (
+  | { id: string; url?: never }
+  | { url: string; id?: never }
+)
 
 function formatBytes(bytes: number): string {
   if (!bytes) return '0 KB'
@@ -54,7 +55,16 @@ function youTubeEmbed(url: string): string {
     : url
 }
 
+function isUrl(value: string): boolean {
+  return (
+    value.startsWith('http://') ||
+    value.startsWith('https://')
+  )
+}
+
 function inferTipo(url: string): string {
+  if (isYouTube(url)) return 'youtube'
+
   return (
     url.split('.').pop()?.split('?')[0]?.toLowerCase() ||
     ''
@@ -65,118 +75,56 @@ function inferTipo(url: string): string {
 // EXCEL VIEWER (SheetJS)
 // ─────────────────────────────────────────────
 
-function ExcelViewer({
-  url,
-}: {
-  url: string
-}) {
-  const [loading, setLoading] =
-    useState(true)
-
-  const [error, setError] =
-    useState('')
-
-  const [sheetNames, setSheetNames] =
-    useState<string[]>([])
-
-  const [activeSheet, setActiveSheet] =
-    useState('')
-
-  const [data, setData] = useState<any[][]>(
-    []
-  )
-
-  const [workbook, setWorkbook] =
-    useState<XLSX.WorkBook | null>(null)
+function ExcelViewer({ url }: { url: string }) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [sheetNames, setSheetNames] = useState<string[]>([])
+  const [activeSheet, setActiveSheet] = useState('')
+  const [data, setData] = useState<any[][]>([])
+  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null)
 
   useEffect(() => {
     async function loadExcel() {
       try {
         setLoading(true)
-
         const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error(
-            'No se pudo descargar el archivo'
-          )
-        }
-
-        const arrayBuffer =
-          await response.arrayBuffer()
-
-        const wb = XLSX.read(arrayBuffer, {
-          type: 'array',
-        })
-
+        if (!response.ok) throw new Error('No se pudo descargar el archivo')
+        const arrayBuffer = await response.arrayBuffer()
+        const wb = XLSX.read(arrayBuffer, { type: 'array' })
         setWorkbook(wb)
-
         setSheetNames(wb.SheetNames)
-
-        const firstSheet =
-          wb.SheetNames[0]
-
+        const firstSheet = wb.SheetNames[0]
         setActiveSheet(firstSheet)
-
-        const worksheet =
-          wb.Sheets[firstSheet]
-
-        const json =
-          XLSX.utils.sheet_to_json(
-            worksheet,
-            {
-              header: 1,
-              defval: '',
-            }
-          ) as any[][]
-
+        const json = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet], {
+          header: 1,
+          defval: '',
+        }) as any[][]
         setData(json)
-
         setLoading(false)
       } catch (err) {
         console.error(err)
-
-        setError(
-          'No se pudo cargar el archivo Excel.'
-        )
-
+        setError('No se pudo cargar el archivo Excel.')
         setLoading(false)
       }
     }
-
     loadExcel()
   }, [url])
 
-  function changeSheet(
-    sheetName: string
-  ) {
+  function changeSheet(sheetName: string) {
     if (!workbook) return
-
     setActiveSheet(sheetName)
-
-    const worksheet =
-      workbook.Sheets[sheetName]
-
-    const json =
-      XLSX.utils.sheet_to_json(
-        worksheet,
-        {
-          header: 1,
-          defval: '',
-        }
-      ) as any[][]
-
+    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+      defval: '',
+    }) as any[][]
     setData(json)
   }
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
-        <div className="w-10 h-10 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
-
-        <p className="text-sm">
-          Cargando Excel...
-        </p>
+        <div className="w-10 h-10 rounded-full border-2 border-[var(--color-tertiary)] border-t-[var(--color-primary)] animate-spin" />
+        <p className="text-sm">Cargando Excel...</p>
       </div>
     )
   }
@@ -185,27 +133,21 @@ function ExcelViewer({
     return (
       <div className="flex flex-col items-center gap-2 p-8 text-red-500">
         <X size={32} />
-
-        <p className="text-sm font-medium">
-          {error}
-        </p>
+        <p className="text-sm font-medium">{error}</p>
       </div>
     )
   }
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-white">
-      {/* SHEETS */}
       <div className="flex gap-2 p-3 border-b border-gray-200 overflow-x-auto bg-gray-50">
         {sheetNames.map((sheet) => (
           <button
             key={sheet}
-            onClick={() =>
-              changeSheet(sheet)
-            }
+            onClick={() => changeSheet(sheet)}
             className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition ${
               activeSheet === sheet
-                ? 'bg-[#223740] text-white'
+                ? 'bg-[var(--color-primary)] text-white'
                 : 'bg-white border border-gray-200 hover:bg-gray-100'
             }`}
           >
@@ -213,23 +155,19 @@ function ExcelViewer({
           </button>
         ))}
       </div>
-
-      {/* TABLE */}
       <div className="flex-1 overflow-auto">
         <table className="min-w-full border-collapse text-sm">
           <tbody>
             {data.map((row, rowIndex) => (
               <tr key={rowIndex}>
-                {row.map(
-                  (cell, cellIndex) => (
-                    <td
-                      key={cellIndex}
-                      className="border border-gray-200 px-3 py-2 whitespace-nowrap"
-                    >
-                      {cell?.toString() || ''}
-                    </td>
-                  )
-                )}
+                {row.map((cell, cellIndex) => (
+                  <td
+                    key={cellIndex}
+                    className="border border-gray-200 px-3 py-2 whitespace-nowrap"
+                  >
+                    {cell?.toString() || ''}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -238,102 +176,60 @@ function ExcelViewer({
     </div>
   )
 }
-function WordViewer({
-  url,
-}: {
-  url: string
-}) {
-  const containerRef =
-    React.useRef<HTMLDivElement | null>(
-      null
-    )
 
-  const [loading, setLoading] =
-    useState(true)
+// ─────────────────────────────────────────────
+// WORD VIEWER (docx-preview)
+// ─────────────────────────────────────────────
 
-  const [error, setError] =
-    useState('')
+function WordViewer({ url }: { url: string }) {
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function loadDocx() {
       try {
         const response = await fetch(url)
-
-        if (!response.ok) {
-          throw new Error(
-            'No se pudo descargar el documento'
-          )
-        }
-
-        const blob =
-          await response.blob()
-
+        if (!response.ok) throw new Error('No se pudo descargar el documento')
+        const blob = await response.blob()
         if (!containerRef.current) return
-
-        containerRef.current.innerHTML =
-          ''
-
-        await renderAsync(
-          blob,
-          containerRef.current,
-          undefined,
-          {
-            className: 'docx-preview',
-            inWrapper: true,
-            ignoreWidth: false,
-            ignoreHeight: false,
-            ignoreFonts: false,
-            breakPages: true,
-            renderHeaders: true,
-            renderFooters: true,
-            renderFootnotes: true,
-          }
-        )
-
+        containerRef.current.innerHTML = ''
+        await renderAsync(blob, containerRef.current, undefined, {
+          className: 'docx-preview',
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          breakPages: true,
+          renderHeaders: true,
+          renderFooters: true,
+          renderFootnotes: true,
+        })
         setLoading(false)
       } catch (err) {
         console.error(err)
-
-        setError(
-          'No se pudo cargar el documento Word.'
-        )
-
+        setError('No se pudo cargar el documento Word.')
         setLoading(false)
       }
     }
-
     loadDocx()
   }, [url])
 
   return (
     <div className="relative w-full h-full overflow-auto bg-[#525659] p-6">
-      {/* LOADING */}
       {loading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/80">
-          <div className="w-10 h-10 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
-
-          <p className="text-sm text-gray-500">
-            Cargando documento...
-          </p>
+          <div className="w-10 h-10 rounded-full border-2 border-gray-300 border-t-[var(--color-tertiary)] animate-spin" />
+          <p className="text-sm text-gray-500">Cargando documento...</p>
         </div>
       )}
-
-      {/* ERROR */}
       {error && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white text-red-500">
           <X size={32} />
-
-          <p className="text-sm font-medium">
-            {error}
-          </p>
+          <p className="text-sm font-medium">{error}</p>
         </div>
       )}
-
-      {/* DOCX */}
-      <div
-        ref={containerRef}
-        className="flex justify-center"
-      />
+      <div ref={containerRef} className="flex justify-center" />
     </div>
   )
 }
@@ -353,39 +249,21 @@ function PreviewBody({
   loading: boolean
   error: string
   pdfPage: number
-  setPdfPage: React.Dispatch<
-    React.SetStateAction<number>
-  >
+  setPdfPage: React.Dispatch<React.SetStateAction<number>>
 }) {
-  const type =
-    doc?.tipo?.toLowerCase() || ''
+  const type = doc?.tipo?.toLowerCase() || ''
 
   const isPdf = type === 'pdf'
-
-  const isImage = [
-    'png',
-    'jpg',
-  ].includes(type)
-
-  const isWord = ['doc', 'docx'].includes(
-    type
-  )
-
-  const isExcel = ['xls', 'xlsx'].includes(
-    type
-  )
-
-  const isYoutube =
-    !!doc?.url && isYouTube(doc.url)
+  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(type)
+  const isWord = ['doc', 'docx'].includes(type)
+  const isExcel = ['xls', 'xlsx'].includes(type)
+  const isYoutube = type === 'youtube' || (!!doc?.url && isYouTube(doc.url))
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
-        <div className="w-10 h-10 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
-
-        <p className="text-sm">
-          Cargando archivo...
-        </p>
+        <div className="w-10 h-10 rounded-full border-2 border-gray-300 border-t-[var(--color-tertiary)] animate-spin" />
+        <p className="text-sm">Cargando archivo...</p>
       </div>
     )
   }
@@ -394,15 +272,27 @@ function PreviewBody({
     return (
       <div className="flex flex-col items-center gap-2 p-8 text-red-500">
         <X size={32} />
-
-        <p className="text-sm font-medium">
-          {error}
-        </p>
+        <p className="text-sm font-medium">{error}</p>
       </div>
     )
   }
 
   if (!doc) return null
+
+  // ───────────────── YOUTUBE (primero, antes de cualquier otro tipo)
+  if (isYoutube && doc.url) {
+    return (
+      <div className="w-full h-full bg-black">
+        <iframe
+          src={youTubeEmbed(doc.url)}
+          title={doc.nombre}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    )
+  }
 
   // ───────────────── PDF
   if (isPdf && doc.url) {
@@ -413,27 +303,18 @@ function PreviewBody({
           title={doc.nombre}
           className="w-full flex-1 border-0"
         />
-
         <div className="flex items-center justify-between px-5 py-2 border-t border-gray-100 bg-white text-xs text-gray-500">
           <span>Página {pdfPage}</span>
-
           <div className="flex gap-1">
             <button
-              onClick={() =>
-                setPdfPage((p) =>
-                  Math.max(1, p - 1)
-                )
-              }
+              onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
               disabled={pdfPage <= 1}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
             >
               <ChevronLeft size={15} />
             </button>
-
             <button
-              onClick={() =>
-                setPdfPage((p) => p + 1)
-              }
+              onClick={() => setPdfPage((p) => p + 1)}
               className="p-1 rounded hover:bg-gray-100"
             >
               <ChevronRight size={15} />
@@ -457,43 +338,21 @@ function PreviewBody({
     )
   }
 
-  // ───────────────── YOUTUBE
-  if (isYoutube && doc.url) {
-    return (
-      <div className="w-full h-full bg-black">
-        <iframe
-          src={youTubeEmbed(doc.url)}
-          title={doc.nombre}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
-    )
-  }
-
   // ───────────────── WORD
-if (isWord && doc.url) {
-  return (
-    <WordViewer url={doc.url} />
-  )
-}
+  if (isWord && doc.url) {
+    return <WordViewer url={doc.url} />
+  }
 
   // ───────────────── EXCEL
   if (isExcel && doc.url) {
-    return (
-      <ExcelViewer url={doc.url} />
-    )
+    return <ExcelViewer url={doc.url} />
   }
 
   // ───────────────── FALLBACK
   return (
     <div className="flex flex-col items-center justify-center gap-3 p-8 text-gray-400">
       <FileText size={40} />
-
-      <p className="text-sm font-medium">
-        No se puede visualizar este archivo.
-      </p>
+      <p className="text-sm font-medium">No se puede visualizar este archivo.</p>
     </div>
   )
 }
@@ -510,40 +369,42 @@ export function FilePreviewContainer({
   onClose,
   embedded = false,
 }: FilePreviewContainerProps) {
-  const [doc, setDoc] =
-    useState<Documento | null>(null)
-
-  const [loading, setLoading] =
-    useState(true)
-
-  const [error, setError] =
-    useState('')
-
-  const [pdfPage, setPdfPage] =
-    useState(1)
+  const [doc, setDoc] = useState<Documento | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [pdfPage, setPdfPage] = useState(1)
 
   useEffect(() => {
-    // URL DIRECTA
+    // ── 1. Prop `url` explícita → siempre directa, sin API
     if (url) {
       setDoc({
         id: 'preview-directo',
-        nombre:
-          nombre ||
-          url.split('/').pop() ||
-          'archivo',
+        nombre: nombre || url.split('/').pop() || 'archivo',
         tipo: tipo || inferTipo(url),
         tamaño: 0,
         url,
       })
-
       setLoading(false)
-
       return
     }
 
-    // API POR ID
     if (id) {
+      // ── 2. `id` es una URL → visualizar directamente, sin API
+      if (isUrl(id)) {
+        setDoc({
+          id: 'preview-directo',
+          nombre: nombre || id.split('/').pop() || 'archivo',
+          tipo: tipo || inferTipo(id),
+          tamaño: 0,
+          url: id,
+        })
+        setLoading(false)
+        return
+      }
+
+      // ── 3. `id` es un ID real → consumir la API
       setLoading(true)
+      setError('')
 
       filesApi
         .obtenerPorId(id)
@@ -552,10 +413,7 @@ export function FilePreviewContainer({
           setLoading(false)
         })
         .catch(() => {
-          setError(
-            'No se pudo cargar el archivo.'
-          )
-
+          setError('No se pudo cargar el archivo.')
           setLoading(false)
         })
     }
@@ -566,29 +424,23 @@ export function FilePreviewContainer({
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#AEEBF2] flex items-center justify-center">
-            <FileText
-              size={15}
-              className="text-[#223740]"
-            />
+          <div className="w-8 h-8 rounded-lg bg-[var(--color-tertiary)] flex items-center justify-center">
+            <FileText size={15} className="text-[var(--color-primary)]" />
           </div>
-
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate text-[#223740]">
+            <p className="text-sm font-semibold truncate text-[var(--color-primary)]">
               {doc?.nombre || 'Archivo'}
             </p>
-
             {doc && (
               <p className="text-[11px] text-gray-400 uppercase">
-                {formatBytes(doc.tamaño)} ·{' '}
-                {doc.tipo}
+                {formatBytes(doc.tamaño)} · {doc.tipo}
               </p>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {doc?.url && (
+          {doc?.url && doc.tipo !== 'youtube' && !isYouTube(doc.url) && (
             <a
               href={doc.url}
               download={doc.nombre}
@@ -597,7 +449,6 @@ export function FilePreviewContainer({
               <Download size={16} />
             </a>
           )}
-
           {!embedded && (
             <button
               onClick={onClose}
@@ -622,7 +473,6 @@ export function FilePreviewContainer({
     </div>
   )
 
-  // EMBEDDED
   if (embedded) {
     return (
       <div className="w-full h-[600px] rounded-xl overflow-hidden border border-gray-200">
@@ -631,19 +481,15 @@ export function FilePreviewContainer({
     )
   }
 
-  // MODAL
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
-        backgroundColor:
-          'rgba(6,10,13,0.7)',
+        backgroundColor: 'rgba(6,10,13,0.7)',
         backdropFilter: 'blur(6px)',
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose()
-        }
+        if (e.target === e.currentTarget) onClose()
       }}
     >
       <div

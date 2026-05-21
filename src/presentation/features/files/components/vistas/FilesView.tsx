@@ -45,7 +45,7 @@ export function FilesView() {
         {/* ── Page header ── */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[#223740]">File Repository</h1>
+            <h1 className="text-xl font-bold text-[var(--color-primary)]">File Repository</h1>
             {!loading && (
               <p className="text-xs text-gray-400 mt-0.5">
                 {documents.length} file{documents.length !== 1 ? 's' : ''}
@@ -58,7 +58,7 @@ export function FilesView() {
         {/* ── Loading spinner ── */}
         {loading && (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-[#AEEBF2] border-t-[#5A878C] animate-spin" />
+            <div className="w-8 h-8 rounded-full border-2 border-[var(--color-tertiary)] border-t-[var(--color-primary)] animate-spin" />
           </div>
         )}
 
@@ -87,8 +87,8 @@ export function FilesView() {
                 {/* Preview panel header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <Eye size={15} className="text-[#5A878C]" />
-                    <span className="text-xs font-semibold text-[#223740] truncate max-w-[200px]">
+                    <Eye size={15} className="text-[var(--color-primary)]" />
+                    <span className="text-xs font-semibold text-[var(--color-primary)] truncate max-w-[200px]">
                       {selectedDoc.nombre}
                     </span>
                   </div>

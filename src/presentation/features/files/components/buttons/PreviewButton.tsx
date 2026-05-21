@@ -2,17 +2,19 @@ import React, { useState } from 'react'
 import { Maximize2, Play } from 'lucide-react'
 import { FilePreviewContainer } from '../vistas/Filepreviewcontainer'
 
-interface PreviewButtonProps {
-  id: string
-  /** Texto del botón. Default: 'Ver' */
+type PreviewButtonProps = {
   label?: string
   /** 'expand' muestra ícono de ampliar, 'play' muestra ícono de reproducir */
   variant?: 'expand' | 'play'
   className?: string
-}
+} & (
+  | { id: string; url?: never }
+  | { url: string; id?: never }
+)
 
 export function PreviewButton({
   id,
+  url,
   label = 'Ver',
   variant = 'expand',
   className = '',
@@ -41,7 +43,9 @@ export function PreviewButton({
       </button>
 
       {open && (
-        <FilePreviewContainer id={id} onClose={() => setOpen(false)} />
+        id
+          ? <FilePreviewContainer id={id} onClose={() => setOpen(false)} />
+          : <FilePreviewContainer url={url!} onClose={() => setOpen(false)} />
       )}
     </>
   )

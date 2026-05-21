@@ -11,9 +11,6 @@ import { FileList } from "../components/FileList";
 import type { Documento } from "../../../../domain/files/Filesapi";
 import { Settings2, Hash, Link2, ChevronDown, ChevronUp } from "lucide-react";
 
-// ─────────────────────────────────────────────
-// Panel de configuración del playground
-// ─────────────────────────────────────────────
 interface PlaygroundConfig {
   demoId: string;
   videoUrl: string;
@@ -30,7 +27,6 @@ function ConfigPanel({
 
   return (
     <div className="rounded-2xl border border-[#5A878C]/30 bg-white shadow-sm overflow-hidden">
-      {/* Header */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
@@ -55,7 +51,6 @@ function ConfigPanel({
 
       {open && (
         <div className="px-5 pb-5 pt-1 grid sm:grid-cols-2 gap-4 border-t border-gray-100">
-          {/* ID del documento */}
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
               <Hash size={11} />
@@ -74,7 +69,6 @@ function ConfigPanel({
             </p>
           </div>
 
-          {/* URL del video */}
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
               <Link2 size={11} />
@@ -95,7 +89,6 @@ function ConfigPanel({
         </div>
       )}
 
-      {/* Valores activos (siempre visible cuando el panel está cerrado) */}
       {!open && (
         <div className="px-5 py-2.5 border-t border-gray-100 bg-gray-50 flex flex-wrap gap-4">
           <span className="text-[11px] text-gray-500 font-mono">
@@ -112,9 +105,6 @@ function ConfigPanel({
   );
 }
 
-// ─────────────────────────────────────────────
-// Section wrapper
-// ─────────────────────────────────────────────
 function Section({
   title,
   code,
@@ -157,6 +147,16 @@ export default function PagePrueba() {
   const handleDeleteUploaded = (id: string) =>
     setUploadedFiles((prev) => prev.filter((d) => d.id !== id));
 
+  // Props para FilePreviewContainer: url si es URL absoluta, id si es ruta relativa
+  const demoPreviewProps = config.demoId.startsWith("http")
+    ? { url: config.demoId }
+    : { id: config.demoId };
+
+  // Props para PreviewButton con videoUrl: siempre es URL
+  const videoPreviewProps = config.videoUrl.startsWith("http")
+    ? { url: config.videoUrl }
+    : { id: config.videoUrl };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -174,26 +174,25 @@ export default function PagePrueba() {
           </p>
         </div>
 
-        {/* ── Panel de configuración ── */}
         <ConfigPanel config={config} onChange={setConfig} />
 
         {/* 1. UploadButton + FileList */}
         <Section
           title="1. UploadButton — Sube archivo a la API y lo agrega al listado"
           code={`import { UploadButton } from '@presentation/features/files/components/buttons/UploadButton'
-            import { FileList }    from '@presentation/features/files/components/FileList'
-            import type { Documento } from '@domain/files/Filesapi'
-            const [archivos, setArchivos] = useState<Documento[]>([])
-            
-            <UploadButton
-             onUploaded={(doc) => setArchivos((prev) => [doc, ...prev])}
-             />
-             
-            <FileList 
+          import { FileList }    from '@presentation/features/files/components/FileList'
+          import type { Documento } from '@domain/files/Filesapi'
+          const [archivos, setArchivos] = useState<Documento[]>([])
+
+          <UploadButton
+            onUploaded={(doc) => setArchivos((prev) => [doc, ...prev])}
+          />
+
+          <FileList 
             documents={archivos} 
             heading="Archivos subidos en esta sesión" 
             onDeleted={(id) => setArchivos((prev) => prev.filter((d) => d.id !== id))}
-            />`}
+          />`}
         >
           <div className="w-full space-y-4">
             <UploadButton
@@ -217,11 +216,11 @@ export default function PagePrueba() {
         <Section
           title="2. DownloadButton — Descarga un archivo por ID"
           code={`import { DownloadButton } from '@presentation/features/files/components/buttons/DownloadButton'
-            <DownloadButton id="${config.demoId}" fileName="guia.pdf" /> 
-            // Props: 
-            // id:         string   — ID del documento (requerido) 
-            // fileName?:  string   — nombre sugerido para la descarga
-            // className?: string`}
+          <DownloadButton id="${config.demoId}" fileName="guia.pdf" />
+          // Props:
+          // id:         string   — ID del documento (requerido)
+          // fileName?:  string   — nombre sugerido para la descarga
+          // className?: string`}
         >
           <DownloadButton id={config.demoId} fileName="Guía_Metodología.pdf" />
         </Section>
@@ -229,14 +228,14 @@ export default function PagePrueba() {
         {/* 3. DeleteButton */}
         <Section
           title="3. DeleteButton — Elimina un archivo con confirmación doble"
-          code={`import { DeleteButton } from '@presentation/features/files/components/buttons/DeleteButton' 
-            <DeleteButton id="${config.demoId}" onDeleted={(id) => console.log('Eliminado:', id)} /> 
-            <DeleteButton id="${config.demoId}" onDeleted={handleDeleted} iconOnly />
-            // Props: 
-            // id:          string                — ID del documento (requerido)
-            // onDeleted?:  (id: string) => void  — callback tras eliminar exitosamente
-            // iconOnly?:   boolean               — muestra solo el ícono de papelera
-            // className?:  string`}
+          code={`import { DeleteButton } from '@presentation/features/files/components/buttons/DeleteButton'
+          <DeleteButton id="${config.demoId}" onDeleted={(id) => console.log('Eliminado:', id)} />
+          <DeleteButton id="${config.demoId}" onDeleted={handleDeleted} iconOnly />
+          // Props:
+          // id:          string                — ID del documento (requerido)
+          // onDeleted?:  (id: string) => void  — callback tras eliminar exitosamente
+          // iconOnly?:   boolean               — muestra solo el ícono de papelera
+          // className?:  string`}
         >
           <DeleteButton
             id={config.demoId}
@@ -252,17 +251,22 @@ export default function PagePrueba() {
         {/* 4. PreviewButton */}
         <Section
           title="4. PreviewButton — Abre modal de previsualización"
-          code={`import { PreviewButton } from '@presentation/features/files/components/buttons/PreviewButton' 
+          code={`import { PreviewButton } from '@presentation/features/files/components/buttons/PreviewButton'
+          // Con ID de documento (consulta la API):
           <PreviewButton id="${config.demoId}" label="Ver" variant="expand" />
-          <PreviewButton id="${config.videoUrl}" label="Reproducir" variant="play" />
+
+          // Con URL directa (no consulta la API):
+          <PreviewButton url="${config.videoUrl}" label="Reproducir" variant="play" />
+
           // Props:
-          // id:        string              — ID del documento o URL de video (requerido)
+          // id?:       string              — ID del documento (exclusivo con url)
+          // url?:      string              — URL directa del recurso (exclusivo con id)
           // label?:    string              — texto del botón. Default: 'Ver'
           // variant?:  'expand' | 'play'  — ícono. Default: 'expand'
           // className?: string`}
         >
           <PreviewButton id={config.demoId} label="Ver" variant="expand" />
-          <PreviewButton id={config.videoUrl} label="Reproducir" variant="play" />
+          <PreviewButton url={config.videoUrl} label="Reproducir" variant="play" />
         </Section>
 
         {/* 5. UploadModal */}
@@ -271,17 +275,17 @@ export default function PagePrueba() {
           code={`import { UploadModal } from '@presentation/features/files/components/buttons/Uploadmodal'
           const [open, setOpen] = useState(false)
           <button onClick={() => setOpen(true)}>Abrir modal</button>
-          <UploadModal 
-            open={open} 
-            onClose={() => setOpen(false)} 
-            onUploaded={(doc) => { 
+          <UploadModal
+            open={open}
+            onClose={() => setOpen(false)}
+            onUploaded={(doc) => {
               setOpen(false)
               setArchivos((prev) => [doc, ...prev])
             }}
           />
           // Props:
-          // open:        boolean                   — controla visibilidad (requerido) 
-          // onClose:     () => void                — se llama al cerrar (requerido) 
+          // open:        boolean                   — controla visibilidad (requerido)
+          // onClose:     () => void                — se llama al cerrar (requerido)
           // onUploaded?: (doc: Documento) => void  — callback con el doc subido`}
         >
           <button
@@ -305,16 +309,17 @@ export default function PagePrueba() {
           title="6. FilePreviewContainer — Modal de previsualización"
           code={`import { FilePreviewContainer } from '@presentation/features/files/components/vistas/Filepreviewcontainer'
           const [open, setOpen] = useState(false)
-          {open && (
-            <FilePreviewContainer 
-              id="${config.demoId}" 
-              onClose={() => setOpen(false)}
-            />
-          )}
-          // Soporta: PDF (iframe), imágenes, MP4, YouTube, Excel (Office Online)
-          // Props:
-          // id:        string     — ID del documento (requerido) 
-          // onClose:   () => void — se llama al cerrar (requerido) 
+
+          // Con ID (consulta la API):
+          {open && <FilePreviewContainer id="${config.demoId}" onClose={() => setOpen(false)} />}
+
+          // Con URL directa (no consulta la API):
+          {open && <FilePreviewContainer url="${config.videoUrl}" onClose={() => setOpen(false)} />}
+
+          // Props (se requiere id O url, nunca los dos):
+          // id?:       string     — ID del documento → consulta filesApi.obtenerPorId
+          // url?:      string     — URL directa → visualiza sin llamar a la API
+          // onClose:   () => void — se llama al cerrar (requerido)
           // embedded?: boolean    — modo panel inline sin backdrop. Default: false`}
         >
           <button
@@ -325,7 +330,7 @@ export default function PagePrueba() {
           </button>
           {previewModalOpen && (
             <FilePreviewContainer
-              id={config.demoId}
+              {...demoPreviewProps}
               onClose={() => setPreviewModalOpen(false)}
             />
           )}
@@ -334,14 +339,18 @@ export default function PagePrueba() {
         {/* 7. FilePreviewContainer embedded */}
         <Section
           title="7. FilePreviewContainer embedded — Panel inline sin modal"
-          code={`<FilePreviewContainer 
-            id="${config.demoId}" 
-            onClose={() => setPreviewId(null)} 
-            embedded
-          />`}
+          code={`// Con ID:
+          <FilePreviewContainer id="${config.demoId}" onClose={() => {}} embedded />
+                    
+          // Con URL:
+          <FilePreviewContainer url="${config.videoUrl}" onClose={() => {}} embedded />`}
         >
           <div className="w-full rounded-xl overflow-hidden border border-gray-200">
-            <FilePreviewContainer id={config.demoId} onClose={() => {}} embedded />
+            <FilePreviewContainer
+              {...demoPreviewProps}
+              onClose={() => {}}
+              embedded
+            />
           </div>
         </Section>
 
