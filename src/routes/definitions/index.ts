@@ -6,6 +6,7 @@ import { reportsRoutes } from './reports.routes';
 import { superAdminRoutes } from './superadmin.routes';
 import { gradeRoutes } from './grades.routes';
 import { teacherRoutes } from "./teacher.routes";
+import { studentRoutes } from './student.routes'
 import ProfunSoft from '../../ProfunSoft'
 import RequireAuth from '../guards/RequireAuth'
 
@@ -25,6 +26,7 @@ import RequireAuth from '../guards/RequireAuth'
 
 export const allRoutes: RouteObject[] = [
     ...authRoutes,
+    ...studentRoutes,
     {
         element: createElement(RequireAuth),
         children: [

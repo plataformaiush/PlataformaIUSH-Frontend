@@ -1,37 +1,23 @@
-import {useMemo} from 'react'
+import {useMemo, useState, useEffect} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {
     ArrowRight, Target, Trophy,
-    Play, GraduationCap, Wrench, CheckCircle2,
+    Play, GraduationCap, CheckCircle2, Loader,
 } from 'lucide-react'
-import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
-import {EmptyCoursesState, DEMO_COURSES} from './components/EmptyCoursesState'
+import {EmptyCoursesState} from './components/EmptyCoursesState'
+import {studentService, type MisCursos} from '../services/studentService'
 
-const STUDENT_NAME = 'Ana'
 const STREAK_DAYS = 14
 const WEEKLY_DONE = 4
 const WEEKLY_TOTAL = 5
 const CIRC = 2 * Math.PI * 40   // ≈ 251.3
 
-type CourseType = 'Curso' | 'Taller'
 type CourseStatus = 'locked' | 'progress' | 'approved'
 
-interface CourseMeta {
-    type: CourseType;
-    instructor: string;
-    module: string
+interface EnrichedCourse extends MisCursos {
+    displayTitle: string
+    displayDescription: string
 }
-
-const COURSE_META: Record<string, CourseMeta> = {
-    '1': {type: 'Curso', instructor: 'Carlos Mendez', module: 'Módulo 3: Funciones'},
-    '2': {type: 'Taller', instructor: 'Laura Ramírez', module: 'Módulo 5: Prototipado'},
-    '3': {type: 'Curso', instructor: 'Diego Torres', module: 'Módulo 2: JOIN y GROUP BY'},
-    '4': {type: 'Curso', instructor: 'Ana Martínez', module: 'Módulo 1: Fundamentos'},
-    '5': {type: 'Taller', instructor: 'Paula Gómez', module: 'Módulo 4: Analíticas'},
-    '6': {type: 'Curso', instructor: 'Sergio Ruiz', module: 'Módulo 3: Regresión'},
-}
-
-const DEFAULT_META: CourseMeta = {type: 'Curso', instructor: 'Instructor', module: 'Módulo 1'}
 
 function statusOf(progress: number): CourseStatus {
     if (progress === 0) return 'locked'
@@ -44,28 +30,81 @@ function statusOf(progress: number): CourseStatus {
 ══════════════════════════════════════════════════════════════════════ */
 export function StudentDashboardPage() {
     const navigate = useNavigate()
-    const enrolledCourses = useStudentProgressStore(s => s.enrolledCourses)
-    const progressMap = useStudentProgressStore(s => s.progress)
-    const enrollCourses = useStudentProgressStore(s => s.enrollCourses)
 
-    const hasEnrolled = enrolledCourses.length > 0 || Object.keys(progressMap).length > 0
+    const [studentName, setStudentName] = useState<string>('Estudiante')
+    const [enrichedCourses, setEnrichedCourses] = useState<EnrichedCourse[]>([])
+    const [isLoadingCourses, setIsLoadingCourses] = useState(false)
 
-    const courses = enrolledCourses.length > 0
-        ? enrolledCourses
-        : hasEnrolled ? DEMO_COURSES : []
+    // Obtener nombre del estudiante desde localStorage
+    useEffect(() => {
+        const userData = localStorage.getItem('user')
+        if (userData) {
+            try {
+                const user = JSON.parse(userData)
+                setStudentName(user.nombre || user.name || 'Estudiante')
+            } catch (e) {
+                console.error('Error parsing user from localStorage:', e)
+            }
+        }
+    }, [])
+
+    // Cargar todos los cursos desde la API
+    useEffect(() => {
+        const loadCourses = async () => {
+            setIsLoadingCourses(true)
+            try {
+                const cursos = await studentService.getAllCursos()
+
+                const normalizedCourses = cursos.map((curso) => ({
+                    ...curso,
+                    displayTitle: curso.titulo,
+                    displayDescription: curso.descripcion || 'Sin descripción disponible',
+                }))
+
+                setEnrichedCourses(normalizedCourses)
+            } catch (err) {
+                console.error('Error loading courses:', err)
+                setEnrichedCourses([])
+            } finally {
+                setIsLoadingCourses(false)
+            }
+        }
+
+        loadCourses()
+    }, [])
+
+    // Solo usamos los cursos provenientes de la base de datos
+    const courses = enrichedCourses
+
+    const hasEnrolled = courses.length > 0
 
     const inProgress = useMemo(() =>
             [...courses]
-                .filter(c => c.progress > 0 && c.progress < 100)
-                .sort((a, b) => b.progress - a.progress)[0] ?? null
+                .filter(c => c.porcentajeProgreso > 0 && c.porcentajeProgreso < 100)
+                .sort((a, b) => b.porcentajeProgreso - a.porcentajeProgreso)[0] ?? null
         , [courses])
 
-    const goToCourse = (id: string) => navigate(`/student/courses/${id}`)
+    const goToCourse = (id: string) => navigate(`/student/curso/${id}`)
+
+    if (isLoadingCourses) {
+        return (
+            <div className="flex items-center justify-center px-6 md:px-8 py-16 md:py-24">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader size={32} className="animate-spin text-secondary"/>
+                    <p className="text-sm text-secondary">Cargando tus cursos...</p>
+                </div>
+            </div>
+        )
+    }
 
     if (!hasEnrolled) {
         return (
             <div className="px-6 md:px-8 py-6 md:py-8">
-                <EmptyCoursesState onEnroll={() => enrollCourses(DEMO_COURSES)}/>
+                {/*
+                  Como ya no usamos el store global para datos falsos,
+                  aquí deberías redirigir a un catálogo o llamar a tu API real de matriculación.
+                */}
+                <EmptyCoursesState onEnroll={() => console.log("Aquí debes implementar la lógica hacia la API para matricular un curso")} />
             </div>
         )
     }
@@ -76,10 +115,10 @@ export function StudentDashboardPage() {
             {/* Fila 1: Hero + Weekly Goal */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
                 <HeroBanner
-                    name={STUDENT_NAME}
+                    name={studentName}
                     streak={STREAK_DAYS}
-                    courseName={inProgress?.title ?? null}
-                    onContinue={() => inProgress && goToCourse(inProgress.id)}
+                    courseName={inProgress?.displayTitle ?? null}
+                    onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
                 />
                 <WeeklyGoalCard done={WEEKLY_DONE} total={WEEKLY_TOTAL}/>
             </div>
@@ -89,9 +128,9 @@ export function StudentDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <InProgressCard
                         course={inProgress}
-                        onClick={() => goToCourse(inProgress.id)}
+                        onClick={() => goToCourse(inProgress.idCurso)}
                     />
-                    <UpNextCard onClick={() => goToCourse(inProgress.id)}/>
+                    <UpNextCard onClick={() => goToCourse(inProgress.idCurso)}/>
                 </div>
             )}
 
@@ -198,11 +237,9 @@ function InProgressCard({
                             course,
                             onClick,
                         }: {
-    course: typeof DEMO_COURSES[0]
+    course: EnrichedCourse
     onClick: () => void
 }) {
-    const meta = COURSE_META[course.id] ?? DEFAULT_META
-
     return (
         <button
             onClick={onClick}
@@ -214,20 +251,20 @@ function InProgressCard({
         En progreso
       </span>
 
-            <h3 className="text-xl font-bold text-primary leading-snug">{course.title}</h3>
+            <h3 className="text-xl font-bold text-primary leading-snug">{course.displayTitle}</h3>
             <p className="text-sm text-secondary leading-relaxed line-clamp-2">
-                Domina los conceptos y herramientas para avanzar en tu carrera profesional.
+                {course.displayDescription || 'Domina los conceptos y herramientas para avanzar en tu carrera profesional.'}
             </p>
 
             <div className="mt-auto">
                 <div className="flex justify-between items-center text-xs font-medium text-secondary mb-1.5">
-                    <span>{meta.module}</span>
-                    <span>{course.progress}%</span>
+                    <span>Progreso</span>
+                    <span>{course.porcentajeProgreso}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
                     <div
                         className="h-full rounded-full bg-secondary transition-all duration-700"
-                        style={{width: `${course.progress}%`}}
+                        style={{width: `${course.porcentajeProgreso}%`}}
                     />
                 </div>
             </div>
@@ -271,7 +308,7 @@ function LearningPathSection({
                                  courses,
                                  onCourseClick,
                              }: {
-    courses: typeof DEMO_COURSES
+    courses: EnrichedCourse[]
     onCourseClick: (id: string) => void
 }) {
     return (
@@ -286,9 +323,9 @@ function LearningPathSection({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map(course => (
                     <CourseGridCard
-                        key={course.id}
+                        key={course.idCurso}
                         course={course}
-                        onClick={() => onCourseClick(course.id)}
+                        onClick={() => onCourseClick(course.idCurso)}
                     />
                 ))}
             </div>
@@ -301,37 +338,42 @@ function CourseGridCard({
                             course,
                             onClick,
                         }: {
-    course: typeof DEMO_COURSES[0]
+    course: EnrichedCourse
     onClick: () => void
 }) {
-    const meta = COURSE_META[course.id] ?? DEFAULT_META
-    const status = statusOf(course.progress)
+    const status = statusOf(course.porcentajeProgreso)
 
     return (
-        <button
+        <div
             onClick={onClick}
             className="bg-surface rounded-2xl overflow-hidden border border-mid/20
-                 flex flex-col text-left hover:shadow-md transition-all duration-200 w-full"
+                 flex flex-col text-left hover:shadow-md transition-all duration-200 w-full cursor-pointer"
         >
             {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-primary/10">
-                <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                />
+                {course.thumbnail ? (
+                    <img
+                        src={course.thumbnail}
+                        alt={course.displayTitle}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-primary/20">
+                        <GraduationCap size={32} className="text-primary/50" />
+                    </div>
+                )}
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/90 backdrop-blur-sm
                         text-[11px] font-semibold text-primary">
-                    {meta.type === 'Taller' ? <Wrench size={12}/> : <GraduationCap size={12}/>}
-                    {meta.type}
+                    <GraduationCap size={12}/>
+                    Curso
                 </div>
             </div>
 
             {/* Cuerpo */}
             <div className="p-4 flex flex-col gap-1.5 flex-1">
-                <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.title}</p>
-                <p className="text-xs text-secondary">Instructor: {meta.instructor}</p>
+                <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.displayTitle}</p>
+                <p className="text-xs text-secondary line-clamp-2">{course.displayDescription}</p>
 
                 {/* Footer estado con botones dinámicos */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
@@ -350,11 +392,11 @@ function CourseGridCard({
                     {status === 'progress' && (
                         <>
                             <div className="w-full">
-                                <p className="text-[11px] font-semibold text-secondary mb-1">{course.progress}%</p>
+                                <p className="text-[11px] font-semibold text-secondary mb-1">{course.porcentajeProgreso}%</p>
                                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
                                     <div
                                         className="h-full rounded-full bg-secondary transition-all duration-700"
-                                        style={{width: `${course.progress}%`}}
+                                        style={{width: `${course.porcentajeProgreso}%`}}
                                     />
                                 </div>
                             </div>
@@ -386,6 +428,6 @@ function CourseGridCard({
                     )}
                 </div>
             </div>
-        </button>
+        </div>
     )
 }

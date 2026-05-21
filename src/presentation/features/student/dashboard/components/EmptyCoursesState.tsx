@@ -1,11 +1,12 @@
 import { BookOpen, Compass, Sparkles } from 'lucide-react'
-import type { EnrolledCourse } from '../../../../../../../PlataformaIUSH-Frontend/src/domain/student/types'
+import type { EnrolledCourse } from '@domain/student/types'
 
 /* Cursos de demo que se cargan al hacer clic en "Explorar catálogo" */
 export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '1',
     title: 'Introducción a la Programación con Python',
+    description: 'Aprende los fundamentos de la programación con Python. Incluye variables, funciones y estructuras de datos básicas.',
     thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&q=80',
     progress: 65,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
@@ -13,6 +14,7 @@ export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '2',
     title: 'Diseño UX/UI: Principios Fundamentales',
+    description: 'Domina los principios esenciales del diseño UX/UI. Aprende sobre usabilidad, accesibilidad y mejores prácticas de diseño.',
     thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80',
     progress: 100,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
@@ -20,6 +22,7 @@ export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '3',
     title: 'Bases de Datos Relacionales con SQL',
+    description: 'Aprende SQL desde cero. Trabaja con tablas, consultas complejas y optimización de bases de datos.',
     thumbnail: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&q=80',
     progress: 30,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
@@ -27,6 +30,7 @@ export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '4',
     title: 'Desarrollo Web con React y TypeScript',
+    description: 'Crea aplicaciones modernas con React. Aprende TypeScript, hooks, state management y mejores prácticas.',
     thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80',
     progress: 0,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
@@ -34,6 +38,7 @@ export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '5',
     title: 'Marketing Digital y Redes Sociales',
+    description: 'Estrategias de marketing digital efectivas. Gestión de redes sociales, marketing de contenidos y análisis de datos.',
     thumbnail: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80',
     progress: 85,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
@@ -41,6 +46,7 @@ export const DEMO_COURSES: EnrolledCourse[] = [
   {
     id: '6',
     title: 'Estadística Aplicada para Negocios',
+    description: 'Aprende estadística aplicada para tomar decisiones basadas en datos. Análisis, visualización e interpretación.',
     thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
     progress: 45,
     lastAccessedAt: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
