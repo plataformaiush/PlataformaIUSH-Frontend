@@ -5,6 +5,7 @@ import ProfunSoft from '../../ProfunSoft'
 import RequireAuth from '../guards/RequireAuth'
 import { adminRoutes } from './admin.routes'
 import { authRoutes } from './auth.routes'
+import { coursesRoutes } from './courses.routes'
 import { gradeRoutes } from './grades.routes'
 import { reportsRoutes } from './reports.routes'
 import { superAdminRoutes } from './superadmin.routes'
@@ -30,6 +31,7 @@ export const allRoutes: RouteObject[] = [
         children: [
             ...vistaEstudiantesRutas, // Equipo 7
             ...adminRoutes, // Equipo 4
+            ...coursesRoutes, // Equipo 1
             {
                 path: '/',
                 element: createElement(ProfunSoft),
@@ -42,7 +44,6 @@ export const allRoutes: RouteObject[] = [
             },
         ],
     },
-    // Equipo 1 (Cursos): ...plantillaRoutes,
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
