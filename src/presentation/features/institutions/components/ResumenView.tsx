@@ -1,9 +1,10 @@
 const comparativo = [
   { metrica: 'Sesiones totales', actual: '12,480', anterior: '10,200', delta: '+22%', up: true },
-  { metrica: 'Tiempo promedio', actual: '28 min', anterior: '24 min', delta: '+17%', up: true },
-  { metrica: 'Contenidos vistos', actual: '48,300', anterior: '41,000', delta: '+18%', up: true },
-  { metrica: 'Certificados', actual: '142', anterior: '98', delta: '+45%', up: true },
+  { metrica: 'Tiempo promedio de terminación de cursos', actual: '28 min', anterior: '24 min', delta: '+17%', up: true },
+  { metrica: 'Contenidos completados', actual: '48,300', anterior: '41,000', delta: '+18%', up: true },
+  { metrica: 'Certificados Emitidos', actual: '142', anterior: '98', delta: '+45%', up: true },
   { metrica: 'Nuevos usuarios', actual: '54', anterior: '61', delta: '-11%', up: false },
+  { metrica: 'Cursos sin inscripciones', actual: '3', anterior: '1', delta: '+200%', up: false },
 ]
 
 const sesiones = [
@@ -97,7 +98,7 @@ export function ResumenView() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {[
           { l: 'Sesiones este mes', v: '12,480', delta: '+22%', up: true },
-          { l: 'Tiempo promedio', v: '28 min', delta: '+17%', up: true },
+          { l: 'Tiempo promedio de terminación de cursos', v: '28 min', delta: '+17%', up: true },
           { l: 'Certificados emitidos', v: '142', delta: '+45%', up: true },
         ].map((s) => (
           <div key={s.l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"

@@ -1,12 +1,15 @@
-﻿import { RouteObject } from 'react-router-dom';
-import { createElement } from 'react';
-import { authRoutes } from './auth.routes';
-import { vistaEstudiantesRutas } from './vista-estudiante.routes';
-import { reportsRoutes } from './reports.routes';
-import { superAdminRoutes } from './superadmin.routes';
-import { adminRoutes } from './admin.routes';
-import { gradeRoutes } from './grades.routes';
-import ProfunSoft from '../../ProfunSoft';
+﻿import { createElement } from 'react'
+import { type RouteObject } from 'react-router-dom'
+
+import ProfunSoft from '../../ProfunSoft'
+import RequireAuth from '../guards/RequireAuth'
+import { adminRoutes } from './admin.routes'
+import { authRoutes } from './auth.routes'
+import { gradeRoutes } from './grades.routes'
+import { reportsRoutes } from './reports.routes'
+import { superAdminRoutes } from './superadmin.routes'
+import { teacherRoutes } from './teacher.routes.tsx'
+import { vistaEstudiantesRutas } from './vista-estudiante.routes'
 
 /**
  * Agregador central de rutas
@@ -21,22 +24,27 @@ import ProfunSoft from '../../ProfunSoft';
  */
 
 export const allRoutes: RouteObject[] = [
-    ...authRoutes,           // Equipo 1
-    ...vistaEstudiantesRutas, // Equipo 7
+    ...authRoutes, // Equipo 1
     {
-        path: '/',
-        element: createElement(ProfunSoft),
+        element: createElement(RequireAuth),
         children: [
-            ...reportsRoutes,     // Equipo 9 (Analytics y Reportes)
-            ...superAdminRoutes,  // Equipo 3 (Institución)
-            ...gradeRoutes,       // Equipo 5 (Notas)
-            ...adminRoutes,       // Equipo 4 (Admin)
+            ...vistaEstudiantesRutas, // Equipo 7
+            ...adminRoutes, // Equipo 4
+            {
+                path: '/',
+                element: createElement(ProfunSoft),
+                children: [
+                    ...teacherRoutes, // Equipo 6
+                    ...reportsRoutes, // Equipo 9
+                    ...superAdminRoutes, // Equipo 3
+                    ...gradeRoutes, // Equipo 5
+                ],
+            },
         ],
     },
     // Equipo 1 (Cursos): ...plantillaRoutes,
     // Equipo 2 (Archivos): ...fileRoutes,
     // Equipo 3 (Institución): ...institutionRoutes,
-    // Equipo 6 (Docente): ...teacherRoutes,
     // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
     // Equipo 9 (Analytics): ...analyticsRoutes,
-];
+]

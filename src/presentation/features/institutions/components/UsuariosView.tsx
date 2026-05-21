@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useUsersViewPreference } from '../../../../context/UsersViewPreferenceContext'
 
 const allUsers = [
   { nombre: 'Ana García', rol: 'Estudiante', estado: 'Activo', acceso: 'Hoy, 10:32' },
@@ -24,12 +25,29 @@ const PER_PAGE = 5
 export function UsuariosView() {
   const [search, setSearch] = useState('')
   const [rolFilter, setRolFilter] = useState('Todos')
+  const [filtroEstado, setFiltroEstado] = useState<string>('')
   const [page, setPage] = useState(1)
+  const { viewType, setViewType } = useUsersViewPreference()
+
+  // Configuración de filtros
+  const roleFilters = [
+    { id: 'Todos', label: 'Todos' },
+    { id: 'Estudiante', label: 'Estudiantes' },
+    { id: 'Docente', label: 'Docentes' },
+    { id: 'Admin', label: 'Administradores' }
+  ]
+
+  const statusFilters = [
+    { id: 'Todos', label: 'Todos' },
+    { id: 'Activo', label: 'Activo' },
+    { id: 'Inactivo', label: 'Inactivo' }
+  ]
 
   const filtered = allUsers.filter((u) => {
     const matchSearch = u.nombre.toLowerCase().includes(search.toLowerCase())
     const matchRol = rolFilter === 'Todos' || u.rol === rolFilter
-    return matchSearch && matchRol
+    const matchEstado = filtroEstado === '' || u.estado === filtroEstado
+    return matchSearch && matchRol && matchEstado
   })
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
@@ -37,13 +55,27 @@ export function UsuariosView() {
 
   return (
     <div className="p-6 space-y-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div>
-        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Usuarios</h1>
-        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>1,332 usuarios registrados</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Usuarios</h1>
+          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>1,332 usuarios registrados</p>
+        </div>
+        <button
+          onClick={() => setViewType(viewType === 'original' ? 'management' : 'original')}
+          className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+          style={{
+            backgroundColor: 'var(--color-primary)',
+            color: 'white',
+            borderColor: 'var(--color-primary)'
+          }}
+          title={`Cambiar a vista ${viewType === 'original' ? 'de gestión' : 'original'}`}
+        >
+          Cambiar Vista
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {[['Total', '1,332'], ['Estudiantes', '1,284'], ['Docentes', '48']].map(([l, v]) => (
+        {[['Usuarios activos', '1,332'], ['Estudiantes', '1,284'], ['Docentes', '48']].map(([l, v]) => (
           <div key={l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
             style={{
               background: 'var(--color-muted)',
@@ -86,22 +118,46 @@ export function UsuariosView() {
               '--tw-ring-color': 'var(--color-primary)'
             } as React.CSSProperties}
           />
-          <div className="flex gap-1 flex-wrap mt-4 mb-6">
-            {['Todos', 'Estudiante', 'Docente'].map((f) => (
+          <div className="flex gap-2 flex-wrap mt-4 mb-4">
+            {roleFilters.map((filter) => (
               <button
-                key={f}
-                onClick={() => { setRolFilter(f); setPage(1) }}
-                className="text-xs px-3 py-2 rounded-lg border transition-all flex-1 md:flex-none"
-                style={rolFilter === f ? {
+                key={filter.id}
+                onClick={() => { setRolFilter(filter.id); setPage(1) }}
+                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
+                style={(rolFilter === filter.id) ? {
                   backgroundColor: 'var(--color-primary)',
                   borderColor: 'var(--color-primary)',
-                  color: 'white'
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                 } : {
                   borderColor: 'var(--color-border)',
-                  color: 'var(--sa-muted)'
+                  color: 'var(--color-muted-foreground)',
+                  backgroundColor: 'var(--color-input)'
                 }}
               >
-                {f}
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 flex-wrap mb-6">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setFiltroEstado(filter.id === 'Todos' ? '' : filter.id); setPage(1) }}
+                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
+                style={((filtroEstado === '' && filter.id === 'Todos') || (filtroEstado === filter.id)) ? {
+                  backgroundColor: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                } : {
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-muted-foreground)',
+                  backgroundColor: 'var(--color-input)'
+                }}
+              >
+                {filter.label}
               </button>
             ))}
           </div>

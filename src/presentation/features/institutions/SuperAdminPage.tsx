@@ -1,25 +1,28 @@
 import { JSX, useEffect } from 'react'
 import { DashboardView } from './components/DashboardView'
-import { UsuariosView } from './components/UsuariosView'
 import { CursosView } from './components/CursosView'
 import { ResumenView } from './components/ResumenView'
 import { PersonalizacionView } from './components/PersonalizacionView'
+import { UsuariosView } from './components/UsuariosView'
+import UserManagementPage from '../student/auth/pages/UserManagementPage'
+import { useUsersViewPreference } from '../../../context/UsersViewPreferenceContext'
 import { institutionService } from '../../../domain/institution/institutionService'
 import { institutionStorageService } from '../../../domain/institution/institutionStorageService'
 import { useLocation } from 'react-router-dom'
 
 type Page = 'dashboard' | 'reportes' | 'usuarios' | 'cursos' | 'personalizacion'
 
-const VIEWS: Record<Page, JSX.Element> = {
-  dashboard: <DashboardView />,
-  reportes: <ResumenView />,
-  usuarios: <UsuariosView />,
-  cursos: <CursosView />,
-  personalizacion: <PersonalizacionView />,
-}
-
 export function SuperAdminPage() {
   const location = useLocation()
+  const { viewType } = useUsersViewPreference()
+
+  const VIEWS: Record<Page, JSX.Element> = {
+    dashboard: <DashboardView />,
+    reportes: <ResumenView />,
+    usuarios: viewType === 'original' ? <UsuariosView /> : <UserManagementPage />,
+    cursos: <CursosView />,
+    personalizacion: <PersonalizacionView />,
+  }
 
   useEffect(() => {
     institutionService
