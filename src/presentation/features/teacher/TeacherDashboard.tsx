@@ -23,6 +23,41 @@ import { TeacherMetricCard } from "./components/TeacherMetricCard";
 import { TeacherRecentEnrollmentCard } from "./components/TeacherRecentEnrollmentCard";
 import { useTeacherStore } from "./services/useTeacherStore";
 
+function getStoredTeacherName() {
+  try {
+    const rawUser = localStorage.getItem("user");
+
+    if (!rawUser) return "";
+
+    const user = JSON.parse(rawUser) as {
+      nombre?: string;
+      name?: string;
+      fullName?: string;
+      correo?: string;
+      email?: string;
+    };
+
+    return (
+      user.nombre ||
+      user.name ||
+      user.fullName ||
+      user.correo ||
+      user.email ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+function getDisplayTeacherName(endpointName?: string) {
+  if (endpointName && endpointName.trim() && endpointName !== "Docente") {
+    return endpointName;
+  }
+
+  return getStoredTeacherName() || "docente";
+}
+
 function CourseSection({
   title,
   subtitle,
@@ -41,27 +76,27 @@ function CourseSection({
   variant?: "creation" | "enrolled" | "low" | "completed";
 }) {
   return (
-    <section className="rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-6 shadow-[0_18px_38px_rgba(22,55,68,0.08)]">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-[32px] border border-[var(--teacher-border)] bg-[var(--teacher-card)] p-4 shadow-[0_18px_38px_rgba(22,55,68,0.08)] sm:p-6">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--teacher-soft)] text-[var(--teacher-accent)]">
           {icon}
         </div>
 
-        <div>
+        <div className="min-w-0 max-w-full">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--teacher-accent)]">
             Dashboard docente
           </p>
-          <h2 className="mt-1 text-2xl font-black text-[var(--teacher-text)]">
+          <h2 className="mt-1 break-words text-xl font-black text-[var(--teacher-text)] sm:text-2xl">
             {title}
           </h2>
-          <p className="mt-1 text-sm font-medium text-[var(--teacher-muted)]">
+          <p className="mt-1 break-words text-sm font-medium text-[var(--teacher-muted)]">
             {subtitle}
           </p>
         </div>
       </div>
 
       {courses.length > 0 ? (
-        <div className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 2xl:grid-cols-2 [&>*]:w-full">
           {courses.map((course) => (
             <TeacherCourseInsightCard
               key={course.id}
@@ -129,6 +164,7 @@ export default function TeacherDashboard() {
 
   const teacher = dashboard?.teacher;
   const totals = dashboard?.totals;
+  const teacherName = getDisplayTeacherName(teacher?.name);
 
   const createCourseUrl = dashboard?.quickActions.createCourseUrl || "/courses/new";
   const myCoursesUrl = dashboard?.quickActions.coursesUrl || "/courses";
@@ -148,9 +184,7 @@ export default function TeacherDashboard() {
               </div>
 
               <h1 className="text-4xl font-black tracking-tight md:text-5xl">
-                {teacher?.name
-                  ? `Bienvenid@, ${teacher.name}`
-                  : "Bienvenid@, docente"}
+                  Bienvenid@, {teacherName}
               </h1>
 
               <p className="mt-4 max-w-xl text-base font-medium leading-7 text-[var(--teacher-text-on-dark)] opacity-80">
@@ -357,7 +391,7 @@ export default function TeacherDashboard() {
               )}
             </section>
 
-            <section className="rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] to-[var(--teacher-secondary)] p-6 text-[var(--teacher-text-on-dark)] shadow-[0_18px_38px_rgba(22,55,68,0.18)]">
+            {/*<section className="rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] to-[var(--teacher-secondary)] p-6 text-[var(--teacher-text-on-dark)] shadow-[0_18px_38px_rgba(22,55,68,0.18)]">
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--teacher-text-on-dark)] opacity-70">
@@ -387,7 +421,7 @@ export default function TeacherDashboard() {
                   Actualizar datos
                 </button>
               </div>
-            </section>
+            </section>*/}
           </>
         ) : null}
 
