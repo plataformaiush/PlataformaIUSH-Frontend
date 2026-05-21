@@ -76,10 +76,10 @@ export function StudentStatsBar({ stats }: StudentStatsBarProps) {
         {/* Cursos completados */}
         <div className="flex items-center gap-3 p-4 rounded-2xl
                         bg-surface border border-mid/20 shadow-sm">
-          <Ring
-            pct={completionPct}
-            color="#223740"
-            icon={<BookCheck size={16} className="text-primary" />}
+         <Ring
+          pct={completionPct}
+          color="var(--color-primary)"
+          icon={<BookCheck size={16} className="text-primary" />}
           />
           <div className="min-w-0">
             <p className="text-xl font-black text-primary leading-none">
@@ -99,9 +99,9 @@ export function StudentStatsBar({ stats }: StudentStatsBarProps) {
                         bg-surface border border-mid/20 shadow-sm">
           <Ring
             pct={stats.avgProgress}
-            color="#58838C"
+            color="var(--color-secondary)"
             icon={<TrendingUp size={16} className="text-secondary" />}
-          />
+            />
           <div className="min-w-0">
             <p className="text-xl font-black text-primary leading-none">
               {stats.avgProgress}

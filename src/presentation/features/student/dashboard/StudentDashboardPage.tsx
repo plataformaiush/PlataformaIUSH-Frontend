@@ -4,7 +4,7 @@ import {
     ArrowRight, Target, Trophy,
     Play, GraduationCap, Wrench, CheckCircle2,
 } from 'lucide-react'
-import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
+import {useStudentProgressStore} from '../../../stores/studentProgressStore'
 import {EmptyCoursesState, DEMO_COURSES} from './components/EmptyCoursesState'
 
 const STUDENT_NAME = 'Ana'
@@ -115,7 +115,7 @@ interface HeroBannerProps {
 function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
     return (
         <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-[260px]"
-             style={{background: 'linear-gradient(135deg, #162830 0%, #223740 55%, #2d5e68 100%)'}}>
+             style={{background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 70%, black) 0%, var(--color-primary) 55%, color-mix(in srgb, var(--color-primary) 70%, white) 100%)'}}>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
                       bg-white/15 text-white text-xs font-semibold w-fit">
                 🔥 ¡{streak} días seguidos!

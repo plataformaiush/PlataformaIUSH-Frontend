@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useStudentProgressStore } from '@presentation/stores/studentProgressStore'
 import { ContentModal } from '../content-modal/ContentModal'
-import type { Course, AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
+import type { Course, AnyContentData } from '@domain/shared/interfaces/ICourseContent'
 
 /* ── Mock data ──────────────────────────────────────────────────────────── */
 const MOCK_COURSE: Course = {
@@ -36,8 +36,8 @@ const MOCK_COURSE: Course = {
     {
       id: 'm3', title: 'Módulo 3: Estructuras de Datos', order: 3,
       contents: [
-        { id: 'c10', title: 'Listas y tuplas',   order: 1, type: 'video' },
-        { id: 'c11', title: 'Diccionarios',      order: 2, type: 'text'  },
+        { id: 'c10', title: 'Listas y tuplas',        order: 1, type: 'video' },
+        { id: 'c11', title: 'Diccionarios',           order: 2, type: 'text'  },
         { id: 'c12', title: 'Conjuntos',              order: 3, type: 'image' },
         { id: 'c14', title: 'Guía de referencia PDF', order: 4, type: 'pdf'   },
         { id: 'c15', title: 'Ejercicios en Excel',    order: 5, type: 'xlsx'  },
@@ -72,24 +72,11 @@ function getDefaultContent(id: string): AnyContentData {
 const MODULE_COLORS = ['#5A878C', '#059669', '#7C3AED']
 
 /* ── Patrón de posición orgánica en desktop ─────────────────────────────── */
-// [leftFr, rightFr] → posición del círculo ≈ leftFr/(leftFr+rightFr)*100%
 const LAYOUT_PATTERNS: [number, number][] = [
-  [1, 9],  // ~10% — extremo izquierdo
-  [9, 1],  // ~90% — extremo derecho
-  [1, 4],  // ~20%
-  [6, 1],  // ~86%
-  [2, 5],  // ~29%
-  [5, 1],  // ~83%
-  [1, 5],  // ~17%
-  [4, 1],  // ~80%
-  [1, 3],  // ~25%
-  [5, 2],  // ~71%
-  [1, 7],  // ~12%
-  [7, 1],  // ~88%
-  [3, 5],  // ~37%
+  [1, 9], [9, 1], [1, 4], [6, 1], [2, 5], [5, 1],
+  [1, 5], [4, 1], [1, 3], [5, 2], [1, 7], [7, 1], [3, 5],
 ]
 
-/* Espaciado vertical variado para camino orgánico (px) */
 const VERTICAL_GAPS = [56, 44, 72, 48, 64, 40, 68, 52, 44, 60, 48, 72, 52]
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
@@ -110,7 +97,6 @@ interface FlatItem {
   status:          ContentStatus
 }
 
-/* Estado por contenido */
 function computeContentStatuses(
   modules: typeof MOCK_COURSE.modules,
   completedIds: string[],
@@ -126,7 +112,6 @@ function computeContentStatuses(
   )
 }
 
-/* Estado por módulo (para panel de resumen) */
 function computeModuleStatuses(
   modules: typeof MOCK_COURSE.modules,
   completedIds: string[],
@@ -147,7 +132,6 @@ function computeModuleStatuses(
   return result
 }
 
-/* Parámetros de línea para cada segmento SVG */
 interface SegmentParams {
   stroke: string; opacity: number
   dasharray?: string
@@ -184,7 +168,6 @@ export function CourseMapPage() {
   const completedModules = moduleStatuses.filter(s => s === 'completed').length
   const activeModuleName = MOCK_COURSE.modules.find(m => m.id === activeModuleId)?.title ?? ''
 
-  /* Lista plana de contenidos */
   const flatItems = useMemo((): FlatItem[] => {
     const items: FlatItem[] = []
     let gi = 0
@@ -202,7 +185,6 @@ export function CourseMapPage() {
     return items
   }, [contentStatuses])
 
-  /* ── Medición SVG ───────────────────────────────────────────────────── */
   const containerRef = useRef<HTMLDivElement>(null)
   const [circles, setCircles] = useState<{ x: number; y: number }[]>([])
   const [svgDims,  setSvgDims]  = useState({ w: 0, h: 0 })
@@ -229,7 +211,6 @@ export function CourseMapPage() {
 
   useEffect(() => { measure() }, [contentStatuses, measure])
 
-  /* ── Scroll al nodo actual (carga inicial + post-completar) ─────────── */
   const prevCurrentIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -243,8 +224,6 @@ export function CourseMapPage() {
 
     const delay = isFirstLoad ? 150 : 400
     const timer = setTimeout(() => {
-      // Hay dos nodos con el mismo data-content-id (mobile y desktop).
-      // offsetParent === null indica display:none → elegimos el visible.
       const nodes = containerRef.current?.querySelectorAll(
         `[data-content-id="${currentItem.contentId}"]`
       )
@@ -258,7 +237,6 @@ export function CourseMapPage() {
     return () => clearTimeout(timer)
   }, [flatItems, circles.length])
 
-  /* ── Navegación ─────────────────────────────────────────────────────── */
   const openContent = (contentId: string, moduleId: string) => {
     setActiveContent(getDefaultContent(contentId))
     setActiveModuleId(moduleId)
@@ -267,13 +245,10 @@ export function CourseMapPage() {
   const goNext = () => { if (activeIdx < allContents.length - 1) openContent(allContents[activeIdx + 1].id, activeModuleId) }
   const goPrev = () => { if (activeIdx > 0)                      openContent(allContents[activeIdx - 1].id, activeModuleId) }
 
-  /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <div className="w-full px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto">
-
       <div className="flex flex-col lg:flex-row gap-8">
 
-        {/* ── Timeline ──────────────────────────────────────────────────── */}
         <div className="flex-1 min-w-0">
           <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm -mx-4 md:-mx-8 px-4 md:px-8 py-2 mb-4">
             <Link
@@ -285,17 +260,15 @@ export function CourseMapPage() {
               Dashboard
             </Link>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-primary leading-tight">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-foreground leading-tight">
             {MOCK_COURSE.title}
           </h1>
-          <p className="text-sm md:text-base text-secondary leading-relaxed mt-3 max-w-xl">
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed mt-3 max-w-xl">
             Aprende los fundamentos de uno de los lenguajes más versátiles del mundo.
             Ideal para principiantes y quienes buscan ampliar sus habilidades.
           </p>
 
           <div ref={containerRef} className="relative mt-10 pb-4">
-
-            {/* ── SVG: mapa del tesoro — curvas con flechas de dirección ── */}
             {circles.length >= 2 && (
               <svg
                 className="absolute inset-0 pointer-events-none z-0"
@@ -305,7 +278,6 @@ export function CourseMapPage() {
                 aria-hidden="true"
               >
                 <defs>
-                  {/* Flecha por color de módulo (completado) */}
                   {MODULE_COLORS.map((color, mi) => (
                     <marker key={`arrow-mod-${mi}`}
                             id={`arrow-mod-${mi}`}
@@ -314,7 +286,6 @@ export function CourseMapPage() {
                       <polygon points="0 0, 7 3, 0 6" fill={color} opacity="0.85" />
                     </marker>
                   ))}
-                  {/* Flecha gris (pendiente) */}
                   <marker id="arrow-gray"
                           markerWidth="7" markerHeight="6"
                           refX="6" refY="3" orient="auto">
@@ -349,7 +320,6 @@ export function CourseMapPage() {
               </svg>
             )}
 
-            {/* ── Nodos de contenido ───────────────────────────────────── */}
             <div>
               {flatItems.map(item => (
                 <div key={item.contentId}>
@@ -370,10 +340,8 @@ export function CourseMapPage() {
           </div>
         </div>
 
-        {/* ── Panel resumen ─────────────────────────────────────────────── */}
         <div className="w-full lg:w-72 xl:w-80 shrink-0">
           <div className="lg:sticky lg:top-8 space-y-4">
-
             <div className="rounded-2xl overflow-hidden aspect-video bg-primary relative">
               <img src={MOCK_COURSE.thumbnail} alt={MOCK_COURSE.title}
                    className="w-full h-full object-cover opacity-50" />
@@ -389,17 +357,17 @@ export function CourseMapPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[10px] text-mid uppercase tracking-wider mb-0.5">Instructor</p>
-                  <p className="text-sm font-semibold text-primary">Dr. Sarah Jenkins</p>
+                  <p className="text-sm font-semibold text-foreground">Dr. Sarah Jenkins</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-mid uppercase tracking-wider mb-0.5">Nivel</p>
-                  <p className="text-sm font-semibold text-primary">Avanzado</p>
+                  <p className="text-sm font-semibold text-foreground">Avanzado</p>
                 </div>
               </div>
 
               <div>
                 <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Progreso general</p>
-                <div className="flex justify-between items-center text-xs text-secondary mb-1.5">
+                <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5">
                   <span>{completedModules} de {MOCK_COURSE.modules.length} módulos completados</span>
                   <span className="font-semibold">{globalProgress}%</span>
                 </div>
@@ -419,7 +387,7 @@ export function CourseMapPage() {
                   ].map((b, i) => (
                     <div key={i}
                          className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-500"
-                         style={b.earned ? { backgroundColor: b.color + '25' } : { backgroundColor: '#9CA3AF25', opacity: 0.4 }}>
+                         style={b.earned ? { backgroundColor: b.color + '25' } : { backgroundColor: 'var(--color-muted)', opacity: 0.4 }}>
                       {b.emoji}
                     </div>
                   ))}
@@ -429,11 +397,11 @@ export function CourseMapPage() {
               <div>
                 <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-3">Recursos</p>
                 <div className="space-y-2.5">
-                  <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">
+                  <button className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full text-left">
                     <FileText size={15} className="shrink-0" />
                     Syllabus del curso (PDF)
                   </button>
-                  <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">
+                  <button className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary transition-colors w-full text-left">
                     <Link2 size={15} className="shrink-0" />
                     Biblioteca de componentes
                   </button>
@@ -470,9 +438,7 @@ export function CourseMapPage() {
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Separador de módulo
-══════════════════════════════════════════════════════════════════════════════ */
+/* ── Separador de módulo ─────────────────────────────────────────────────── */
 function ModuleDivider({ title, index, color }: { title: string; index: number; color: string }) {
   return (
     <div className={`flex items-center gap-3 relative z-20 mb-5 ${index > 0 ? 'mt-8' : ''}`}>
@@ -490,9 +456,7 @@ function ModuleDivider({ title, index, color }: { title: string; index: number; 
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Fila de nodo de contenido
-══════════════════════════════════════════════════════════════════════════════ */
+/* ── Fila de nodo ───────────────────────────────────────────────────────── */
 function ContentNodeRow({ item, onAction }: { item: FlatItem; onAction: () => void }) {
   const [leftFr, rightFr] = LAYOUT_PATTERNS[item.globalIndex % LAYOUT_PATTERNS.length]
   const gap        = VERTICAL_GAPS[item.globalIndex % VERTICAL_GAPS.length]
@@ -502,7 +466,6 @@ function ContentNodeRow({ item, onAction }: { item: FlatItem; onAction: () => vo
 
   return (
     <>
-      {/* Mobile: lineal */}
       <div data-content-id={item.contentId}
            className="flex md:hidden items-start gap-3 relative z-10"
            style={{ marginBottom: `${gap * 0.6}px` }}>
@@ -510,7 +473,6 @@ function ContentNodeRow({ item, onAction }: { item: FlatItem; onAction: () => vo
         <div className="flex-1 min-w-0">{card}</div>
       </div>
 
-      {/* Desktop: posición orgánica */}
       <div
         data-content-id={item.contentId}
         className="hidden md:grid items-center relative z-10"
@@ -553,9 +515,9 @@ function ContentCircle({ type, status, moduleIndex, onAction }: {
         onClick={onAction}
         aria-label="Ver contenido"
         className="w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                   bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
+                   bg-surface-muted hover:bg-muted transition-colors cursor-pointer"
       >
-        <Check size={16} className="text-gray-500" strokeWidth={2.5} />
+        <Check size={16} className="text-mid" strokeWidth={2.5} />
       </button>
     )
   }
@@ -582,9 +544,9 @@ function ContentCircle({ type, status, moduleIndex, onAction }: {
     <div
       data-content-circle
       className="w-9 h-9 rounded-full flex items-center justify-center shrink-0
-                 bg-gray-100 border-2 border-gray-200 cursor-not-allowed"
+                 bg-surface-muted border-2 border-mid/30 cursor-not-allowed"
     >
-      <Lock size={13} className="text-gray-400" />
+      <Lock size={13} className="text-mid" />
     </div>
   )
 }
@@ -592,6 +554,7 @@ function ContentCircle({ type, status, moduleIndex, onAction }: {
 /* ── Card ───────────────────────────────────────────────────────────────── */
 const CONTENT_TYPE_LABEL: Record<string, string> = {
   video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen',
+  pdf: 'PDF', xlsx: 'Excel',
 }
 
 function ContentCard({ item, onAction }: { item: FlatItem; onAction: () => void }) {
@@ -609,31 +572,23 @@ function ContentCard({ item, onAction }: { item: FlatItem; onAction: () => void 
         style={{
           border: `3px solid ${color}`,
           boxShadow: `0 0 0 1px ${color}30, 0 8px 28px ${color}35`,
-          background: `linear-gradient(160deg, white 55%, ${color}10 100%)`,
+          background: `linear-gradient(160deg, var(--color-surface) 55%, ${color}10 100%)`,
         }}
       >
-        {/* colored top stripe */}
         <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
-
         <div className="p-3.5">
-          {/* "Aquí estás" badge */}
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold mb-2 text-white"
                 style={{ backgroundColor: color }}>
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             Aquí estás
           </span>
-
-          {/* tipo badge */}
-          <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                           text-[10px] font-semibold"
+          <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
                 style={{ backgroundColor: color + '18', color }}>
             {typeLabel}
           </span>
-
-          <p className="mt-2 text-sm font-bold text-primary leading-snug line-clamp-2">
+          <p className="mt-2 text-sm font-bold text-foreground leading-snug line-clamp-2">
             {item.contentTitle}
           </p>
-
           <button
             onClick={e => { e.stopPropagation(); onAction() }}
             className="mt-3 w-full flex items-center justify-center gap-1.5
@@ -653,29 +608,26 @@ function ContentCard({ item, onAction }: { item: FlatItem; onAction: () => void 
     <div
       onClick={isCompleted ? onAction : undefined}
       className={[
-        'bg-gray-50 rounded-2xl p-3.5 w-full md:max-w-[200px]',
-        'border border-gray-200 transition-colors duration-200',
-        isCompleted ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed',
+        'bg-surface-muted rounded-2xl p-3.5 w-full md:max-w-[200px]',
+        'border border-mid/20 transition-colors duration-200',
+        isCompleted ? 'cursor-pointer hover:bg-muted' : 'cursor-not-allowed',
       ].join(' ')}
     >
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                       text-[10px] font-semibold mb-2 bg-gray-200 text-gray-500">
+                       text-[10px] font-semibold mb-2 bg-muted text-muted-foreground">
         {typeLabel}
       </span>
-
-      <p className="text-sm font-semibold text-gray-500 leading-snug line-clamp-2">
+      <p className="text-sm font-semibold text-muted-foreground leading-snug line-clamp-2">
         {item.contentTitle}
       </p>
-
       {isCompleted && (
-        <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
+        <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-mid">
           <Check size={10} />
           Completado
         </p>
       )}
-
       {item.status === 'locked' && (
-        <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
+        <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-mid">
           <Lock size={10} />
           Bloqueado
         </p>
