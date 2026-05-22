@@ -234,6 +234,13 @@ export const studentService = {
     return response.data?.data ?? response.data
   },
 
+  // Eliminar inscripción de un curso
+  async eliminarInscripcion(idInscripcion: string): Promise<void> {
+    await apiAxiosInstance.delete(`/inscripciones/${idInscripcion}`, {
+      headers: getStudentAuthHeaders(),
+    })
+  },
+
   async getMisCursosInscritos(userId: string): Promise<CursoInscritoBackend[]> {
     const response = await apiAxiosInstance.get(`/inscripciones/mis-cursos/${userId}`, {
       headers: getStudentAuthHeaders(),
