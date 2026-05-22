@@ -1,5 +1,5 @@
 import {
-  mapTeacherDashboardSummaryResponse,
+  composeTeacherDashboardData,
   mapTeacherHealthResponse,
 } from "../../../../domain/teacher/teacherMappers";
 import { TeacherRepository } from "../../../../domain/teacher/teacherRepository";
@@ -29,6 +29,19 @@ const API_BASE_URL = (
 
 const TEACHER_HEALTH_ENDPOINT = "/api/teacher/health";
 const TEACHER_DASHBOARD_SUMMARY_ENDPOINT = "/api/teacher/dashboard/summary";
+const TEACHER_COURSES_IN_PROGRESS_ENDPOINT =
+  "/api/teacher/dashboard/courses/in-progress";
+const TEACHER_STUDENTS_TOTAL_ENDPOINT =
+  "/api/teacher/dashboard/students/total";
+const TEACHER_TOP_ENROLLED_ENDPOINT =
+  "/api/teacher/dashboard/courses/top-enrolled";
+const TEACHER_LOWEST_ENROLLED_ENDPOINT =
+  "/api/teacher/dashboard/courses/lowest-enrolled";
+const TEACHER_TOP_COMPLETED_ENDPOINT =
+  "/api/teacher/dashboard/courses/top-completed";
+const TEACHER_RECENT_STUDENTS_ENDPOINT =
+  "/api/teacher/dashboard/students/recent";
+
 const REQUEST_TIMEOUT_MS = 8000;
 
 function getAuthToken() {
@@ -52,12 +65,13 @@ async function request<T>(endpoint: string): Promise<T> {
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    mode: "cors",
-    signal: controller.signal,
-    headers: {
-    Accept: "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      method: "GET",
+      mode: "cors",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
@@ -81,6 +95,14 @@ async function request<T>(endpoint: string): Promise<T> {
   }
 }
 
+async function safeRequest<T>(endpoint: string): Promise<T | null> {
+  try {
+    return await request<T>(endpoint);
+  } catch {
+    return null;
+  }
+}
+
 export const teacherApi: TeacherRepository = {
   async getHealth(): Promise<TeacherHealthResponse> {
     const payload = await request<unknown>(TEACHER_HEALTH_ENDPOINT);
@@ -88,7 +110,32 @@ export const teacherApi: TeacherRepository = {
   },
 
   async getDashboardSummary(): Promise<TeacherDashboardData> {
-    const payload = await request<unknown>(TEACHER_DASHBOARD_SUMMARY_ENDPOINT);
-    return mapTeacherDashboardSummaryResponse(payload);
+    const summary = await request<unknown>(TEACHER_DASHBOARD_SUMMARY_ENDPOINT);
+
+    const [
+      coursesInProgress,
+      studentsTotal,
+      topEnrolled,
+      lowestEnrolled,
+      topCompleted,
+      recentStudents,
+    ] = await Promise.all([
+      safeRequest<unknown>(TEACHER_COURSES_IN_PROGRESS_ENDPOINT),
+      safeRequest<unknown>(TEACHER_STUDENTS_TOTAL_ENDPOINT),
+      safeRequest<unknown>(TEACHER_TOP_ENROLLED_ENDPOINT),
+      safeRequest<unknown>(TEACHER_LOWEST_ENROLLED_ENDPOINT),
+      safeRequest<unknown>(TEACHER_TOP_COMPLETED_ENDPOINT),
+      safeRequest<unknown>(TEACHER_RECENT_STUDENTS_ENDPOINT),
+    ]);
+
+    return composeTeacherDashboardData({
+      summary,
+      coursesInProgress,
+      studentsTotal,
+      topEnrolled,
+      lowestEnrolled,
+      topCompleted,
+      recentStudents,
+    });
   },
 };

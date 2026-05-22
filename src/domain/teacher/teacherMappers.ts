@@ -93,6 +93,7 @@ function mapCourseInsight(value: unknown): TeacherCourseInsight {
     item.modulesCount ??
       item.modulosCount ??
       item.total_modulos ??
+      item.cantidad_modulos ??
       item.modulos ??
       item.modules
   );
@@ -101,9 +102,38 @@ function mapCourseInsight(value: unknown): TeacherCourseInsight {
     item.contentsCount ??
       item.contenidosCount ??
       item.total_contenidos ??
+      item.cantidad_contenidos ??
       item.contenidos ??
       item.contents
   );
+
+  const enrolledStudents = asNumber(
+    item.enrolledStudents ??
+      item.studentsCount ??
+      item.inscritos ??
+      item.total_inscritos ??
+      item.total_estudiantes ??
+      item.estudiantes_inscritos
+  );
+
+  const completedStudents = asNumber(
+    item.completedStudents ??
+      item.completedCount ??
+      item.completados ??
+      item.total_completados ??
+      item.estudiantes_completados
+  );
+
+  const progressPercentage =
+    item.progressPercentage !== undefined
+      ? asNumber(item.progressPercentage)
+      : item.percentage !== undefined
+        ? asNumber(item.percentage)
+        : item.porcentaje !== undefined
+          ? asNumber(item.porcentaje)
+          : item.avance !== undefined
+            ? asNumber(item.avance)
+            : null;
 
   return {
     id:
@@ -124,33 +154,10 @@ function mapCourseInsight(value: unknown): TeacherCourseInsight {
       asOptionalString(item.codigo_curso),
 
     modulesCount,
-
     contentsCount,
-
-    enrolledStudents: asNumber(
-      item.enrolledStudents ??
-        item.studentsCount ??
-        item.inscritos ??
-        item.total_estudiantes ??
-        item.estudiantes_inscritos
-    ),
-
-    completedStudents: asNumber(
-      item.completedStudents ??
-        item.completedCount ??
-        item.completados ??
-        item.total_completados ??
-        item.estudiantes_completados
-    ),
-
-    progressPercentage:
-      item.progressPercentage !== undefined
-        ? asNumber(item.progressPercentage)
-        : item.percentage !== undefined
-          ? asNumber(item.percentage)
-          : item.avance !== undefined
-            ? asNumber(item.avance)
-            : null,
+    enrolledStudents,
+    completedStudents,
+    progressPercentage,
 
     status: isTeacherCourseStatus(status)
       ? status
@@ -172,30 +179,93 @@ function mapRecentEnrollment(value: unknown): RecentEnrolledStudent {
 
   const studentName =
     asString(item.studentName) ||
+    asString(item.nombre_estudiante) ||
     asString(item.name) ||
     asString(item.nombre) ||
     "Estudiante";
 
   return {
-    id: asString(item.id) || asString(item.enrollmentId),
-    studentId: asOptionalString(item.studentId),
+    id:
+      asString(item.id) ||
+      asString(item.enrollmentId) ||
+      asString(item.id_inscripcion),
+
+    studentId:
+      asOptionalString(item.studentId) ||
+      asOptionalString(item.id_estudiante),
+
     studentName,
-    email: asOptionalString(item.email) || asOptionalString(item.correo),
+
+    email:
+      asOptionalString(item.email) ||
+      asOptionalString(item.correo) ||
+      null,
+
     avatar: asOptionalString(item.avatar) || buildInitials(studentName),
-    courseId: asString(item.courseId),
+
+    courseId:
+      asString(item.courseId) ||
+      asString(item.id_curso),
+
     courseTitle:
       asString(item.courseTitle) ||
       asString(item.courseName) ||
+      asString(item.titulo_curso) ||
       asString(item.curso),
+
     progressPercentage: asNumber(
-      item.progressPercentage ?? item.percentage ?? item.avance
+      item.progressPercentage ??
+        item.percentage ??
+        item.porcentaje ??
+        item.avance
     ),
+
     enrolledAt:
       asString(item.enrolledAt) ||
       asString(item.createdAt) ||
+      asString(item.fecha_inicio) ||
       asString(item.fechaInscripcion),
-    detailUrl: asOptionalString(item.detailUrl) || asOptionalString(item.url),
+
+    detailUrl:
+      asOptionalString(item.detailUrl) ||
+      asOptionalString(item.url),
   };
+}
+
+function mergeCourseData(
+  baseCourses: TeacherCourseInsight[],
+  detailCourses: TeacherCourseInsight[]
+): TeacherCourseInsight[] {
+  return baseCourses.map((course) => {
+    const detail = detailCourses.find((item) => item.id === course.id);
+
+    if (!detail) return course;
+
+    return {
+      ...course,
+      modulesCount:
+        course.modulesCount > 0 ? course.modulesCount : detail.modulesCount,
+      contentsCount:
+        course.contentsCount > 0 ? course.contentsCount : detail.contentsCount,
+      enrolledStudents:
+        course.enrolledStudents > 0
+          ? course.enrolledStudents
+          : detail.enrolledStudents,
+      completedStudents:
+        course.completedStudents > 0
+          ? course.completedStudents
+          : detail.completedStudents,
+      progressPercentage:
+        course.progressPercentage !== null && course.progressPercentage !== undefined
+          ? course.progressPercentage
+          : detail.progressPercentage,
+      status:
+        course.status && course.status !== "Pendiente"
+          ? course.status
+          : detail.status,
+      detailUrl: course.detailUrl || detail.detailUrl,
+    };
+  });
 }
 
 export function mapTeacherHealthResponse(
@@ -205,7 +275,10 @@ export function mapTeacherHealthResponse(
 
   return {
     status: asString(data.status) || "unknown",
-    module: asOptionalString(data.module) ?? undefined,
+    module:
+      asOptionalString(data.module) ||
+      asOptionalString(data.modulo) ||
+      undefined,
     team: asOptionalString(data.team) ?? undefined,
     timestamp: asOptionalString(data.timestamp) ?? undefined,
   };
@@ -217,6 +290,7 @@ export function mapTeacherDashboardSummaryResponse(
   const data = unwrapPayload(payload);
 
   const teacherPayload = data.teacher ?? data.user ?? data.docente;
+
   const quickActions = isRecord(data.quickActions)
     ? data.quickActions
     : isRecord(data.accionesRapidas)
@@ -237,20 +311,6 @@ export function mapTeacherDashboardSummaryResponse(
   );
 
   const mappedCourses = rawCourses.map(mapCourseInsight);
-
-  const coursesInCreationSource = asArray(
-    data.coursesInCreation ??
-      data.cursosInCreation ??
-      data.cursosEnCreacion ??
-      data.cursos_en_creacion
-  );
-
-  const coursesInCreation =
-    coursesInCreationSource.length > 0
-      ? coursesInCreationSource.map(mapCourseInsight)
-      : mappedCourses.filter(
-          (course) => course.modulesCount === 0 || course.contentsCount === 0
-        );
 
   return {
     teacher: mapTeacher(teacherPayload),
@@ -280,6 +340,7 @@ export function mapTeacherDashboardSummaryResponse(
         totals.students ??
           totals.totalStudents ??
           totals.total_estudiantes ??
+          totals.total_estudiantes_matriculados ??
           totals.estudiantes ??
           totals.estudiantes_matriculados
       ),
@@ -306,7 +367,9 @@ export function mapTeacherDashboardSummaryResponse(
       ),
     },
 
-    coursesInCreation,
+    coursesInCreation: mappedCourses.filter(
+      (course) => course.modulesCount === 0 || course.contentsCount === 0
+    ),
 
     topCompletedCourses: asArray(
       data.topCompletedCourses ??
@@ -332,5 +395,134 @@ export function mapTeacherDashboardSummaryResponse(
         data.ultimos_inscritos ??
         data.estudiantes_recientes
     ).map(mapRecentEnrollment),
+  };
+}
+
+export function mapTeacherCoursesInProgressResponse(
+  payload: unknown
+): TeacherCourseInsight[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(data.cursos ?? data.courses).map(mapCourseInsight);
+}
+
+export function mapTeacherStudentsTotalResponse(payload: unknown): number {
+  const data = unwrapPayload(payload);
+
+  return asNumber(
+    data.total_estudiantes_matriculados ??
+      data.totalStudents ??
+      data.students ??
+      data.total_estudiantes
+  );
+}
+
+export function mapTeacherTopEnrolledCoursesResponse(
+  payload: unknown
+): TeacherCourseInsight[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(data.cursos ?? data.courses).map(mapCourseInsight);
+}
+
+export function mapTeacherLowestEnrolledCoursesResponse(
+  payload: unknown
+): TeacherCourseInsight[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(data.cursos ?? data.courses).map(mapCourseInsight);
+}
+
+export function mapTeacherTopCompletedCoursesResponse(
+  payload: unknown
+): TeacherCourseInsight[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(
+    data.cursos ??
+      data.courses ??
+      data.topCompletedCourses ??
+      data.cursosMasCompletados ??
+      data.cursos_mas_completados
+  ).map(mapCourseInsight);
+}
+
+export function mapTeacherRecentStudentsResponse(
+  payload: unknown
+): RecentEnrolledStudent[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(data.estudiantes ?? data.students).map(mapRecentEnrollment);
+}
+
+export function composeTeacherDashboardData(params: {
+  summary: unknown;
+  coursesInProgress?: unknown | null;
+  studentsTotal?: unknown | null;
+  topEnrolled?: unknown | null;
+  lowestEnrolled?: unknown | null;
+  topCompleted?: unknown | null;
+  recentStudents?: unknown | null;
+}): TeacherDashboardData {
+  const baseDashboard = mapTeacherDashboardSummaryResponse(params.summary);
+
+  const coursesInProgress = params.coursesInProgress
+    ? mapTeacherCoursesInProgressResponse(params.coursesInProgress)
+    : baseDashboard.coursesInCreation;
+
+  const studentsTotal = params.studentsTotal
+    ? mapTeacherStudentsTotalResponse(params.studentsTotal)
+    : baseDashboard.totals.students;
+
+  const topEnrolledCourses = params.topEnrolled
+    ? mapTeacherTopEnrolledCoursesResponse(params.topEnrolled)
+    : baseDashboard.topEnrolledCourses;
+
+  const lowEnrolledCourses = params.lowestEnrolled
+    ? mapTeacherLowestEnrolledCoursesResponse(params.lowestEnrolled)
+    : baseDashboard.lowEnrolledCourses;
+
+  const topCompletedCourses = params.topCompleted
+    ? mapTeacherTopCompletedCoursesResponse(params.topCompleted)
+    : baseDashboard.topCompletedCourses;
+
+  const recentEnrollments = params.recentStudents
+    ? mapTeacherRecentStudentsResponse(params.recentStudents)
+    : baseDashboard.recentEnrollments;
+
+  const enrollmentDetails = [...topEnrolledCourses, ...lowEnrolledCourses];
+
+  const enrichedCoursesInProgress = mergeCourseData(
+    coursesInProgress,
+    enrollmentDetails
+  );
+
+  const enrichedTopEnrolledCourses = mergeCourseData(
+    topEnrolledCourses,
+    coursesInProgress
+  );
+
+  const enrichedLowEnrolledCourses = mergeCourseData(
+    lowEnrolledCourses,
+    coursesInProgress
+  );
+
+  return {
+    ...baseDashboard,
+
+    totals: {
+      ...baseDashboard.totals,
+      students: studentsTotal,
+    },
+
+    coursesInCreation: enrichedCoursesInProgress,
+
+    topEnrolledCourses: enrichedTopEnrolledCourses,
+
+    lowEnrolledCourses: enrichedLowEnrolledCourses,
+
+    topCompletedCourses,
+
+    recentEnrollments,
   };
 }
