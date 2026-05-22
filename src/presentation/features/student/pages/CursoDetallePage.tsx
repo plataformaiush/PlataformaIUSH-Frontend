@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { studentService, CursoDetalle, ModuloItem } from '../services/studentService'
+import { studentService, CursoDetalle, ModuloItem, CursoDetalleConProgreso } from '../services/studentService'
 import { ChevronRight } from 'lucide-react'
 
 export default function CursoDetallePage() {
@@ -10,14 +10,39 @@ export default function CursoDetallePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const getCurrentUserId = (): string | null => {
+    const userData = localStorage.getItem('user')
+    if (!userData) return null
+    try {
+      const parsedUser = JSON.parse(userData)
+      return parsedUser.id || parsedUser.idUsuario || null
+    } catch {
+      return null
+    }
+  }
+
   useEffect(() => {
     if (!cursoId) return
+    const usuarioId = getCurrentUserId()
+    if (!usuarioId) {
+      setError('Usuario no autenticado')
+      setLoading(false)
+      return
+    }
 
     const fetchCursoDetalle = async () => {
       try {
         setLoading(true)
-        const data = await studentService.getCursoDetalle(cursoId)
-        setCurso(data)
+        const data = await studentService.getCursoDetalleConProgreso(cursoId, usuarioId)
+        console.log('📚 Respuesta del endpoint /api/cursos/{id}/detalle/{id_usuario}:', data)
+
+        // Extraer curso en formato compatible con CursoDetalle
+        const cursoConModulos: CursoDetalle = {
+          ...data.curso,
+          modulos: data.modulos,
+        }
+
+        setCurso(cursoConModulos)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al cargar curso')
@@ -116,7 +141,7 @@ export default function CursoDetallePage() {
                       {modulo.orden}. {modulo.titulo}
                     </h3>
                     <p className="text-sm mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                      {modulo.contenidosCount} contenidos • {!modulo.activo && '(Inactivo)'}
+                      {(modulo as any).totalContenidos || (modulo as any).contenidosCount || 0} contenidos • {!modulo.activo && '(Inactivo)'}
                     </p>
                   </div>
                   <ChevronRight size={20} style={{ color: 'var(--color-secondary)' }} />
