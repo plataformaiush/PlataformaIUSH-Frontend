@@ -121,16 +121,18 @@ function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
                 🔥 ¡{streak} días seguidos!
             </div>
 
-            <div>
-                <h1 className="text-4xl lg:text-5xl font-extrabold text-white leading-[1.1]">
-                    Bienvenida,<br/>{name}.
-                </h1>
-                <p className="text-sm lg:text-base text-white/70 leading-relaxed mt-3 max-w-md">
-                    {courseName
-                        ? `Estás progresando muy bien en '${courseName}'. ¿Lista para continuar?`
-                        : 'Explora tus cursos y sigue aprendiendo hoy.'}
-                </p>
-            </div>
+       <div>
+    <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.1]"
+        style={{ color: 'var(--color-text-on-dark)' }}>
+        Bienvenid@,<br/>{name}.
+    </h1>
+    <p className="text-sm lg:text-base leading-relaxed mt-3 max-w-md"
+       style={{ color: 'var(--color-text-on-dark)', opacity: 0.7 }}>
+        {courseName
+            ? `Estás progresando muy bien en '${courseName}'. ¿Lista para continuar?`
+            : 'Explora tus cursos y sigue aprendiendo hoy.'}
+    </p>
+</div>
 
             <button
                 onClick={onContinue}
