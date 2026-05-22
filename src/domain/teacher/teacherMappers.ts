@@ -433,6 +433,20 @@ export function mapTeacherLowestEnrolledCoursesResponse(
   return asArray(data.cursos ?? data.courses).map(mapCourseInsight);
 }
 
+export function mapTeacherTopCompletedCoursesResponse(
+  payload: unknown
+): TeacherCourseInsight[] {
+  const data = unwrapPayload(payload);
+
+  return asArray(
+    data.cursos ??
+      data.courses ??
+      data.topCompletedCourses ??
+      data.cursosMasCompletados ??
+      data.cursos_mas_completados
+  ).map(mapCourseInsight);
+}
+
 export function mapTeacherRecentStudentsResponse(
   payload: unknown
 ): RecentEnrolledStudent[] {
@@ -447,6 +461,7 @@ export function composeTeacherDashboardData(params: {
   studentsTotal?: unknown | null;
   topEnrolled?: unknown | null;
   lowestEnrolled?: unknown | null;
+  topCompleted?: unknown | null;
   recentStudents?: unknown | null;
 }): TeacherDashboardData {
   const baseDashboard = mapTeacherDashboardSummaryResponse(params.summary);
@@ -466,6 +481,10 @@ export function composeTeacherDashboardData(params: {
   const lowEnrolledCourses = params.lowestEnrolled
     ? mapTeacherLowestEnrolledCoursesResponse(params.lowestEnrolled)
     : baseDashboard.lowEnrolledCourses;
+
+  const topCompletedCourses = params.topCompleted
+    ? mapTeacherTopCompletedCoursesResponse(params.topCompleted)
+    : baseDashboard.topCompletedCourses;
 
   const recentEnrollments = params.recentStudents
     ? mapTeacherRecentStudentsResponse(params.recentStudents)
@@ -502,7 +521,7 @@ export function composeTeacherDashboardData(params: {
 
     lowEnrolledCourses: enrichedLowEnrolledCourses,
 
-    topCompletedCourses: baseDashboard.topCompletedCourses,
+    topCompletedCourses,
 
     recentEnrollments,
   };

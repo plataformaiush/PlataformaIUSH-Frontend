@@ -174,7 +174,7 @@ export default function TeacherDashboard() {
       style={teacherThemeVars}
       className="min-h-screen w-full overflow-x-hidden bg-[var(--teacher-bg)] px-4 py-6 text-[var(--teacher-text)] sm:px-5 lg:px-8"
     >
-      <div className="mx-auto w-full max-w-[1240px] space-y-7">
+      <div className="mx-auto w-full max-w-[1560px] space-y-7">
         <section className="overflow-hidden rounded-[32px] bg-gradient-to-br from-[var(--teacher-primary)] via-[var(--teacher-secondary)] to-[var(--teacher-accent)] p-7 text-[var(--teacher-text-on-dark)] shadow-[0_24px_60px_rgba(21,55,68,0.24)] md:p-9">
           <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
             <div className="max-w-2xl">

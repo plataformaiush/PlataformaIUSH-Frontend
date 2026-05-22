@@ -12,6 +12,42 @@ function getProgressColor(value: number) {
   return "from-[var(--teacher-primary)] to-[var(--teacher-accent)]";
 }
 
+function normalizeText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getCourseStatusLabel(course: TeacherCourseInsight) {
+  const modulesCount = Number(course.modulesCount ?? 0);
+  const contentsCount = Number(course.contentsCount ?? 0);
+  const rawStatus = course.status?.trim() || "";
+
+  const normalizedStatus = normalizeText(rawStatus);
+
+  if (modulesCount <= 0) {
+    return "Sin módulos";
+  }
+
+  if (contentsCount <= 0) {
+    return "Sin contenidos";
+  }
+
+  if (
+    !rawStatus ||
+    normalizedStatus === "sin modulos" ||
+    normalizedStatus === "sin modulo" ||
+    normalizedStatus === "sin contenidos" ||
+    normalizedStatus === "sin contenido" ||
+    normalizedStatus === "pendiente"
+  ) {
+    return "Publicado";
+  }
+
+  return rawStatus;
+}
 export function TeacherCourseInsightCard({
   course,
   variant = "enrolled",
@@ -22,6 +58,8 @@ export function TeacherCourseInsightCard({
     variant === "completed" ? course.completedStudents : course.enrolledStudents;
 
   const mainLabel = variant === "completed" ? "Completados" : "Inscritos";
+
+  const statusLabel = getCourseStatusLabel(course);
 
   return (
     <article className="w-full min-w-0 max-w-full overflow-hidden rounded-[26px] border border-[var(--teacher-border)] bg-[var(--teacher-card-soft)] p-4 transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(22,55,68,0.08)] sm:p-5">
@@ -39,7 +77,7 @@ export function TeacherCourseInsightCard({
         </div>
 
         <span className="w-fit max-w-full shrink-0 truncate rounded-full bg-[var(--teacher-success-soft)] px-3 py-1 text-xs font-black text-[var(--teacher-success)]">
-          {course.status || "Pendiente"}
+          {statusLabel}
         </span>
       </div>
 

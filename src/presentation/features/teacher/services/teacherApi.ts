@@ -37,6 +37,8 @@ const TEACHER_TOP_ENROLLED_ENDPOINT =
   "/api/teacher/dashboard/courses/top-enrolled";
 const TEACHER_LOWEST_ENROLLED_ENDPOINT =
   "/api/teacher/dashboard/courses/lowest-enrolled";
+const TEACHER_TOP_COMPLETED_ENDPOINT =
+  "/api/teacher/dashboard/courses/top-completed";
 const TEACHER_RECENT_STUDENTS_ENDPOINT =
   "/api/teacher/dashboard/students/recent";
 
@@ -65,6 +67,7 @@ async function request<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "GET",
       mode: "cors",
+      cache: "no-store",
       signal: controller.signal,
       headers: {
         Accept: "application/json",
@@ -114,12 +117,14 @@ export const teacherApi: TeacherRepository = {
       studentsTotal,
       topEnrolled,
       lowestEnrolled,
+      topCompleted,
       recentStudents,
     ] = await Promise.all([
       safeRequest<unknown>(TEACHER_COURSES_IN_PROGRESS_ENDPOINT),
       safeRequest<unknown>(TEACHER_STUDENTS_TOTAL_ENDPOINT),
       safeRequest<unknown>(TEACHER_TOP_ENROLLED_ENDPOINT),
       safeRequest<unknown>(TEACHER_LOWEST_ENROLLED_ENDPOINT),
+      safeRequest<unknown>(TEACHER_TOP_COMPLETED_ENDPOINT),
       safeRequest<unknown>(TEACHER_RECENT_STUDENTS_ENDPOINT),
     ]);
 
@@ -129,6 +134,7 @@ export const teacherApi: TeacherRepository = {
       studentsTotal,
       topEnrolled,
       lowestEnrolled,
+      topCompleted,
       recentStudents,
     });
   },
