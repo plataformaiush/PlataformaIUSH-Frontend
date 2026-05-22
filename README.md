@@ -489,6 +489,19 @@ npm run lint
 npm run format
 ```
 
+## Dependencias necesarias para el visor de archivos
+
+Instalar las dependencias requeridas para la visualización de documentos Excel y Word:
+
+- npm install xlsx docx-preview
+
+# Librerías utilizadas
+ - xlsx → Visualización y lectura de archivos Excel (.xls, .xlsx)
+ - docx-preview → Renderizado de documentos Word (.docx) conservando estilos, tablas, imágenes y formatos
+
+# Ejecutar el proyecto
+npm run dev
+
 ## Scripts Disponibles
 
 - `npm run dev` - Inicia servidor de desarrollo
