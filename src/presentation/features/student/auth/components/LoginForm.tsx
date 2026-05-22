@@ -31,7 +31,7 @@ export default function LoginForm() {
 
       const response = await loginRequest(data);
 
-      console.log("LOGIN OK:", response);
+      console.log("LOGIN EXITOSO:", response);
 
       // Guarda el token y usuario en el store y localStorage
       const expiresIn = response.expiresIn || 3600; // 1 hora por defecto
@@ -58,7 +58,7 @@ export default function LoginForm() {
         }, 2000);
       }
     } catch (error) {
-      console.error("Error login:", error);
+      console.error("Error en login:", error);
       const errorMessage = "Credenciales incorrectas o error del servidor";
       setErrorMsg(errorMessage);
       setError(errorMessage);
