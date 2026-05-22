@@ -10,12 +10,13 @@ import { reportsRoutes } from './reports.routes'
 import { superAdminRoutes } from './superadmin.routes'
 import { teacherRoutes } from './teacher.routes.tsx'
 import { vistaEstudiantesRutas } from './vista-estudiante.routes'
+import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
  * Agregador central de rutas
  * Define la estructura base de la aplicación
  * Equipo 2: Centralización de rutas
- * 
+ *
  * @example
  * export const allRoutes: RouteObject[] = [
  *     ...authRoutes,
@@ -25,6 +26,7 @@ import { vistaEstudiantesRutas } from './vista-estudiante.routes'
 
 export const allRoutes: RouteObject[] = [
     ...authRoutes, // Equipo 1
+    ...archivosRoutes,
     {
         element: createElement(RequireAuth),
         children: [
