@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
 import {EmptyCoursesState, DEMO_COURSES} from './components/EmptyCoursesState'
+import { trackIniciarCurso } from '../../reports/events/TagManagerEvents'
 
 const STUDENT_NAME = 'Ana'
 const STREAK_DAYS = 14
@@ -339,6 +340,7 @@ function CourseGridCard({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
+                                trackIniciarCurso(course.title) //Trackeamos la función de iniciar curso
                                 onClick()
                             }}
                             className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white

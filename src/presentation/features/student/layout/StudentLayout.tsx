@@ -4,12 +4,15 @@ import { Bell, Menu, Settings } from 'lucide-react'
 import { StudentHeader } from './StudentHeader'
 import { StudentSidebar } from './StudentSidebar'
 import { StudentBottomNav } from './StudentBottomNav'
+import { useHandleRolTracker } from '../../reports/hooks/useHandleRolTracker'
 
 const MOCK_AVATAR = 'https://api.dicebear.com/9.x/avataaars/svg?seed=Ana'
 
 export function StudentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const toggle = () => setSidebarOpen(o => !o)
+
+  useHandleRolTracker()
 
   return (
     <div className="min-h-screen bg-surface-muted">

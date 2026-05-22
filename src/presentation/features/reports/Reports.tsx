@@ -38,13 +38,13 @@ const Reports = () => {
                 - Acá debe ir la lógica de gráficas sacadas con TAG-MANAGER.
             </div>
 
-            {/* <div className="mb-8">
+            <div className="mb-8">
               <SimulateEvents/>
             </div>
 
             <div className="mt-8 mb-8">
               <GraphsLooker />
-            </div> */}
+            </div>
           </section>
         </div>
       </div>

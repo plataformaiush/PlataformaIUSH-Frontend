@@ -1,8 +1,9 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useStudentProgressStore } from '@presentation/stores/studentProgressStore'
+import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { ContentLoader } from './components/ContentLoader'
+import { trackIniciarModulo } from '../../reports/events/TagManagerEvents'
 import type { AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
 
 const VideoContent = lazy(() =>
@@ -27,6 +28,11 @@ const XlsxContent = lazy(() =>
 interface ContentModalProps {
   content: AnyContentData
   courseId: string
+  courseName: string
+  moduleName: string
+  currentStep: number
+  totalSteps: number
+  isFirstInModule: boolean
   onClose: () => void
   onPrev?: () => void
   onNext?: () => void
@@ -37,6 +43,11 @@ interface ContentModalProps {
 export function ContentModal({
   content,
   courseId,
+  courseName,
+  moduleName,
+  currentStep,
+  totalSteps,
+  isFirstInModule,
   onClose,
   onPrev,
   onNext,
@@ -44,6 +55,7 @@ export function ContentModal({
   hasNext = false,
 }: ContentModalProps) {
   const markContentComplete = useStudentProgressStore(s => s.markContentComplete)
+  const progress = useStudentProgressStore(s => s.getProgress(courseId))
 
   /* Bloquear scroll del body al abrir */
   useEffect(() => {
@@ -60,6 +72,12 @@ export function ContentModal({
   }, [onClose])
 
   const handleComplete = () => {
+    const wasAlreadyCompleted = progress?.completedContents.includes(content.id) ?? false
+
+    if (isFirstInModule && !wasAlreadyCompleted) {
+      trackIniciarModulo(courseName, moduleName)
+    }
+
     markContentComplete(courseId, content.id)
     onClose()
   }

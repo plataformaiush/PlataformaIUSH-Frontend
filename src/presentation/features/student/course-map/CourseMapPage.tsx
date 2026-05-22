@@ -4,7 +4,7 @@ import {
   ArrowLeft, Check, Lock, Play,
   FileText, Link2, MessageSquare, HelpCircle, Image as ImageIcon, Table,
 } from 'lucide-react'
-import { useStudentProgressStore } from '@presentation/stores/studentProgressStore'
+import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { ContentModal } from '../content-modal/ContentModal'
 import type { Course, AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
 
@@ -202,6 +202,10 @@ export function CourseMapPage() {
     return items
   }, [contentStatuses])
 
+  const activeItem = activeContent
+    ? flatItems.find(item => item.contentId === activeContent.id && item.moduleId === activeModuleId)
+    : null
+
   /* ── Medición SVG ───────────────────────────────────────────────────── */
   const containerRef = useRef<HTMLDivElement>(null)
   const [circles, setCircles] = useState<{ x: number; y: number }[]>([])
@@ -264,6 +268,7 @@ export function CourseMapPage() {
     setActiveModuleId(moduleId)
     useStudentProgressStore.getState().updateLastAccessed(courseId)
   }
+
   const goNext = () => { if (activeIdx < allContents.length - 1) openContent(allContents[activeIdx + 1].id, activeModuleId) }
   const goPrev = () => { if (activeIdx > 0)                      openContent(allContents[activeIdx - 1].id, activeModuleId) }
 
@@ -456,9 +461,11 @@ export function CourseMapPage() {
         <ContentModal
           content={activeContent}
           courseId={courseId}
+          courseName={MOCK_COURSE.title}
           currentStep={activeIdx + 1}
           totalSteps={totalContents}
           moduleName={activeModuleName}
+          isFirstInModule={activeItem?.isFirstInModule ?? false}
           onClose={() => setActiveContent(null)}
           onPrev={goPrev}
           onNext={goNext}
