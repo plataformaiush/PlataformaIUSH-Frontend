@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchCursoById } from '../../services/courseService'
-import { createModulo } from '../../services/moduleService'
+import { createModulo, fetchModulos } from '../../services/moduleService'
 import { useState, useEffect, useCallback } from 'react'
 import type { Course } from '../../../domain/courses/types'
 import { BookOpen, Save, RotateCcw, CheckCircle2, Users, Target } from 'lucide-react'
@@ -11,8 +11,11 @@ import { logger } from '../../utils/logger'
 
 const moduleSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(100, 'El título no puede exceder 100 caracteres'),
-  description: z.string().min(1, 'La descripción es requerida').max(500, 'La descripción no puede exceder 500 caracteres'),
-  order: z.number().min(1, 'El orden debe ser al menos 1')
+  description: z.string().max(500).optional().default(''),
+  order: z.preprocess(
+    (v) => (v === '' || v === null || Number.isNaN(v) ? 1 : Number(v)),
+    z.number().min(1, 'El orden debe ser al menos 1')
+  )
 })
 
 type ModuleFormData = z.infer<typeof moduleSchema>
@@ -60,8 +63,17 @@ export const CreateModulePage = () => {
 
   useEffect(() => {
     if (!courseId) return
-    fetchCursoById(courseId)
-      .then(setCourse)
+    Promise.all([
+      fetchCursoById(courseId),
+      fetchModulos(courseId)
+    ])
+      .then(([courseData, existingModules]) => {
+        setCourse(courseData)
+        const maxOrder = existingModules.length > 0
+          ? Math.max(...existingModules.map(m => m.order))
+          : 0
+        setValue('order', maxOrder + 1)
+      })
       .catch(err => logger.error('Error al cargar curso', { error: err, courseId }))
       .finally(() => setLoading(false))
   }, [courseId])
@@ -174,7 +186,7 @@ export const CreateModulePage = () => {
         <div className="px-8 py-6">
           <div className="flex items-center justify-between">
             <Link 
-              to={`/courses/${courseId}/modules`}
+              to={`/courses/${courseId}`}
               className="group flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all hover:opacity-80"
               style={{ 
                 borderColor: '#E5E7EB',
@@ -388,7 +400,7 @@ export const CreateModulePage = () => {
               {/* Action buttons */}
               <div className="flex gap-4 pt-4">
                 <Link
-                  to={`/courses/${courseId}/modules`}
+                  to={`/courses/${courseId}`}
                   className="flex-1 px-6 py-3 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-[1.02] font-medium text-base"
                   style={{ 
                     borderColor: '#E5E7EB',

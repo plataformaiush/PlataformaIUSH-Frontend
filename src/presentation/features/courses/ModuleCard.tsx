@@ -82,7 +82,7 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleC
       {/* Module name */}
       <td className="px-6 py-5">
         <Link
-          to={`/courses/${courseId}/modules/${module.id}/contents`}
+          to={`/courses/${courseId}/modules/${module.id}`}
           className="font-semibold hover:underline focus:outline-none transition-colors"
           style={{ color: '#223740', fontSize: '14px' }}
         >
@@ -145,7 +145,7 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate }: ModuleC
         <div className="flex items-center gap-2">
           {/* View contents */}
           <Link
-            to={`/courses/${courseId}/modules/${module.id}/contents`}
+            to={`/courses/${courseId}/modules/${module.id}`}
             className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
             style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
             title="Ver contenidos"

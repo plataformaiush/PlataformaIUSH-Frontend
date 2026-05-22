@@ -66,7 +66,7 @@ export const ContentListPage = () => {
       <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
         <div className="px-8 py-4">
           <Link
-            to={`/courses/${courseId}/modules`}
+            to={`/courses/${courseId}`}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
             style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}
           >

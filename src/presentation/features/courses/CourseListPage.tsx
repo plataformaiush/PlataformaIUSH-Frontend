@@ -161,7 +161,7 @@ export const CourseListPage = () => {
   }
   
   const handleViewCourse = (courseId: string) => {
-    navigate(`/courses/${courseId}/modules`)
+    navigate(`/courses/${courseId}`)
   }
 
   const handleAddModule = (courseId: string) => {

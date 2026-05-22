@@ -7,12 +7,13 @@ import { Course } from '../../../domain/courses/types'
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle2, BookOpen, Users, Target, Plus, Save, RotateCcw } from 'lucide-react'
 import { logger } from '../../utils/logger'
+import { useAuthStore } from '../../stores/auth.store'
 
 const courseSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(100, 'El título no puede exceder 100 caracteres').regex(/^[a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ.,-]+$/, 'El título contiene caracteres inválidos'),
-  description: z.string().min(1, 'La descripción es requerida').max(500, 'La descripción no puede exceder 500 caracteres'),
-  category: z.string().min(1, 'La categoría es requerida'),
-  instructor: z.string().optional(), // Hacerlo opcional ya que usamos etiquetas
+  description: z.string().max(500).optional().default(''),
+  category: z.string().optional().default(''),
+  instructor: z.string().optional(),
   level: z.enum(['beginner', 'intermediate', 'advanced']),
   status: z.enum(['active', 'inactive'])
 })
@@ -61,6 +62,7 @@ const clearDraftData = () => {
 
 export const CreateCoursePage = () => {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const [instructorTags, setInstructorTags] = useState<string[]>([])
   const [instructorInput, setInstructorInput] = useState('')
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
@@ -222,9 +224,10 @@ export const CreateCoursePage = () => {
         studentCount: 0
       }
       
-      // TODO: reemplazar por el id del usuario autenticado (auth context)
+
       // Usuario placeholder para desarrollo (seed insertado en BD)
-      const idUsuario = '00000000-0000-0000-0000-000000000001'
+      const idUsuario = user?.id
+      if (!idUsuario) throw new Error('Usuario no autenticado')
       const createdCourse = await createCurso(newCourse, idUsuario)
       logger.info('Curso creado exitosamente', { courseId: createdCourse.id })
       
