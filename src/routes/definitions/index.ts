@@ -33,11 +33,11 @@ export const allRoutes: RouteObject[] = [
         children: [
             ...vistaEstudiantesRutas, // Equipo 7
             ...adminRoutes, // Equipo 4
-            ...coursesRoutes, // Equipo 1
             {
                 path: '/',
                 element: createElement(ProfunSoft),
                 children: [
+                    ...coursesRoutes, // Equipo 1
                     ...teacherRoutes, // Equipo 6
                     ...reportsRoutes, // Equipo 9
                     ...superAdminRoutes, // Equipo 3
