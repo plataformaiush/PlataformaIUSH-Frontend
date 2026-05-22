@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { filesApi, type Documento } from './../../../../../domain/files/Filesapi'
 import { UploadButton } from '../buttons/UploadButton'
 import { FileList } from '../FileList'

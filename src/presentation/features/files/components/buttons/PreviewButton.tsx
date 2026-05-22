@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Maximize2, Play } from 'lucide-react'
 import { FilePreviewContainer } from '../vistas/Filepreviewcontainer'
 
