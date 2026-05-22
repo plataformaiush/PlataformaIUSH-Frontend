@@ -1,6 +1,6 @@
 import api from "../lib/axios";
 import type { Content } from "../../domain/contents/types";
-import { ContentType } from "../../domain/contents/types";
+import { ContentType, parseQuizData } from "../../domain/contents/types";
 
 export interface ContenidoBackend {
   idContenido: string;
@@ -19,7 +19,12 @@ export interface ContenidosResponse {
   data: ContenidoBackend[];
 }
 
-function mapTipoToContentType(tipo: ContenidoBackend["tipo"]): ContentType {
+function mapTipoToContentType(tipo: ContenidoBackend["tipo"], urlOTexto?: string): ContentType {
+  if (tipo === "texto" && urlOTexto) {
+    const quiz = parseQuizData(urlOTexto)
+    if (quiz?.questionType === 'quiz_tf') return ContentType.QUIZ_TF
+    if (quiz?.questionType === 'quiz_mc') return ContentType.QUIZ_MC
+  }
   const tipoMap: Record<ContenidoBackend["tipo"], ContentType> = {
     video: ContentType.VIDEO,
     texto: ContentType.TEXT,
@@ -33,10 +38,12 @@ function mapContentTypeToTipo(
   contentType: ContentType,
 ): ContenidoBackend["tipo"] {
   const contentTypeMap: Record<ContentType, ContenidoBackend["tipo"]> = {
-    [ContentType.VIDEO]: "video",
-    [ContentType.TEXT]: "texto",
+    [ContentType.VIDEO]:    "video",
+    [ContentType.TEXT]:     "texto",
     [ContentType.DOCUMENT]: "archivo",
-    [ContentType.IMAGE]: "imagen",
+    [ContentType.IMAGE]:    "imagen",
+    [ContentType.QUIZ_TF]:  "texto",
+    [ContentType.QUIZ_MC]:  "texto",
   };
   return contentTypeMap[contentType] || "texto";
 }
@@ -47,7 +54,7 @@ function mapContenidoToContent(c: ContenidoBackend): Content {
     moduleId: c.idModulo,
     title: c.titulo,
     description: c.descripcion || "",
-    type: mapTipoToContentType(c.tipo),
+    type: mapTipoToContentType(c.tipo, c.urlOTexto),
     status: c.activo ? "active" : "draft",
     resourceUrl: c.urlOTexto,
     durationMinutes: undefined,

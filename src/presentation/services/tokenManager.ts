@@ -9,11 +9,19 @@ export class TokenManager implements ITokenManager {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  setToken(token: string, expiresIn: number = 3600): void {
+  setToken(token: string, expiresIn: number = 86400): void {
     localStorage.setItem(this.TOKEN_KEY, token);
 
-    const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
+    let expiresAt: Date;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      expiresAt = payload.exp
+        ? new Date(payload.exp * 1000)
+        : new Date(Date.now() + expiresIn * 1000);
+    } catch {
+      expiresAt = new Date(Date.now() + expiresIn * 1000);
+    }
+
     localStorage.setItem(this.TOKEN_EXPIRES_KEY, expiresAt.toISOString());
   }
 

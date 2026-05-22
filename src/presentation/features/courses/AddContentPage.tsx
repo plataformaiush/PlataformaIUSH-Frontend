@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchCursoById } from '../../services/courseService'
 import { fetchModuloById } from '../../services/moduleService'
 import { createContenido, fetchContenidos } from '../../services/contentService'
-import { ContentType } from '../../../domain/contents/types'
+import { ContentType, type QuizTFData, type QuizMCData, type QuizMCOption } from '../../../domain/contents/types'
 import type { Course } from '../../../domain/courses/types'
 import type { Module } from '../../../domain/modules/types'
 import { useState, useEffect, useRef } from 'react'
@@ -64,6 +64,24 @@ const contentTypes = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
       </svg>
     )
+  },
+  {
+    type: ContentType.QUIZ_TF,
+    label: 'Verdadero/Falso',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  {
+    type: ContentType.QUIZ_MC,
+    label: 'Opción múltiple',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    )
   }
 ]
 
@@ -79,6 +97,20 @@ export const AddContentPage = () => {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Estado quiz Verdadero/Falso
+  const [tfQuestion, setTfQuestion] = useState('')
+  const [tfAnswer, setTfAnswer] = useState<boolean>(true)
+  const [tfExplanation, setTfExplanation] = useState('')
+
+  // Estado quiz Opción múltiple
+  const [mcQuestion, setMcQuestion] = useState('')
+  const [mcOptions, setMcOptions] = useState<QuizMCOption[]>([
+    { id: crypto.randomUUID(), text: '' },
+    { id: crypto.randomUUID(), text: '' },
+  ])
+  const [mcCorrectId, setMcCorrectId] = useState('')
+  const [mcExplanation, setMcExplanation] = useState('')
 
   useEffect(() => {
     if (!courseId || !moduleId) return
@@ -139,16 +171,49 @@ export const AddContentPage = () => {
     }
   }
 
+  const buildQuizResourceUrl = (type: ContentType): string | undefined => {
+    if (type === ContentType.QUIZ_TF) {
+      if (!tfQuestion.trim()) { alert('Escribe la pregunta.'); return undefined }
+      const data: QuizTFData = {
+        questionType: 'quiz_tf',
+        question: tfQuestion.trim(),
+        correctAnswer: tfAnswer,
+        explanation: tfExplanation.trim() || undefined,
+      }
+      return JSON.stringify(data)
+    }
+    if (type === ContentType.QUIZ_MC) {
+      const filledOptions = mcOptions.filter(o => o.text.trim())
+      if (!mcQuestion.trim()) { alert('Escribe la pregunta.'); return undefined }
+      if (filledOptions.length < 2) { alert('Agrega al menos 2 opciones.'); return undefined }
+      if (!mcCorrectId || !filledOptions.find(o => o.id === mcCorrectId)) { alert('Selecciona la respuesta correcta.'); return undefined }
+      const data: QuizMCData = {
+        questionType: 'quiz_mc',
+        question: mcQuestion.trim(),
+        options: filledOptions,
+        correctAnswerId: mcCorrectId,
+        explanation: mcExplanation.trim() || undefined,
+      }
+      return JSON.stringify(data)
+    }
+    return undefined
+  }
+
   const onSubmit = async (data: ContentFormData) => {
     if (!moduleId) return
     try {
+      let resourceUrl = data.resourceUrl || undefined
+      if (data.type === ContentType.QUIZ_TF || data.type === ContentType.QUIZ_MC) {
+        resourceUrl = buildQuizResourceUrl(data.type)
+        if (!resourceUrl) return
+      }
       const newContent = await createContenido(moduleId, {
         moduleId,
         title: data.title,
         description: data.description || '',
         type: data.type,
         status: data.status === 'active' ? 'active' : 'draft',
-        resourceUrl: data.resourceUrl || undefined,
+        resourceUrl,
         order: data.order
       })
       logger.info('Contenido creado exitosamente', { contentId: newContent.id, moduleId, courseId })
@@ -353,7 +418,11 @@ export const AddContentPage = () => {
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: '#5A878C' }}></div>
                 <h2 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#5A878C' }}>
-                  {selectedType === ContentType.TEXT ? 'Contenido de Texto' : selectedType === ContentType.VIDEO ? 'URL del Video' : 'Subir Archivo'}
+                  {selectedType === ContentType.TEXT ? 'Contenido de Texto'
+                    : selectedType === ContentType.VIDEO ? 'URL del Video'
+                    : selectedType === ContentType.QUIZ_TF ? 'Pregunta Verdadero / Falso'
+                    : selectedType === ContentType.QUIZ_MC ? 'Pregunta de Opción Múltiple'
+                    : 'Subir Archivo'}
                 </h2>
               </div>
 
@@ -368,6 +437,132 @@ export const AddContentPage = () => {
                     style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
                     placeholder="Escribe el contenido del texto aquí..."
                   />
+                </div>
+              )}
+
+              {/* QUIZ Verdadero/Falso */}
+              {selectedType === ContentType.QUIZ_TF && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Pregunta <span style={{ color: '#DC2626' }}>*</span></label>
+                    <textarea
+                      rows={3}
+                      value={tfQuestion}
+                      onChange={e => setTfQuestion(e.target.value)}
+                      className="w-full rounded-xl border-2 px-4 py-3 text-sm resize-none focus:outline-none"
+                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                      placeholder="¿Es React una librería de JavaScript?"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-3 block text-sm font-semibold" style={{ color: '#223740' }}>Respuesta correcta</label>
+                    <div className="flex gap-4">
+                      {[{ value: true, label: 'Verdadero' }, { value: false, label: 'Falso' }].map(opt => (
+                        <button
+                          key={String(opt.value)}
+                          type="button"
+                          onClick={() => setTfAnswer(opt.value)}
+                          className="flex-1 rounded-xl border-2 py-3 text-sm font-semibold transition-all"
+                          style={tfAnswer === opt.value
+                            ? { borderColor: '#5A878C', backgroundColor: '#AEEBF2', color: '#223740' }
+                            : { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Explicación (opcional)</label>
+                    <textarea
+                      rows={2}
+                      value={tfExplanation}
+                      onChange={e => setTfExplanation(e.target.value)}
+                      className="w-full rounded-xl border-2 px-4 py-3 text-sm resize-none focus:outline-none"
+                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                      placeholder="Explica por qué esa es la respuesta correcta..."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* QUIZ Opción múltiple */}
+              {selectedType === ContentType.QUIZ_MC && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Pregunta <span style={{ color: '#DC2626' }}>*</span></label>
+                    <textarea
+                      rows={3}
+                      value={mcQuestion}
+                      onChange={e => setMcQuestion(e.target.value)}
+                      className="w-full rounded-xl border-2 px-4 py-3 text-sm resize-none focus:outline-none"
+                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                      placeholder="¿Cuál de los siguientes es un hook de React?"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-semibold" style={{ color: '#223740' }}>Opciones <span style={{ color: '#DC2626' }}>*</span></label>
+                      <button
+                        type="button"
+                        onClick={() => setMcOptions(prev => [...prev, { id: crypto.randomUUID(), text: '' }])}
+                        className="text-xs font-semibold px-3 py-1 rounded-lg"
+                        style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
+                      >
+                        + Agregar opción
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {mcOptions.map((opt, idx) => (
+                        <div key={opt.id} className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="mcCorrect"
+                            checked={mcCorrectId === opt.id}
+                            onChange={() => setMcCorrectId(opt.id)}
+                            className="h-4 w-4 shrink-0"
+                            style={{ accentColor: '#5A878C' }}
+                            title="Marcar como respuesta correcta"
+                          />
+                          <input
+                            type="text"
+                            value={opt.text}
+                            onChange={e => setMcOptions(prev => prev.map(o => o.id === opt.id ? { ...o, text: e.target.value } : o))}
+                            className="flex-1 rounded-xl border-2 px-4 py-2 text-sm focus:outline-none"
+                            style={{
+                              borderColor: mcCorrectId === opt.id ? '#5A878C' : '#E5E7EB',
+                              backgroundColor: mcCorrectId === opt.id ? '#F0FAFB' : '#FAFAFA',
+                              color: '#223740'
+                            }}
+                            placeholder={`Opción ${idx + 1}`}
+                          />
+                          {mcOptions.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => { setMcOptions(prev => prev.filter(o => o.id !== opt.id)); if (mcCorrectId === opt.id) setMcCorrectId('') }}
+                              className="text-red-400 hover:text-red-600"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs" style={{ color: '#6B7280' }}>Selecciona el radio de la respuesta correcta</p>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Explicación (opcional)</label>
+                    <textarea
+                      rows={2}
+                      value={mcExplanation}
+                      onChange={e => setMcExplanation(e.target.value)}
+                      className="w-full rounded-xl border-2 px-4 py-3 text-sm resize-none focus:outline-none"
+                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                      placeholder="Explica por qué esa es la respuesta correcta..."
+                    />
+                  </div>
                 </div>
               )}
 

@@ -157,7 +157,7 @@ export const CourseListPage = () => {
   }
   
   const handleEditCourse = (courseId: string) => {
-    navigate(`/courses/${courseId}/edit`)
+    navigate(`/courses/${courseId}`)
   }
   
   const handleViewCourse = (courseId: string) => {
