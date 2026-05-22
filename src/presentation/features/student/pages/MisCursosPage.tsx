@@ -1,26 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GraduationCap, Loader, Play, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react'
-import {studentService} from "../services/studentService.ts";
-
-// Interfaz basada en el JSON que configuramos en el backend
-export interface CursoInscritoBackend {
-    id_inscripcion: string
-    inscripcion_fecha_inicio: string
-    inscripcion_fecha_finalizacion: string | null
-    id_curso: string
-    id_creador_curso: string
-    titulo: string
-    descripcion: string
-    curso_activo: boolean
-    curso_creacion: string
-    porcentaje_progreso: string
-    contenidos_completados: number
-    modulos_total: number
-    completado: boolean
-    aprobado: boolean
-    thumbnail?: string // Opcional, por si a futuro le agregas imagen a los cursos
-}
+import { GraduationCap, Loader, Play, CheckCircle, ArrowRight, ArrowLeft, Trash2, AlertTriangle, X } from 'lucide-react'
+import { studentService, type CursoInscritoBackend } from '../services/studentService'
 
 /* ═══════════════════════════════════════════════════════════════════
    Página: Mis Cursos
@@ -29,6 +10,9 @@ export function MisCursosPage() {
     const navigate = useNavigate()
     const [misCursos, setMisCursos] = useState<CursoInscritoBackend[]>([])
     const [isLoading, setIsLoading] = useState(true)
+
+    const [courseToDelete, setCourseToDelete] = useState<{ idInscripcion: string, titulo: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const getCurrentUserId = (): string | null => {
         const userData = localStorage.getItem('user')
@@ -45,14 +29,10 @@ export function MisCursosPage() {
         setIsLoading(true)
         try {
             const userId = getCurrentUserId()
-            if (!userId) {
-                console.error("No se encontró el ID del usuario")
-                return
-            }
+            if (!userId) return
 
             const response = await studentService.getMisCursosInscritos(userId)
             setMisCursos(response)
-
         } catch (error) {
             console.error('Error cargando mis cursos:', error)
             setMisCursos([])
@@ -65,17 +45,36 @@ export function MisCursosPage() {
         loadMisCursos()
     }, [])
 
-    // 👇 NUEVO: Función inteligente para decidir a dónde ir al hacer clic
     const handleCourseClick = (curso: CursoInscritoBackend) => {
         const progreso = parseFloat(curso.porcentaje_progreso || '0')
-        const isCompleted = progreso >= 100 || curso.completado
+        const isCompleted = progreso >= 100
 
         if (isCompleted) {
-            // Si es 100%, vamos a la página de certificados
             navigate('/student/grades')
         } else {
-            // Si es menor a 100%, vamos al contenido del curso
             navigate(`/student/courses/${curso.id_curso}`)
+        }
+    }
+
+    const handleDeleteClick = (idInscripcion: string, tituloCurso: string) => {
+        setCourseToDelete({ idInscripcion, titulo: tituloCurso })
+    }
+
+    const confirmDeletion = async () => {
+        if (!courseToDelete) return
+
+        setIsDeleting(true)
+        try {
+            await studentService.eliminarInscripcion(courseToDelete.idInscripcion)
+            // Quitamos el curso de la interfaz
+            setMisCursos((prev) => prev.filter(curso => curso.id_inscripcion !== courseToDelete.idInscripcion))
+            // Cerramos el modal
+            setCourseToDelete(null)
+        } catch (error) {
+            console.error('Error eliminando inscripción:', error)
+            window.alert('Hubo un error al intentar eliminar la inscripción. Por favor intenta de nuevo.')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -91,59 +90,112 @@ export function MisCursosPage() {
     }
 
     return (
-        <div className="w-full px-6 md:px-8 py-6 md:py-10 space-y-8 max-w-6xl mx-auto">
-            {/* 👇 MODIFICADO: Header con el botón "Ir al Dashboard" 👇 */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-mid/20 pb-5">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-primary mb-2">Mis Cursos</h1>
-                    <p className="text-secondary text-sm md:text-base">
-                        Continúa tu aprendizaje y revisa tu progreso en los cursos en los que estás inscrito.
-                    </p>
-                </div>
-
-                <button
-                    onClick={() => navigate('/student/dashboard')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full
-                               bg-secondary/10 text-secondary text-sm font-bold
-                               hover:bg-secondary hover:text-white cursor-pointer
-                               transition-all duration-300 shadow-sm w-fit"
-                >
-                    <ArrowLeft size={16} />
-                    Ir al Dashboard
-                </button>
-            </div>
-
-            {/* Empty State */}
-            {misCursos.length === 0 ? (
-                <div className="bg-surface border border-mid/20 rounded-2xl p-10 text-center flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                        <GraduationCap size={32} className="text-primary/50" />
+        <>
+            <div className="w-full px-6 md:px-8 py-6 md:py-10 space-y-8 max-w-6xl mx-auto relative">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-mid/20 pb-5">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-extrabold text-primary mb-2">Mis Cursos</h1>
+                        <p className="text-secondary text-sm md:text-base">
+                            Continúa tu aprendizaje y revisa tu progreso en los cursos en los que estás inscrito.
+                        </p>
                     </div>
-                    <h3 className="text-xl font-bold text-primary">Aún no tienes cursos</h3>
-                    <p className="text-secondary text-sm max-w-md">
-                        Explora nuestro catálogo e inscríbete en tu primer curso para comenzar a aprender.
-                    </p>
+
                     <button
                         onClick={() => navigate('/student/dashboard')}
-                        className="mt-4 px-6 py-2.5 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full
+                                   bg-secondary/10 text-secondary text-sm font-bold
+                                   hover:bg-secondary hover:text-white cursor-pointer
+                                   transition-all duration-300 shadow-sm w-fit"
                     >
-                        Explorar catálogo
+                        <ArrowLeft size={16} />
+                        Ir al Dashboard
                     </button>
                 </div>
-            ) : (
-                /* Grid de Cursos Inscritos */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {misCursos.map((curso) => (
-                        <EnrolledCourseCard
-                            key={curso.id_inscripcion}
-                            course={curso}
-                            // Pasamos el curso entero a la función inteligente
-                            onClick={() => handleCourseClick(curso)}
-                        />
-                    ))}
+
+                {misCursos.length === 0 ? (
+                    <div className="bg-surface border border-mid/20 rounded-2xl p-10 text-center flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                            <GraduationCap size={32} className="text-primary/50" />
+                        </div>
+                        <h3 className="text-xl font-bold text-primary">Aún no tienes cursos</h3>
+                        <p className="text-secondary text-sm max-w-md">
+                            Explora nuestro catálogo e inscríbete en tu primer curso para comenzar a aprender.
+                        </p>
+                        <button
+                            onClick={() => navigate('/student/dashboard')}
+                            className="mt-4 px-6 py-2.5 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
+                        >
+                            Explorar catálogo
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {misCursos.map((curso) => (
+                            <EnrolledCourseCard
+                                key={curso.id_inscripcion}
+                                course={curso}
+                                onClick={() => handleCourseClick(curso)}
+                                // Conectamos el botón de la tarjeta con la función que abre el modal
+                                onDelete={() => handleDeleteClick(curso.id_inscripcion, curso.titulo)}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {courseToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-surface border border-mid/20 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+
+                        {/* Cabecera del modal */}
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
+                                    <AlertTriangle size={20} className="text-red-500" />
+                                </div>
+                                <h3 className="text-lg font-bold text-primary">Eliminar inscripción</h3>
+                            </div>
+                            <button
+                                onClick={() => setCourseToDelete(null)}
+                                className="text-secondary hover:text-primary transition-colors mt-1"
+                                disabled={isDeleting}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Mensaje de advertencia */}
+                        <p className="text-secondary text-sm mb-2 leading-relaxed">
+                            ¿Estás seguro que deseas darte de baja del curso: <span className="font-bold text-primary">"{courseToDelete.titulo}"</span>?
+                        </p>
+                        <p className="text-red-500/90 text-sm mb-6 leading-relaxed font-medium">
+                            ⚠️ Esta acción no se puede deshacer y perderás todo tu progreso actual.
+                        </p>
+
+                        {/* Botones de acción */}
+                        <div className="flex justify-end gap-3 mt-auto">
+                            <button
+                                onClick={() => setCourseToDelete(null)}
+                                disabled={isDeleting}
+                                className="px-4 py-2.5 rounded-lg text-sm font-semibold text-secondary hover:bg-mid/10 transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmDeletion}
+                                disabled={isDeleting}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                            >
+                                {isDeleting && (
+                                    <Loader size={16} className="animate-spin" />
+                                )}
+                                {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-        </div>
+        </>
     )
 }
 
@@ -151,15 +203,15 @@ export function MisCursosPage() {
 function EnrolledCourseCard({
                                 course,
                                 onClick,
+                                onDelete,
                             }: {
     course: CursoInscritoBackend
     onClick: () => void
+    onDelete: () => void
 }) {
-    // Parseamos el string del backend a número
     const progreso = parseFloat(course.porcentaje_progreso || '0')
-    const isCompleted = progreso >= 100 || course.completado
+    const isCompleted = progreso >= 100
 
-    // 👇 NUEVO: Lógica dinámica para el texto del botón 👇
     let buttonText = 'Iniciar curso'
     if (isCompleted) {
         buttonText = 'Ir a certificados'
@@ -171,9 +223,8 @@ function EnrolledCourseCard({
         <div
             onClick={onClick}
             className="bg-surface rounded-2xl overflow-hidden border border-mid/20
-                 flex flex-col text-left hover:shadow-lg transition-all duration-300 w-full cursor-pointer group"
+                 flex flex-col text-left hover:shadow-lg transition-all duration-300 w-full cursor-pointer group relative"
         >
-            {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-primary/5">
                 {course.thumbnail ? (
                     <img
@@ -187,10 +238,9 @@ function EnrolledCourseCard({
                     </div>
                 )}
 
-                {/* Badge de estado flotante */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/95 backdrop-blur-sm shadow-sm
-                        text-[11px] font-bold">
+                        text-[11px] font-bold z-10">
                     {isCompleted ? (
                         <>
                             <CheckCircle size={14} className="text-green-600" />
@@ -203,9 +253,21 @@ function EnrolledCourseCard({
                         </>
                     )}
                 </div>
+
+                {/* Botón de eliminar */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-white/90 text-red-500
+                               hover:bg-red-500 hover:text-white transition-colors shadow-sm z-10 opacity-0 group-hover:opacity-100"
+                    title="Eliminar inscripción"
+                >
+                    <Trash2 size={16} />
+                </button>
             </div>
 
-            {/* Cuerpo de la tarjeta */}
             <div className="p-5 flex flex-col gap-2 flex-1">
                 <h3 className="font-bold text-base text-primary line-clamp-2 leading-tight">
                     {course.titulo}
@@ -214,10 +276,7 @@ function EnrolledCourseCard({
                     {course.descripcion || 'Sin descripción disponible'}
                 </p>
 
-                {/* Footer interactivo (Progreso + Botón) */}
                 <div className="mt-auto flex flex-col gap-4 pt-3 border-t border-mid/10">
-
-                    {/* Barra de Progreso */}
                     <div className="flex flex-col gap-1.5">
                         <div className="flex justify-between items-end">
                             <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider">
@@ -237,7 +296,6 @@ function EnrolledCourseCard({
                         </div>
                     </div>
 
-                    {/* 👇 MODIFICADO: Botón de Acción con texto dinámico 👇 */}
                     <button
                         className={`w-full py-2.5 px-3 rounded-lg text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2 ${
                             isCompleted
