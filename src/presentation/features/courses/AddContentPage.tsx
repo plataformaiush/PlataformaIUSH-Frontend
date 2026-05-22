@@ -9,7 +9,7 @@ import { ContentType, type QuizTFData, type QuizMCData, type QuizMCOption } from
 import type { Course } from '../../../domain/courses/types'
 import type { Module } from '../../../domain/modules/types'
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Save, RotateCcw, CheckCircle2 } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import api from '../../lib/axios'
 
@@ -238,85 +238,59 @@ export const AddContentPage = () => {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-      {/* Header */}
+      {/* Top bar — igual que ModuleListPage y ContentListPage */}
       <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <Link
-              to={`/courses/${courseId}/modules/${moduleId}`}
-              className="group flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all hover:opacity-80"
-              style={{ 
-                borderColor: '#E5E7EB',
-                backgroundColor: '#FFFFFF',
-                color: '#6B7280'
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-medium">Volver a contenidos</span>
-            </Link>
-            
-            <div className="flex items-center gap-4">
-              {/* Save indicator */}
-              {showSaveIndicator && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium" 
-                  style={{ backgroundColor: '#AEEBF2', color: '#5A878C' }}>
-                  <CheckCircle2 className="w-3 h-3" />
-                  {lastSaved ? 'Guardado automáticamente' : 'Borrador restaurado'}
-                </div>
-              )}
-              
-              {/* Progress indicator */}
-              <div className="flex items-center gap-3 px-4 py-2 rounded-full" 
-                style={{ 
-                  backgroundColor: '#AEEBF2',
-                  border: '1px solid #E5E7EB'
-                }}
-              >
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#5A878C' }} />
-                <span className="text-sm font-medium" style={{ color: '#223740' }}>Creando contenido</span>
-              </div>
-              
-              {/* Quick actions */}
-              <div className="flex items-center gap-2">
-                <button 
-                  type="button"
-                  className="p-2 rounded-lg transition-all hover:opacity-80"
-                  style={{ backgroundColor: 'transparent' }}
-                  title="Guardar borrador"
-                >
-                  <Save className="h-4 w-4" style={{ color: '#6B7280' }} />
-                </button>
-                <button 
-                  type="button"
-                  className="p-2 rounded-lg transition-all hover:opacity-80"
-                  style={{ backgroundColor: 'transparent' }}
-                  title="Limpiar borrador"
-                >
-                  <RotateCcw className="h-4 w-4" style={{ color: '#6B7280' }} />
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="px-8 py-4">
+          <Link
+            to={`/courses/${courseId}/modules/${moduleId}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+            style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Volver a contenidos
+          </Link>
         </div>
       </div>
 
-      <div className="flex gap-8 px-8 py-8 max-w-7xl mx-auto">
+      <div className="px-8 py-8 max-w-2xl mx-auto">
         {/* Main form */}
-        <div className="flex-1 space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold" style={{ color: '#223740' }}>Agregar Contenido</h1>
-            <p className="text-sm" style={{ color: '#5A878C' }}>Completa la información para crear un nuevo contenido en tu módulo</p>
-            {/* Module badge */}
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: '#223740' }}>Agregar Contenido</h1>
+              <p className="text-sm mt-1" style={{ color: '#5A878C' }}>Completa la información para crear un nuevo contenido en tu módulo</p>
+            </div>
+
+            {/* Progress steps */}
             <div className="flex items-center gap-3">
-              <span
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
-                style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
-              >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#5A878C' }} />
-                Módulo {String(module.order ?? 1).padStart(2, '0')} — {module.title}
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium border-2"
+                  style={{ backgroundColor: '#E5E7EB', color: '#6B7280', borderColor: '#E5E7EB' }}>1</div>
+                <div>
+                  <div className="text-xs" style={{ color: '#6B7280' }}>Curso</div>
+                  <div className="text-xs truncate max-w-[80px]" style={{ color: '#9CA3AF' }}>{course.title}</div>
+                </div>
+              </div>
+              <div className="w-8 h-0.5" style={{ backgroundColor: '#E5E7EB' }} />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium border-2"
+                  style={{ backgroundColor: '#E5E7EB', color: '#6B7280', borderColor: '#E5E7EB' }}>2</div>
+                <div>
+                  <div className="text-xs" style={{ color: '#6B7280' }}>Módulo</div>
+                  <div className="text-xs truncate max-w-[80px]" style={{ color: '#9CA3AF' }}>{module.title}</div>
+                </div>
+              </div>
+              <div className="w-8 h-0.5" style={{ backgroundColor: '#E5E7EB' }} />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow"
+                  style={{ backgroundColor: '#223740' }}>3</div>
+                <div>
+                  <div className="text-xs font-semibold" style={{ color: '#223740' }}>Contenido</div>
+                  <div className="text-xs" style={{ color: '#6B7280' }}>Paso actual</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -749,8 +723,8 @@ export const AddContentPage = () => {
           </form>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-80 shrink-0 space-y-6">
+        {/* Sidebar - removed */}
+        <div className="hidden">
           {/* Preview */}
           <div className="overflow-hidden rounded-2xl border shadow-sm hover:shadow-md transition-all" style={{ 
             borderColor: '#E5E7EB',
