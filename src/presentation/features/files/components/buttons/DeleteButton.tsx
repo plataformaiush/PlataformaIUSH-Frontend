@@ -3,9 +3,8 @@ import { Trash2 } from 'lucide-react'
 import { filesApi } from '../../../../../domain/files/Filesapi'
 
 interface DeleteButtonProps {
-  id: string
+  id: string        
   onDeleted?: (id: string) => void
-  /** Si true, muestra solo el ícono sin texto */
   iconOnly?: boolean
   className?: string
 }
@@ -31,8 +30,6 @@ export function DeleteButton({
   const handleConfirm = async () => {
     try {
       setLoading(true)
-      // id es la ruta relativa: "documentos/1747123456789_mi_archivo.pdf"
-      // filesApi.eliminar se encarga de codificarlo para la URL
       await filesApi.eliminar(id)
       onDeleted?.(id)
     } catch {

@@ -156,7 +156,15 @@ const real = {
   listar: async (carpeta?: Carpeta): Promise<Documento[]> => {
     const params = carpeta ? { carpeta } : {}
     const { data } = await api.get('/api/documentos', { params })
-    return data
+    return data.data.map((d: any) => ({
+      id: d.id_maestro_documento,
+      nombre: d.numero_documento,
+      tipo: d.tipo_extension,
+      tamaño: d.tamanno,
+      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      creadoEn: d.fecha_creacion,
+      carpeta: d.ruta_documento.split('/')[0] as Carpeta,
+    }))
   },
 
   // POST /api/documentos  (multipart/form-data)
@@ -194,19 +202,19 @@ const real = {
     return data
   },
 
-  // GET /api/documentos/:id  (id = id_maestro_documento)
+  // GET /api/documentos/:id  (id = id_maestro_documento UUID)
   obtenerPorId: async (id: string): Promise<Documento> => {
-  const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
-  const d = data.data
-  return {
-    id: d.id_maestro_documento,
-    nombre: d.numero_documento,
-    tipo: d.tipo_extension,
-    tamaño: d.tamanno,
-    url: `${API_BASE}/api/documentos/${encodeURIComponent(d.ruta_documento)}/descargar`,
-    creadoEn: d.fecha_creacion,
-    carpeta: d.ruta_documento.split('/')[0] as Carpeta,
-  }
+    const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
+    const d = data.data
+    return {
+      id: d.id_maestro_documento,
+      nombre: d.numero_documento,
+      tipo: d.tipo_extension,
+      tamaño: d.tamanno,
+      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      creadoEn: d.fecha_creacion,
+      carpeta: d.ruta_documento.split('/')[0] as Carpeta,
+    }
   },
 
   // DELETE /api/documentos/:id
@@ -214,7 +222,7 @@ const real = {
     await api.delete(`/api/documentos/${encodeURIComponent(id)}`)
   },
 
-  // GET /api/documentos/:id/descargar
+  // GET /api/documentos/:id/descargar  (id = id_maestro_documento UUID)
   descargarUrl: (id: string): string =>
     `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`,
 }

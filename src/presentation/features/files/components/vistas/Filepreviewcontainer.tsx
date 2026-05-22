@@ -72,23 +72,24 @@ function inferTipo(url: string): string {
 }
 
 // ─────────────────────────────────────────────
-// HOOK: convierte una URL con Content-Disposition: attachment
-// en un blob URL que el navegador puede renderizar inline
+// HOOK: blob URL para evitar Content-Disposition: attachment
 // ─────────────────────────────────────────────
 
-function useBlobUrl(url: string | undefined): { blobUrl: string; blobLoading: boolean; blobError: string } {
+function useBlobUrl(url: string | undefined): {
+  blobUrl: string
+  blobLoading: boolean
+  blobError: string
+} {
   const [blobUrl, setBlobUrl] = useState('')
   const [blobLoading, setBlobLoading] = useState(false)
   const [blobError, setBlobError] = useState('')
 
   useEffect(() => {
     if (!url) return
-
     let objectUrl = ''
     setBlobLoading(true)
     setBlobError('')
     setBlobUrl('')
-
     fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`Error ${r.status}`)
@@ -104,17 +105,14 @@ function useBlobUrl(url: string | undefined): { blobUrl: string; blobLoading: bo
         setBlobError('No se pudo cargar el archivo.')
         setBlobLoading(false)
       })
-
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [url])
 
   return { blobUrl, blobLoading, blobError }
 }
 
 // ─────────────────────────────────────────────
-// PDF VIEWER (blob URL para evitar Content-Disposition: attachment)
+// PDF VIEWER
 // ─────────────────────────────────────────────
 
 function PdfViewer({
@@ -398,15 +396,9 @@ function PreviewBody({
     )
   }
 
-  // ───────────────── PDF (via blob URL para evitar Content-Disposition: attachment)
+  // ───────────────── PDF (blob URL para evitar Content-Disposition: attachment)
   if (isPdf && doc.url) {
-    return (
-      <PdfViewer
-        url={doc.url}
-        pdfPage={pdfPage}
-        setPdfPage={setPdfPage}
-      />
-    )
+    return <PdfViewer url={doc.url} pdfPage={pdfPage} setPdfPage={setPdfPage} />
   }
 
   // ───────────────── IMAGEN

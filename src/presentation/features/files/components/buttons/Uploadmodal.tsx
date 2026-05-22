@@ -51,6 +51,7 @@ export function UploadModal({ open, onClose, onUploaded }: UploadModalProps) {
       })
       setDocSubido(doc)
       setEstado('exitoso')
+      // ✅ Notifica al padre con el doc del POST — FilesView hará obtenerPorId internamente
       onUploaded?.(doc)
     } catch {
       setEstado('error')
@@ -177,7 +178,6 @@ export function UploadModal({ open, onClose, onUploaded }: UploadModalProps) {
                   {archivo.name} · {formatBytes(archivo.size)}
                 </p>
               </div>
-              {/* Barra de progreso */}
               <div className="w-full">
                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                   <div
@@ -204,7 +204,6 @@ export function UploadModal({ open, onClose, onUploaded }: UploadModalProps) {
                   {docSubido.nombre} · {formatBytes(docSubido.tamaño)}
                 </p>
               </div>
-              {/* Barra completa */}
               <div className="w-full">
                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                   <div className="h-full bg-[#5A878C] rounded-full w-full" />

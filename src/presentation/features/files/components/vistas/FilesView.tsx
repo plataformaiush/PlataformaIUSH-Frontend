@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { filesApi, type Documento } from './../../../../../domain/files/Filesapi'
 import { UploadButton } from '../buttons/UploadButton'
 import { FileList } from '../FileList'
@@ -10,6 +10,7 @@ export function FilesView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const hasFetched = useRef(false)
 
   const fetchDocuments = async () => {
     try {
@@ -23,18 +24,26 @@ export function FilesView() {
     }
   }
 
-  useEffect(() => { fetchDocuments() }, [])
+  useEffect(() => {
+    if (hasFetched.current) return
+    hasFetched.current = true
+    fetchDocuments()
+  }, [])
 
   const handleDeleted = (id: string) => {
     setDocuments((prev) => prev.filter((d) => d.id !== id))
     if (previewId === id) setPreviewId(null)
   }
 
-  const handleUploaded = (doc: Documento) =>
-    setDocuments((prev) => [doc, ...prev])
-
-  const handleSelectPreview = (id: string) =>
-    setPreviewId((prev) => (prev === id ? null : id))
+  const handleUploaded = async (doc: Documento) => {
+    try {
+      const docFresh = await filesApi.obtenerPorId(doc.id)
+      setDocuments((prev) => [docFresh, ...prev])
+    } catch {
+      // Fallback: usa el doc del POST si el GET falla
+      setDocuments((prev) => [doc, ...prev])
+    }
+  }
 
   const selectedDoc = documents.find((d) => d.id === previewId) ?? null
 
