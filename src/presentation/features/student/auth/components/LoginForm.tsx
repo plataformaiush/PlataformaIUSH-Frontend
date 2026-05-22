@@ -40,8 +40,10 @@ export default function LoginForm() {
       // Redirige según el rol del usuario
       const userRoles = response.user.roles || [];
       
-      if (userRoles.includes("SuperAdmin") || userRoles.includes("Admin")) {
+      if (userRoles.includes("SuperAdmin")) {
         navigate("/super-admin");
+      } else if (userRoles.includes("Admin")) {
+        navigate("/admin");
       } else if (userRoles.includes("Estudiante")) {
         navigate("/student");
       } else if (userRoles.includes("Docente")) {
