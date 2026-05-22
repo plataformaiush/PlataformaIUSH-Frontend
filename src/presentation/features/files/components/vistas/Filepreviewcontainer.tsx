@@ -72,6 +72,110 @@ function inferTipo(url: string): string {
 }
 
 // ─────────────────────────────────────────────
+// HOOK: convierte una URL con Content-Disposition: attachment
+// en un blob URL que el navegador puede renderizar inline
+// ─────────────────────────────────────────────
+
+function useBlobUrl(url: string | undefined): { blobUrl: string; blobLoading: boolean; blobError: string } {
+  const [blobUrl, setBlobUrl] = useState('')
+  const [blobLoading, setBlobLoading] = useState(false)
+  const [blobError, setBlobError] = useState('')
+
+  useEffect(() => {
+    if (!url) return
+
+    let objectUrl = ''
+    setBlobLoading(true)
+    setBlobError('')
+    setBlobUrl('')
+
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Error ${r.status}`)
+        return r.blob()
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob)
+        setBlobUrl(objectUrl)
+        setBlobLoading(false)
+      })
+      .catch((err) => {
+        console.error('useBlobUrl error:', err)
+        setBlobError('No se pudo cargar el archivo.')
+        setBlobLoading(false)
+      })
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [url])
+
+  return { blobUrl, blobLoading, blobError }
+}
+
+// ─────────────────────────────────────────────
+// PDF VIEWER (blob URL para evitar Content-Disposition: attachment)
+// ─────────────────────────────────────────────
+
+function PdfViewer({
+  url,
+  pdfPage,
+  setPdfPage,
+}: {
+  url: string
+  pdfPage: number
+  setPdfPage: React.Dispatch<React.SetStateAction<number>>
+}) {
+  const { blobUrl, blobLoading, blobError } = useBlobUrl(url)
+
+  if (blobLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
+        <div className="w-10 h-10 rounded-full border-2 border-[var(--color-tertiary)] border-t-[var(--color-primary)] animate-spin" />
+        <p className="text-sm">Cargando PDF...</p>
+      </div>
+    )
+  }
+
+  if (blobError) {
+    return (
+      <div className="flex flex-col items-center gap-2 p-8 text-red-500">
+        <X size={32} />
+        <p className="text-sm font-medium">{blobError}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full min-h-0 flex-1">
+      <iframe
+        src={`${blobUrl}#page=${pdfPage}`}
+        title="PDF"
+        className="w-full flex-1 border-0"
+      />
+      <div className="flex items-center justify-between px-5 py-2 border-t border-gray-100 bg-white text-xs text-gray-500">
+        <span>Página {pdfPage}</span>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
+            disabled={pdfPage <= 1}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <button
+            onClick={() => setPdfPage((p) => p + 1)}
+            className="p-1 rounded hover:bg-gray-100"
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
 // EXCEL VIEWER (SheetJS)
 // ─────────────────────────────────────────────
 
@@ -294,34 +398,14 @@ function PreviewBody({
     )
   }
 
-  // ───────────────── PDF
+  // ───────────────── PDF (via blob URL para evitar Content-Disposition: attachment)
   if (isPdf && doc.url) {
     return (
-      <div className="flex flex-col h-full min-h-0 flex-1">
-        <iframe
-          src={`${doc.url}#page=${pdfPage}`}
-          title={doc.nombre}
-          className="w-full flex-1 border-0"
-        />
-        <div className="flex items-center justify-between px-5 py-2 border-t border-gray-100 bg-white text-xs text-gray-500">
-          <span>Página {pdfPage}</span>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
-              disabled={pdfPage <= 1}
-              className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <button
-              onClick={() => setPdfPage((p) => p + 1)}
-              className="p-1 rounded hover:bg-gray-100"
-            >
-              <ChevronRight size={15} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <PdfViewer
+        url={doc.url}
+        pdfPage={pdfPage}
+        setPdfPage={setPdfPage}
+      />
     )
   }
 

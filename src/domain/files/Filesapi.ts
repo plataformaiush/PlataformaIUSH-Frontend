@@ -5,12 +5,12 @@ const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env
 // ─────────────────────────────────────────────
 // Pon en true para usar datos falsos sin backend
 // ─────────────────────────────────────────────
-const MOCK_MODE = true
+const MOCK_MODE = false
 
 export type Carpeta = 'documentos' | 'imagenes'
 
 export interface Documento {
-  id: string       // ruta relativa: "documentos/1747123456789_mi_archivo.pdf"
+  id: string       // id_maestro_documento (UUID)
   nombre: string
   tipo: 'pdf' | 'docx' | 'xlsx' | 'png' | 'jpg' | string
   tamaño: number
@@ -139,7 +139,6 @@ const mock = {
     mockDB.splice(idx, 1)
   },
 
-  // En mock devuelve la URL directa del objeto; en real construye el endpoint
   descargarUrl: (id: string): string => {
     const doc = mockDB.find((d) => d.id === id)
     return doc?.url || `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`
@@ -148,14 +147,12 @@ const mock = {
 
 // ─────────────────────────────────────────────
 // Implementaciones reales con axios
-// Usa createAxiosInstance para heredar el interceptor global
-// (token 'token' en localStorage + manejo automático de 401)
 // ─────────────────────────────────────────────
 const api = createAxiosInstance(API_BASE)
 
 const real = {
-  // GET /api/documentos                    → todos los archivos
-  // GET /api/documentos?carpeta=imagenes   → filtrado por carpeta
+  // GET /api/documentos
+  // GET /api/documentos?carpeta=imagenes
   listar: async (carpeta?: Carpeta): Promise<Documento[]> => {
     const params = carpeta ? { carpeta } : {}
     const { data } = await api.get('/api/documentos', { params })
@@ -163,37 +160,32 @@ const real = {
   },
 
   // POST /api/documentos  (multipart/form-data)
-  // La carpeta se infiere del tipo de archivo: imágenes → "imagenes", resto → "documentos"
   subir: async (
     archivo: File,
     onProgress?: (pct: number, cargado: number) => void
   ): Promise<Documento> => {
     const carpeta = inferirCarpeta(archivo.name)
     const formData = new FormData()
-    formData.append('file', archivo)
+    formData.append('archivo', archivo)
     formData.append('carpeta', carpeta)
+
     const { data } = await api.post('/api/documentos', formData, {
-      // ⚠️ No fijar Content-Type: axios genera el boundary correcto automáticamente
+      timeout: 120000,
       onUploadProgress: (evt) => {
-        if (evt.total && onProgress) {
+        if (evt.total && onProgress)
           onProgress(Math.round((evt.loaded * 100) / evt.total), evt.loaded)
-        }
       },
     })
 
-    // Mapear respuesta del servidor → Documento
-    // Ejemplo de respuesta:
-    // { success: true, data: { id, name, mimeType, size, carpeta, createdTime, modifiedTime, path } }
     const d = data.data
-    const extension = d.name.split('.').pop()?.toLowerCase() || 'unknown'
     return {
-      id: d.id,               // "documentos/1747123456789_mi_archivo.pdf"
-      nombre: d.name,         // "1747123456789_mi_archivo.pdf"
-      tipo: extension,
-      tamaño: d.size,
-      url: d.path,
-      creadoEn: d.createdTime,
-      carpeta: d.carpeta,
+      id: d.id_maestro_documento,
+      nombre: d.numero_documento,
+      tipo: d.tipo_extension,
+      tamaño: d.tamanno,
+      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      creadoEn: d.fecha_creacion,
+      carpeta,
     }
   },
 
@@ -202,23 +194,32 @@ const real = {
     return data
   },
 
+  // GET /api/documentos/:id  (id = id_maestro_documento)
   obtenerPorId: async (id: string): Promise<Documento> => {
-    const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
-    return data
+  const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
+  const d = data.data
+  return {
+    id: d.id_maestro_documento,
+    nombre: d.numero_documento,
+    tipo: d.tipo_extension,
+    tamaño: d.tamanno,
+    url: `${API_BASE}/api/documentos/${encodeURIComponent(d.ruta_documento)}/descargar`,
+    creadoEn: d.fecha_creacion,
+    carpeta: d.ruta_documento.split('/')[0] as Carpeta,
+  }
   },
 
-  // DELETE /api/documentos/:id  (id codificado en la URL)
+  // DELETE /api/documentos/:id
   eliminar: async (id: string): Promise<void> => {
     await api.delete(`/api/documentos/${encodeURIComponent(id)}`)
   },
 
-  // GET /api/documentos/:id/descargar  (id codificado en la URL)
+  // GET /api/documentos/:id/descargar
   descargarUrl: (id: string): string =>
     `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`,
 }
 
 // ─────────────────────────────────────────────
 // Exporta mock o real según la variable MOCK_MODE
-// Cuando el backend esté listo solo cambia a false
 // ─────────────────────────────────────────────
 export const filesApi = MOCK_MODE ? mock : real
