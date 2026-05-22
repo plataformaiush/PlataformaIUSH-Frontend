@@ -1,71 +1,164 @@
-import {useMemo} from 'react'
+import {useMemo, useState, useEffect} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {
-    ArrowRight, Target, Trophy,
-    Play, GraduationCap, Wrench, CheckCircle2,
+    ArrowRight,
+    Play, GraduationCap, Loader, Award,
 } from 'lucide-react'
-import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
-import {EmptyCoursesState, DEMO_COURSES} from './components/EmptyCoursesState'
+// ...existing code... (EmptyCoursesState removed on purpose)
+import {studentService, type MisCursos} from '../services/studentService'
 
-const STUDENT_NAME = 'Ana'
 const STREAK_DAYS = 14
-const WEEKLY_DONE = 4
-const WEEKLY_TOTAL = 5
-const CIRC = 2 * Math.PI * 40   // ≈ 251.3
 
-type CourseType = 'Curso' | 'Taller'
-type CourseStatus = 'locked' | 'progress' | 'approved'
-
-interface CourseMeta {
-    type: CourseType;
-    instructor: string;
-    module: string
+interface EnrichedCourse extends MisCursos {
+    displayTitle: string
+    displayDescription: string
 }
 
-const COURSE_META: Record<string, CourseMeta> = {
-    '1': {type: 'Curso', instructor: 'Carlos Mendez', module: 'Módulo 3: Funciones'},
-    '2': {type: 'Taller', instructor: 'Laura Ramírez', module: 'Módulo 5: Prototipado'},
-    '3': {type: 'Curso', instructor: 'Diego Torres', module: 'Módulo 2: JOIN y GROUP BY'},
-    '4': {type: 'Curso', instructor: 'Ana Martínez', module: 'Módulo 1: Fundamentos'},
-    '5': {type: 'Taller', instructor: 'Paula Gómez', module: 'Módulo 4: Analíticas'},
-    '6': {type: 'Curso', instructor: 'Sergio Ruiz', module: 'Módulo 3: Regresión'},
-}
-
-const DEFAULT_META: CourseMeta = {type: 'Curso', instructor: 'Instructor', module: 'Módulo 1'}
-
-function statusOf(progress: number): CourseStatus {
-    if (progress === 0) return 'locked'
-    if (progress === 100) return 'approved'
-    return 'progress'
-}
+// statusOf removed: dashboard view no longer relies on course progress/status
 
 /* ═══════════════════════════════════════════════════════════════════
    Página principal
 ══════════════════════════════════════════════════════════════════════ */
 export function StudentDashboardPage() {
     const navigate = useNavigate()
-    const enrolledCourses = useStudentProgressStore(s => s.enrolledCourses)
-    const progressMap = useStudentProgressStore(s => s.progress)
-    const enrollCourses = useStudentProgressStore(s => s.enrollCourses)
 
-    const hasEnrolled = enrolledCourses.length > 0 || Object.keys(progressMap).length > 0
+    const [studentName, setStudentName] = useState<string>('Estudiante')
+    const [enrichedCourses, setEnrichedCourses] = useState<EnrichedCourse[]>([])
+    const [isLoadingCourses, setIsLoadingCourses] = useState(false)
+    const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
 
-    const courses = enrolledCourses.length > 0
-        ? enrolledCourses
-        : hasEnrolled ? DEMO_COURSES : []
+    const getCurrentUserId = (): string | null => {
+        const userData = localStorage.getItem('user')
+        if (!userData) return null
+
+        try {
+            const parsedUser = JSON.parse(userData)
+            return parsedUser.id || parsedUser.idUsuario || null
+        } catch {
+            return null
+        }
+    }
+
+    // Función reutilizable para cargar cursos y filtrar los creados por el usuario logueado
+    const loadCourses = async () => {
+        setIsLoadingCourses(true)
+        try {
+            const cursos = await studentService.getAllCursos()
+            const userId = getCurrentUserId()
+
+            const normalizeId = (value: unknown) => (value == null ? '' : String(value))
+
+            // Excluir cursos creados por el usuario logueado y mostrar activos.
+            // Se toleran variantes del backend: activo boolean/number/string y distintos nombres de id usuario.
+            const filtered = cursos.filter((c: any) => {
+                const courseOwnerId = c.idUsuario ?? c.id_usuario ?? c.usuarioId
+                const isNotCreatedByUser = !userId || normalizeId(courseOwnerId) !== normalizeId(userId)
+                const isActive = c.activo === undefined || c.activo === null || c.activo === true || c.activo === 1 || c.activo === '1' || c.activo === 'true'
+                return isNotCreatedByUser && isActive
+            })
+
+            const normalizedCourses = filtered.map((curso: any) => ({
+                idCurso: curso.idCurso,
+                titulo: curso.titulo,
+                descripcion: curso.descripcion,
+                thumbnail: (curso as any).thumbnail || undefined,
+                modulosTotal: curso.modulosCount ?? 0,
+                modulosCompletados: 0,
+                porcentajeProgreso: 0, // en el catálogo no mostramos progreso
+                displayTitle: curso.titulo,
+                displayDescription: curso.descripcion || 'Sin descripción disponible',
+            }))
+
+            setEnrichedCourses(normalizedCourses)
+        } catch (err) {
+            console.error('Error loading courses:', err)
+            setEnrichedCourses([])
+        } finally {
+            setIsLoadingCourses(false)
+        }
+    }
+
+    // Obtener nombre del estudiante desde localStorage
+    useEffect(() => {
+        const userData = localStorage.getItem('user')
+        if (userData) {
+            try {
+                const user = JSON.parse(userData)
+                setStudentName(user.nombre || user.name || 'Estudiante')
+            } catch (e) {
+                console.error('Error parsing user from localStorage:', e)
+            }
+        }
+    }, [])
+
+    // Cargar todos los cursos desde la API
+    useEffect(() => {
+        loadCourses()
+    }, [])
+
+    // Solo usamos los cursos provenientes de la base de datos
+    const courses = enrichedCourses
+
+    const hasEnrolled = courses.length > 0
 
     const inProgress = useMemo(() =>
             [...courses]
-                .filter(c => c.progress > 0 && c.progress < 100)
-                .sort((a, b) => b.progress - a.progress)[0] ?? null
+                .filter(c => c.porcentajeProgreso > 0 && c.porcentajeProgreso < 100)
+                .sort((a, b) => b.porcentajeProgreso - a.porcentajeProgreso)[0] ?? null
         , [courses])
 
     const goToCourse = (id: string) => navigate(`/student/courses/${id}`)
 
+    const handleEnrollClick = async (courseId: string) => {
+        const userId = getCurrentUserId()
+
+        if (!userId) {
+            window.alert('No fue posible identificar el usuario autenticado.')
+            return
+        }
+
+        setEnrollingCourseId(courseId)
+        try {
+            const validation = await studentService.validarInscripcion(courseId, userId)
+
+            if (!validation.enrolled) {
+                await studentService.inscribirCurso({
+                    idCurso: courseId,
+                    idUsuario: userId,
+                    fechaInicio: new Date().toISOString(),
+                })
+            }
+
+            goToCourse(courseId)
+        } catch (error) {
+            console.error('Error al validar/crear inscripción:', error)
+            window.alert('No se pudo completar la inscripción. Inténtalo de nuevo.')
+        } finally {
+            setEnrollingCourseId(null)
+        }
+    }
+
+    if (isLoadingCourses) {
+        return (
+            <div className="flex items-center justify-center px-6 md:px-8 py-16 md:py-24">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader size={32} className="animate-spin text-secondary"/>
+                    <p className="text-sm text-secondary">Cargando tus cursos...</p>
+                </div>
+            </div>
+        )
+    }
+
     if (!hasEnrolled) {
         return (
-            <div className="px-6 md:px-8 py-6 md:py-8">
-                <EmptyCoursesState onEnroll={() => enrollCourses(DEMO_COURSES)}/>
+            <div className="px-6 md:px-8 py-6 md:py-8 text-center">
+                <p className="text-secondary mb-4">No hay cursos disponibles para mostrar.</p>
+                <button
+                    onClick={loadCourses}
+                    className="inline-flex items-center gap-2.5 min-h-10 px-6 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
+                >
+                    Actualizar
+                </button>
             </div>
         )
     }
@@ -73,15 +166,15 @@ export function StudentDashboardPage() {
     return (
         <div className="w-full px-6 md:px-8 py-4 md:py-6 space-y-6 max-w-6xl mx-auto">
 
-            {/* Fila 1: Hero + Weekly Goal */}
+            {/* Fila 1: Hero + Certificados */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
                 <HeroBanner
-                    name={STUDENT_NAME}
+                    name={studentName}
                     streak={STREAK_DAYS}
-                    courseName={inProgress?.title ?? null}
-                    onContinue={() => inProgress && goToCourse(inProgress.id)}
+                    courseName={inProgress?.displayTitle ?? null}
+                    onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
                 />
-                <WeeklyGoalCard done={WEEKLY_DONE} total={WEEKLY_TOTAL}/>
+                <CertificatesCard onNavigate={() => navigate('/grades')}/>
             </div>
 
             {/* Fila 2: In Progress + Up Next */}
@@ -89,9 +182,9 @@ export function StudentDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <InProgressCard
                         course={inProgress}
-                        onClick={() => goToCourse(inProgress.id)}
+                        onClick={() => goToCourse(inProgress.idCurso)}
                     />
-                    <UpNextCard onClick={() => goToCourse(inProgress.id)}/>
+                    <UpNextCard onClick={() => goToCourse(inProgress.idCurso)}/>
                 </div>
             )}
 
@@ -99,6 +192,8 @@ export function StudentDashboardPage() {
             <LearningPathSection
                 courses={courses}
                 onCourseClick={goToCourse}
+                onEnrollClick={handleEnrollClick}
+                enrollingCourseId={enrollingCourseId}
             />
         </div>
     )
@@ -114,7 +209,7 @@ interface HeroBannerProps {
 
 function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
     return (
-        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-[260px]"
+        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-65"
              style={{background: 'linear-gradient(135deg, #162830 0%, #223740 55%, #2d5e68 100%)'}}>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
                       bg-white/15 text-white text-xs font-semibold w-fit">
@@ -134,7 +229,7 @@ function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
 
             <button
                 onClick={onContinue}
-                className="flex items-center gap-2 min-h-[44px] px-6 rounded-xl mt-auto w-fit
+                className="flex items-center gap-2 min-h-11 px-6 rounded-xl mt-auto w-fit
                    border-2 border-white text-white font-semibold text-sm
                    hover:bg-white hover:text-primary transition-all duration-200"
             >
@@ -146,49 +241,39 @@ function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
 }
 
 /* ── Weekly Goal ────────────────────────────────────────────────── */
-function WeeklyGoalCard({done, total}: { done: number; total: number }) {
-    const dash = (done / total) * CIRC
-
+function CertificatesCard({onNavigate}: {onNavigate: () => void}) {
     return (
         <div className="bg-surface rounded-2xl border border-mid/20 p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-primary">Meta semanal</h2>
-                <Target size={18} className="text-secondary"/>
+                <h2 className="text-base font-bold text-primary">Mis certificados</h2>
+                <Award size={18} className="text-secondary"/>
             </div>
 
-            {/* Anillo SVG */}
-            <div className="relative flex items-center justify-center">
-                <svg viewBox="0 0 104 104" className="w-32 h-32">
-                    <circle cx="52" cy="52" r="40" fill="none"
-                            stroke="currentColor" strokeWidth="8"
-                            className="text-mid/25"/>
-                    <circle cx="52" cy="52" r="40" fill="none"
-                            stroke="currentColor" strokeWidth="8"
-                            strokeLinecap="round"
-                            className="text-primary transition-all duration-700"
-                            style={{
-                                strokeDasharray: `${dash} ${CIRC}`,
-                                transform: 'rotate(-90deg)',
-                                transformOrigin: '52px 52px',
-                            }}/>
-                </svg>
-                <div className="absolute flex flex-col items-center pointer-events-none">
-                    <span className="text-2xl font-black text-primary leading-none">{done}/{total}</span>
-                    <span className="text-xs text-secondary mt-0.5">Módulos</span>
+            {/* Ícono decorativo */}
+            <div className="flex justify-center py-4">
+                <div className="w-16 h-16 rounded-full bg-secondary/15 flex items-center justify-center">
+                    <Award size={32} className="text-secondary"/>
                 </div>
             </div>
 
-            {/* Sub-card motivacional */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted">
-                <Trophy size={20} className="text-secondary shrink-0"/>
-                <div>
-                    <p className="text-sm font-bold text-primary">¡Casi lo logras!</p>
-                    <p className="text-xs text-secondary">
-                        Te {total - done === 1 ? 'falta' : 'faltan'} {total - done} módulo{total - done !== 1 ? 's' : ''} para
-                        tu meta.
-                    </p>
-                </div>
+            {/* Texto motivacional */}
+            <div className="text-center">
+                <p className="text-sm font-semibold text-primary mb-1">
+                    Tus logros certificados
+                </p>
+                <p className="text-xs text-secondary">
+                    Visualiza y descarga todos tus certificados completados.
+                </p>
             </div>
+
+            {/* Botón */}
+            <button
+                onClick={onNavigate}
+                className="w-full py-2 px-4 rounded-lg bg-secondary text-white font-semibold text-sm
+                         hover:bg-secondary/90 transition-colors mt-2"
+            >
+                Ver certificados
+            </button>
         </div>
     )
 }
@@ -198,11 +283,9 @@ function InProgressCard({
                             course,
                             onClick,
                         }: {
-    course: typeof DEMO_COURSES[0]
+    course: EnrichedCourse
     onClick: () => void
 }) {
-    const meta = COURSE_META[course.id] ?? DEFAULT_META
-
     return (
         <button
             onClick={onClick}
@@ -214,20 +297,20 @@ function InProgressCard({
         En progreso
       </span>
 
-            <h3 className="text-xl font-bold text-primary leading-snug">{course.title}</h3>
+            <h3 className="text-xl font-bold text-primary leading-snug">{course.displayTitle}</h3>
             <p className="text-sm text-secondary leading-relaxed line-clamp-2">
-                Domina los conceptos y herramientas para avanzar en tu carrera profesional.
+                {course.displayDescription || 'Domina los conceptos y herramientas para avanzar en tu carrera profesional.'}
             </p>
 
             <div className="mt-auto">
                 <div className="flex justify-between items-center text-xs font-medium text-secondary mb-1.5">
-                    <span>{meta.module}</span>
-                    <span>{course.progress}%</span>
+                    <span>Progreso</span>
+                    <span>{course.porcentajeProgreso}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
                     <div
                         className="h-full rounded-full bg-secondary transition-all duration-700"
-                        style={{width: `${course.progress}%`}}
+                        style={{width: `${course.porcentajeProgreso}%`}}
                     />
                 </div>
             </div>
@@ -270,25 +353,31 @@ function UpNextCard({onClick}: { onClick: () => void }) {
 function LearningPathSection({
                                  courses,
                                  onCourseClick,
+                                 onEnrollClick,
+                                 enrollingCourseId,
                              }: {
-    courses: typeof DEMO_COURSES
+    courses: EnrichedCourse[]
     onCourseClick: (id: string) => void
+    onEnrollClick: (id: string) => Promise<void>
+    enrollingCourseId: string | null
 }) {
     return (
         <section className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-primary">Tu ruta de aprendizaje</h2>
+                <h2 className="text-xl font-bold text-primary">Catálogo de cursos</h2>
                 <button className="text-sm font-semibold text-secondary hover:text-primary transition-colors">
-                    Ver todos
+                    Mis cursos
                 </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map(course => (
                     <CourseGridCard
-                        key={course.id}
+                        key={course.idCurso}
                         course={course}
-                        onClick={() => onCourseClick(course.id)}
+                        onClick={() => onCourseClick(course.idCurso)}
+                        onEnroll={() => onEnrollClick(course.idCurso)}
+                        isEnrolling={enrollingCourseId === course.idCurso}
                     />
                 ))}
             </div>
@@ -300,92 +389,61 @@ function LearningPathSection({
 function CourseGridCard({
                             course,
                             onClick,
+                            onEnroll,
+                            isEnrolling,
                         }: {
-    course: typeof DEMO_COURSES[0]
+    course: EnrichedCourse
     onClick: () => void
+    onEnroll: () => Promise<void>
+    isEnrolling: boolean
 }) {
-    const meta = COURSE_META[course.id] ?? DEFAULT_META
-    const status = statusOf(course.progress)
-
     return (
-        <button
+        <div
             onClick={onClick}
             className="bg-surface rounded-2xl overflow-hidden border border-mid/20
-                 flex flex-col text-left hover:shadow-md transition-all duration-200 w-full"
+                 flex flex-col text-left hover:shadow-md transition-all duration-200 w-full cursor-pointer"
         >
             {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-primary/10">
-                <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                />
+                {course.thumbnail ? (
+                    <img
+                        src={course.thumbnail}
+                        alt={course.displayTitle}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-primary/20">
+                        <GraduationCap size={32} className="text-primary/50" />
+                    </div>
+                )}
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/90 backdrop-blur-sm
                         text-[11px] font-semibold text-primary">
-                    {meta.type === 'Taller' ? <Wrench size={12}/> : <GraduationCap size={12}/>}
-                    {meta.type}
+                    <GraduationCap size={12}/>
+                    Curso
                 </div>
             </div>
 
             {/* Cuerpo */}
             <div className="p-4 flex flex-col gap-1.5 flex-1">
-                <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.title}</p>
-                <p className="text-xs text-secondary">Instructor: {meta.instructor}</p>
+                <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.displayTitle}</p>
+                <p className="text-xs text-secondary line-clamp-2">{course.displayDescription}</p>
 
-                {/* Footer estado con botones dinámicos */}
+                {/* Footer: botón de inscripción (solo imprime id del curso por ahora) */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
-                    {status === 'locked' && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onClick()
-                            }}
-                            className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-mid hover:bg-mid/90 transition-colors"
-                        >
-                            Empezar curso
-                        </button>
-                    )}
-                    {status === 'progress' && (
-                        <>
-                            <div className="w-full">
-                                <p className="text-[11px] font-semibold text-secondary mb-1">{course.progress}%</p>
-                                <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full bg-secondary transition-all duration-700"
-                                        style={{width: `${course.progress}%`}}
-                                    />
-                                </div>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onClick()
-                                }}
-                                className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                         bg-secondary hover:bg-secondary/90 transition-colors"
-                            >
-                                Continuar viendo
-                            </button>
-                        </>
-                    )}
-                    {status === 'approved' && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onClick()
-                            }}
-                            className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-secondary hover:bg-secondary/90 transition-colors
-                                     flex items-center justify-center gap-2"
-                        >
-                            <CheckCircle2 size={16} />
-                            Ver certificado
-                        </button>
-                    )}
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation()
+                            await onEnroll()
+                        }}
+                        disabled={isEnrolling}
+                        className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
+                                     bg-secondary hover:bg-secondary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {isEnrolling ? 'Procesando...' : 'Inscribirse'}
+                    </button>
                 </div>
             </div>
-        </button>
+        </div>
     )
 }

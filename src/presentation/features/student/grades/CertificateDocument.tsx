@@ -11,7 +11,7 @@ interface CertificateDocumentProps {
 
 const CERTIFICATE_COLORS: Record<string, { accent: string; light: string }> = {
   '2': { accent: '#E53E6D', light: '#fce7ef' },   // Diseño UX/UI
-  default: { accent: '#223740', light: '#AEEBF2' },
+  default: { accent: 'var(--color-primary)', light: 'var(--color-tertiary)' },
 }
 
 export function CertificateDocument({
@@ -37,7 +37,7 @@ export function CertificateDocument({
       {/* Banda superior */}
       <div
         className="h-3 w-full"
-        style={{ background: `linear-gradient(90deg, #223740, ${palette.accent}, #AEEBF2)` }}
+        style={{ background: `linear-gradient(90deg, var(--color-primary), ${palette.accent}, var(--color-tertiary))` }}
       />
 
       {/* Esquinas decorativas */}
@@ -144,7 +144,7 @@ export function CertificateDocument({
       {/* Banda inferior */}
       <div
         className="h-2 w-full"
-        style={{ background: `linear-gradient(90deg, #AEEBF2, ${palette.accent}, #223740)` }}
+        style={{ background: `linear-gradient(90deg, var(--color-tertiary), ${palette.accent}, var(--color-primary))` }}
       />
     </div>
   )
