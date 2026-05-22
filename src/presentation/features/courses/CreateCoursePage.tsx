@@ -4,10 +4,17 @@ import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { createCurso } from '../../services/courseService'
 import { Course } from '../../../domain/courses/types'
-import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle2, BookOpen, Users, Target, Plus, Save, RotateCcw } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { CheckCircle2, BookOpen, Users, Target, Save, RotateCcw } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import { useAuthStore } from '../../stores/auth.store'
+import api from '../../lib/axios'
+
+interface DocenteOption {
+  id: string
+  nombre: string
+  correo: string
+}
 
 const courseSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(100, 'El título no puede exceder 100 caracteres').regex(/^[a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ.,-]+$/, 'El título contiene caracteres inválidos'),
@@ -63,27 +70,82 @@ const clearDraftData = () => {
 export const CreateCoursePage = () => {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [instructorTags, setInstructorTags] = useState<string[]>([])
-  const [instructorInput, setInstructorInput] = useState('')
+  const [selectedDocentes, setSelectedDocentes] = useState<DocenteOption[]>([])
+  const [docenteSearch, setDocenteSearch] = useState('')
+  const [docenteResults, setDocenteResults] = useState<DocenteOption[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [loadingDocentes, setLoadingDocentes] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [showSaveIndicator, setShowSaveIndicator] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Cargar datos del borrador al montar
   useEffect(() => {
     const draftData = loadDraftData()
-    if (draftData.instructorTags) {
-      setInstructorTags(draftData.instructorTags)
-    }
-    
-    // Verificar si el borrador tiene datos significativos
-    const hasData = draftData.title || draftData.description || draftData.category || 
-                   (draftData.instructorTags && draftData.instructorTags.length > 0)
-    
+    const hasData = draftData.title || draftData.description || draftData.category
     if (hasData) {
       setShowSaveIndicator(true)
       setTimeout(() => setShowSaveIndicator(false), 3000)
     }
   }, [])
+
+  const fetchDocentes = useCallback(async (search: string) => {
+    setLoadingDocentes(true)
+    try {
+      const isWildcard = search.trim() === '$' || search.trim() === ''
+      const url = isWildcard ? '/users' : `/users?nombre=${encodeURIComponent(search)}`
+      const res = await api.get<{ users?: { id: string; nombre: string; correo: string; roles: string[] }[]; data?: { id_usuario: string; nombre: string; correo: string; roles: string[] }[] }>(url)
+      const raw = res.data.users || res.data.data || []
+      const all = raw.map((u: any) => ({ id: u.id || u.id_usuario, nombre: u.nombre, correo: u.correo }))
+      setDocenteResults(all)
+      setShowDropdown(true)
+    } catch {
+      setDocenteResults([])
+    } finally {
+      setLoadingDocentes(false)
+    }
+  }, [])
+
+  // Pre-cargar lista de usuarios al montar (sin mostrar dropdown)
+  useEffect(() => {
+    fetchDocentes('').then(() => setShowDropdown(false))
+  }, [fetchDocentes])
+
+  // Buscar con debounce al escribir
+  useEffect(() => {
+    const q = docenteSearch.trim()
+    if (!q) {
+      setShowDropdown(false)
+      setDocenteResults([])
+      return
+    }
+    const timer = setTimeout(() => fetchDocentes(q), 300)
+    return () => clearTimeout(timer)
+  }, [docenteSearch, fetchDocentes])
+
+  // Cerrar dropdown al click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const addDocente = (docente: DocenteOption) => {
+    if (!selectedDocentes.find(d => d.id === docente.id)) {
+      setSelectedDocentes(prev => [...prev, docente])
+    }
+    setDocenteSearch('')
+    setDocenteResults([])
+    setShowDropdown(false)
+  }
+
+  const removeDocente = (id: string) => {
+    setSelectedDocentes(prev => prev.filter(d => d.id !== id))
+  }
 
   const {
     register,
@@ -117,14 +179,11 @@ export const CreateCoursePage = () => {
       level: watchedLevel,
       status: watchedStatus
     }
-    
-    saveDraftData(formData, instructorTags)
+    saveDraftData(formData, [])
     setLastSaved(new Date())
-    
-    // Mostrar indicador de guardado
     setShowSaveIndicator(true)
     setTimeout(() => setShowSaveIndicator(false), 2000)
-  }, [watchedTitle, watchedDescription, watchedCategory, watchedLevel, watchedStatus, instructorTags])
+  }, [watchedTitle, watchedDescription, watchedCategory, watchedLevel, watchedStatus])
 
   // Guardado automático cuando cambian los datos del formulario
   useEffect(() => {
@@ -145,8 +204,7 @@ export const CreateCoursePage = () => {
     if (confirm('¿Estás seguro de que quieres eliminar el borrador guardado?')) {
       clearDraftData()
       reset({ level: 'beginner', status: 'inactive' })
-      setInstructorTags([])
-      setInstructorInput('')
+      setSelectedDocentes([])
       setLastSaved(null)
     }
   }
@@ -159,55 +217,15 @@ export const CreateCoursePage = () => {
     if (draftData.category) setValue('category', draftData.category)
     if (draftData.level) setValue('level', draftData.level)
     if (draftData.status) setValue('status', draftData.status)
-    if (draftData.instructorTags) {
-      setInstructorTags(draftData.instructorTags)
-    }
     setShowSaveIndicator(true)
     setTimeout(() => setShowSaveIndicator(false), 3000)
   }
 
-  const handleInstructorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && instructorInput.trim()) {
-      e.preventDefault()
-      // Sanitize input
-      const sanitizedInstructor = instructorInput.trim().replace(/\s+/g, ' ')
-      
-      // Validar formato del nombre del instructor
-      if (!/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ.-]+$/.test(sanitizedInstructor)) {
-        alert('El nombre del instructor solo puede contener letras, espacios, guiones y puntos')
-        return
-      }
-      
-      if (sanitizedInstructor.length > 200) {
-        alert('El nombre del instructor no puede exceder 200 caracteres')
-        return
-      }
-      
-      // Verificar duplicados
-      if (instructorTags.some(tag => tag.toLowerCase() === sanitizedInstructor.toLowerCase())) {
-        alert('Este instructor ya ha sido agregado')
-        return
-      }
-      
-      setInstructorTags([...instructorTags, sanitizedInstructor])
-      setInstructorInput('')
-      // Guardado automático después de agregar instructor
-      setTimeout(autoSave, 100)
-    }
-  }
-
-  const removeInstructor = (name: string) => {
-    setInstructorTags(instructorTags.filter((t) => t !== name))
-    // Guardado automático después de eliminar instructor
-    setTimeout(autoSave, 100)
-  }
-
   const onSubmit = async (data: CourseFormData) => {
     try {
-      // Sanitizar datos de entrada
       const sanitizedData: CourseFormData = {
         title: data.title.trim().replace(/\s+/g, ' '),
-        description: data.description.trim().replace(/\s+/g, ' '),
+        description: data.description?.trim().replace(/\s+/g, ' '),
         category: data.category?.trim() || '',
         instructor: data.instructor?.trim() || '',
         level: data.level,
@@ -216,16 +234,14 @@ export const CreateCoursePage = () => {
       
       const newCourse: Omit<Course, 'id'> = {
         title: sanitizedData.title,
-        description: sanitizedData.description,
-        instructor: instructorTags.join(', ') || sanitizedData.instructor || 'Sin instructor asignado',
+        description: sanitizedData.description || '',
+        instructor: selectedDocentes.map(d => d.nombre).join(', ') || 'Sin docente asignado',
         level: sanitizedData.level,
         status: sanitizedData.status === 'active' ? 'active' : 'inactive',
         moduleIds: [],
-        studentCount: 0
+        studentCount: 0,
       }
-      
 
-      // Usuario placeholder para desarrollo (seed insertado en BD)
       const idUsuario = user?.id
       if (!idUsuario) throw new Error('Usuario no autenticado')
       const createdCourse = await createCurso(newCourse, idUsuario)
@@ -369,293 +385,158 @@ export const CreateCoursePage = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid xl:grid-cols-2 gap-6 lg:gap-5">
-              {/* Columna izquierda */}
-              <div className="space-y-6">
-                {/* Tarjeta de información del curso */}
-                <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ 
-                  borderColor: '#E5E7EB',
-                  backgroundColor: '#FFFFFF'
-                }}>
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
-                        <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold" style={{ color: '#223740' }}>
-                          Información del Curso
-                        </h2>
-                        <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                          Completa los datos principales del curso
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-2xl mx-auto">
 
-                  <div className="space-y-5">
-                    {/* Title */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
-                        Nombre del curso <span style={{ color: '#DC2626' }}>*</span>
-                      </label>
-                      <input
-                        {...register('title')}
-                        type="text"
-                        className="w-full px-4 py-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:border-blue-400"
-                        style={{ 
-                          borderColor: '#E5E7EB',
-                          backgroundColor: '#FAFAFA',
-                          color: '#223740',
-                          fontSize: '15px'
-                        }}
-                        placeholder="Ej: Diseño UX/UI Avanzado"
-                      />
-                      {errors.title && (
-                        <p className="mt-2 text-sm font-medium" style={{ color: '#DC2626' }}>
-                          {errors.title.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
-                        Descripción <span style={{ color: '#DC2626' }}>*</span>
-                      </label>
-                      <textarea
-                        {...register('description')}
-                        rows={3}
-                        className="w-full px-4 py-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:border-blue-400 resize-none"
-                        style={{ 
-                          borderColor: '#E5E7EB',
-                          backgroundColor: '#FAFAFA',
-                          color: '#223740',
-                          fontSize: '15px'
-                        }}
-                        placeholder="Describe de qué trata el curso y qué aprenderán los estudiantes..."
-                      />
-                      {errors.description && (
-                        <p className="mt-2 text-sm font-medium" style={{ color: '#DC2626' }}>
-                          {errors.description.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Category + Level */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
-                          Categoría <span style={{ color: '#DC2626' }}>*</span>
-                        </label>
-                        <select
-                          {...register('category')}
-                          className="w-full px-4 py-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:border-blue-400 appearance-none cursor-pointer"
-                          style={{ 
-                            borderColor: '#E5E7EB',
-                            backgroundColor: '#FAFAFA',
-                            color: '#223740',
-                            fontSize: '15px'
-                          }}
-                        >
-                          <option value="">Seleccionar...</option>
-                          <option value="programming">Programación</option>
-                          <option value="design">Diseño</option>
-                          <option value="marketing">Marketing</option>
-                          <option value="data">Datos</option>
-                        </select>
-                        {errors.category && (
-                          <p className="mt-2 text-sm font-medium" style={{ color: '#DC2626' }}>
-                            {errors.category.message}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
-                          Nivel
-                        </label>
-                        <select
-                          {...register('level')}
-                          className="w-full px-4 py-3 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:border-blue-400 appearance-none cursor-pointer"
-                          style={{ 
-                            borderColor: '#E5E7EB',
-                            backgroundColor: '#FAFAFA',
-                            color: '#223740',
-                            fontSize: '15px'
-                          }}
-                        >
-                          <option value="beginner">Principiante</option>
-                          <option value="intermediate">Intermedio</option>
-                          <option value="advanced">Avanzado</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
+            {/* Información del curso */}
+            <div className="p-6 rounded-xl border shadow-sm" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
+                  <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
                 </div>
+                <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Información del Curso</h2>
               </div>
-              
-              {/* Columna derecha */}
-              <div className="space-y-6">
-                {/* Sección de instructores */}
-                <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ 
-                  borderColor: '#E5E7EB',
-                  backgroundColor: '#FFFFFF'
-                }}>
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
-                        <Users className="w-5 h-5" style={{ color: '#5A878C' }} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold" style={{ color: '#223740' }}>
-                          Docentes Asignados
-                        </h2>
-                        <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                          Agrega los instructores del curso
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
-                      Nombres de los docentes
-                    </label>
-                    <div 
-                      className="flex flex-wrap items-center gap-2 p-4 border-2 border-dashed rounded-lg min-h-[80px] transition-all hover:border-blue-300"
-                      style={{ 
-                        borderColor: '#E5E7EB',
-                        backgroundColor: '#FAFAFA'
-                      }}
-                    >
-                      {instructorTags.map((tag) => (
-                        <div
-                          key={tag}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium shadow-sm"
-                          style={{ 
-                            backgroundColor: '#AEEBF2', 
-                            color: '#5A878C' 
-                          }}
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeInstructor(tag)}
-                            className="ml-1 hover:opacity-70 transition-opacity rounded-full p-1 hover:bg-red-100"
-                            aria-label={`Remove instructor: ${tag}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                      <input
-                        value={instructorInput}
-                        onChange={(e) => setInstructorInput(e.target.value)}
-                        onKeyDown={handleInstructorKeyDown}
-                        placeholder="Escribe un nombre y presiona Enter..."
-                        className="flex-1 min-w-[200px] bg-transparent outline-none text-sm py-1"
-                        style={{ 
-                          color: '#223740',
-                          fontSize: '15px'
-                        }}
-                      />
-                    </div>
-                    {instructorTags.length === 0 && (
-                      <p className="mt-2 text-sm font-medium" style={{ color: '#DC2626' }}>
-                        Debes agregar al menos un docente para continuar
-                      </p>
-                    )}
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                    Nombre del curso <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input {...register('title')} type="text"
+                    className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740', fontSize: '15px' }}
+                    placeholder="Ej: Diseño UX/UI Avanzado" />
+                  {errors.title && <p className="mt-1 text-sm" style={{ color: '#DC2626' }}>{errors.title.message}</p>}
                 </div>
-
-                {/* Estado de publicación */}
-                <div className="p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow" style={{ 
-                  borderColor: '#E5E7EB',
-                  backgroundColor: '#FFFFFF'
-                }}>
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
-                        <Target className="w-5 h-5" style={{ color: '#5A878C' }} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold" style={{ color: '#223740' }}>
-                          Estado de Publicación
-                        </h2>
-                        <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                          Define la visibilidad del curso
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    { [
-                      { value: 'inactive', label: 'Inactivo', desc: 'No visible para estudiantes', icon: '📝' },
-                      { value: 'active', label: 'Activo', desc: 'Visible para estudiantes', icon: '🚀' }
-                    ].map((option) => (
-                      <label key={option.value} className="relative cursor-pointer group">
-                        <input
-                          {...register('status')}
-                          type="radio"
-                          value={option.value}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`p-4 border-2 rounded-lg transition-all cursor-pointer group-hover:shadow-md ${
-                            watchedStatus === option.value
-                              ? 'border-blue-500 shadow-md'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          style={{
-                            backgroundColor: watchedStatus === option.value 
-                              ? '#AEEBF2'
-                              : '#FFFFFF',
-                            borderColor: watchedStatus === option.value 
-                              ? '#5A878C'
-                              : '#E5E7EB'
-                          }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 transition-all ${
-                              watchedStatus === option.value
-                                ? 'border-blue-500 bg-blue-500 scale-110'
-                                : 'border-gray-300 bg-white'
-                            }`}
-                            style={{
-                              borderColor: watchedStatus === option.value 
-                                ? '#5A878C'
-                                : '#E5E7EB',
-                              backgroundColor: watchedStatus === option.value 
-                                ? '#5A878C'
-                                : '#FFFFFF'
-                            }}
-                            >
-                              {watchedStatus === option.value && (
-                                <div className="w-2 h-2 rounded-full bg-white" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-lg">{option.icon}</span>
-                                <div className="text-base font-bold" style={{ color: '#223740' }}>{option.label}</div>
-                              </div>
-                              <div className="text-sm" style={{ color: '#6B7280' }}>{option.desc}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Descripción</label>
+                  <textarea {...register('description')} rows={3}
+                    className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none resize-none"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740', fontSize: '15px' }}
+                    placeholder="Describe de qué trata el curso..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Categoría</label>
+                  <input {...register('category')} type="text"
+                    className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740', fontSize: '15px' }}
+                    placeholder="Ej: Programación, Diseño, Marketing..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Nivel</label>
+                  <select {...register('level')}
+                    className="w-full px-4 py-3 rounded-lg border-2 appearance-none focus:outline-none cursor-pointer"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740', fontSize: '15px' }}>
+                    <option value="beginner">Principiante</option>
+                    <option value="intermediate">Intermedio</option>
+                    <option value="advanced">Avanzado</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            {/* Botones de acción */}
-            <div className="flex gap-6 pt-8 lg:col-span-2">
+            {/* Docentes */}
+            <div className="p-6 rounded-xl border shadow-sm" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
+                  <Users className="w-5 h-5" style={{ color: '#5A878C' }} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Docentes Asignados</h2>
+                  <p className="text-sm" style={{ color: '#6B7280' }}>Escribe <strong>$</strong> para ver todos los disponibles</p>
+                </div>
+              </div>
+
+              {selectedDocentes.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedDocentes.map(d => (
+                    <div key={d.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium"
+                      style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
+                      {d.nombre}
+                      <button type="button" onClick={() => removeDocente(d.id)} className="hover:opacity-70">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative" ref={dropdownRef}>
+                <input
+                  type="text"
+                  value={docenteSearch}
+                  onChange={e => setDocenteSearch(e.target.value)}
+                  onFocus={() => { if (docenteSearch.trim()) setShowDropdown(true) }}
+                  placeholder='Buscar por nombre o escribe "$" para listar todos...'
+                  className="w-full px-4 py-3 rounded-lg border-2 text-sm focus:outline-none"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                />
+                {loadingDocentes && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" style={{ color: '#5A878C' }}>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  </div>
+                )}
+                {showDropdown && docenteResults.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 rounded-xl border shadow-lg overflow-y-auto max-h-56"
+                    style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+                    {docenteResults.map(d => (
+                      <button key={d.id} type="button" onClick={() => addDocente(d)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                        style={{ borderBottom: '1px solid #F3F4F6' }}>
+                        <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
+                          style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
+                          {d.nombre.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: '#223740' }}>{d.nombre}</p>
+                          <p className="text-xs" style={{ color: '#6B7280' }}>{d.correo}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showDropdown && !loadingDocentes && docenteResults.length === 0 && (
+                  <div className="absolute z-20 w-full mt-1 rounded-xl border px-4 py-3 text-sm"
+                    style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', color: '#6B7280' }}>
+                    No se encontraron usuarios. Escribe <strong>$</strong> para ver todos.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Estado de publicación */}
+            <div className="p-6 rounded-xl border shadow-sm" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: '#AEEBF2' }}>
+                  <Target className="w-5 h-5" style={{ color: '#5A878C' }} />
+                </div>
+                <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Estado de Publicación</h2>
+              </div>
+              <div className="flex gap-4">
+                {[
+                  { value: 'inactive', label: 'Inactivo', desc: 'No visible para estudiantes' },
+                  { value: 'active',   label: 'Activo',   desc: 'Visible para estudiantes' }
+                ].map(opt => (
+                  <label key={opt.value} className="flex-1 cursor-pointer">
+                    <input {...register('status')} type="radio" value={opt.value} className="sr-only" />
+                    <div className="p-4 rounded-xl border-2 transition-all"
+                      style={{
+                        borderColor: watchedStatus === opt.value ? '#5A878C' : '#E5E7EB',
+                        backgroundColor: watchedStatus === opt.value ? '#AEEBF2' : '#FFFFFF'
+                      }}>
+                      <p className="font-bold text-sm" style={{ color: '#223740' }}>{opt.label}</p>
+                      <p className="text-xs mt-1" style={{ color: '#6B7280' }}>{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-4">
               <Link
                 to="/courses"
                 className="flex-1 px-6 py-3 rounded-xl border-2 transition-all hover:shadow-lg hover:scale-[1.02] font-medium text-base"

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CourseListPage } from '../../courses/CourseListPage'
 
 const allCursos = [
   { nombre: 'Matemáticas I', docente: 'Carlos Ruiz', modulos: 8, estudiantes: 320, estado: 'Activo' },
@@ -26,6 +27,24 @@ export function CursosView() {
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('Todos')
   const [page, setPage] = useState(1)
+  const [viewType, setViewType] = useState<'resumen' | 'gestion'>('resumen')
+
+  if (viewType === 'gestion') {
+    return (
+      <div>
+        <div className="px-6 pt-4">
+          <button
+            onClick={() => setViewType('resumen')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all hover:scale-105"
+            style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
+          >
+            ← Vista resumen
+          </button>
+        </div>
+        <CourseListPage />
+      </div>
+    )
+  }
 
   const filtered = allCursos.filter((c) => {
     const matchSearch = c.nombre.toLowerCase().includes(search.toLowerCase())
@@ -38,9 +57,18 @@ export function CursosView() {
 
   return (
     <div className="p-6 space-y-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div>
-        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Cursos</h1>
-        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>32 cursos en la plataforma</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Cursos</h1>
+          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>32 cursos en la plataforma</p>
+        </div>
+        <button
+          onClick={() => setViewType('gestion')}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all hover:scale-105 shadow-lg"
+          style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
+        >
+          Gestión de Cursos
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
