@@ -217,7 +217,13 @@ export const CourseListPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <nav className="mb-3 flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
-                <span className="hover:opacity-80 transition-opacity cursor-pointer" style={{ color: colors.primary }}>Cursos</span>
+                <Link
+                  to="/super-admin/cursos"
+                  className="hover:opacity-80 transition-opacity"
+                  style={{ color: colors.primary }}
+                >
+                  Cursos
+                </Link>
                 <span style={{ color: '#D1D5DB' }}>/</span>
                 <span style={{ fontWeight: 500, color: '#223740' }}>Gestión</span>
               </nav>
