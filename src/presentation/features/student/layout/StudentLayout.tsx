@@ -9,7 +9,7 @@ export function StudentLayout() {
   const toggle = () => setSidebarOpen(o => !o)
 
   return (
-    <div id="student-root" className="min-h-screen bg-surface-muted">
+    <div className="min-h-screen bg-surface-muted">
       <StudentSidebar isOpen={sidebarOpen} onToggle={toggle} />
       <StudentNavBar onToggle={toggle} mobileMenuOpen={sidebarOpen} />
 

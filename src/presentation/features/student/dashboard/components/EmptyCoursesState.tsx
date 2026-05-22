@@ -1,5 +1,5 @@
 import { BookOpen, Compass, Sparkles } from 'lucide-react'
-import type { EnrolledCourse } from '@domain/student/types'
+import type { EnrolledCourse } from '../../../../../../../PlataformaIUSH-Frontend/src/domain/student/types'
 
 /* Cursos de demo que se cargan al hacer clic en "Explorar catálogo" */
 export const DEMO_COURSES: EnrolledCourse[] = [
@@ -108,9 +108,9 @@ export function EmptyCoursesState({ onEnroll }: EmptyCoursesStateProps) {
       {/* Features mini-list */}
       <div className="mt-12 grid grid-cols-3 gap-4 md:gap-8 max-w-md">
         {[
-          { emoji: '🎯', label: 'A tu ritmo' },
-          { emoji: '📱', label: 'Desde cualquier dispositivo' },
-          { emoji: '🏆', label: 'Certificado al terminar' },
+          { emoji: '', label: 'A tu ritmo' },
+          { emoji: '', label: 'Desde cualquier dispositivo' },
+          { emoji: '', label: 'Certificado al terminar' },
         ].map(({ emoji, label }) => (
           <div key={label} className="flex flex-col items-center gap-1.5">
             <span className="text-2xl">{emoji}</span>

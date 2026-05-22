@@ -1,11 +1,11 @@
 import {useMemo, useState, useEffect} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {
-    ArrowRight, Trophy,
+    ArrowRight,
     Play, GraduationCap, Loader, Award,
 } from 'lucide-react'
-
-import { studentService, type MisCursos } from '../services/studentService'
+// ...existing code... (EmptyCoursesState removed on purpose)
+import {studentService, type MisCursos} from '../services/studentService'
 
 const STREAK_DAYS = 14
 
@@ -25,20 +25,35 @@ export function StudentDashboardPage() {
     const [studentName, setStudentName] = useState<string>('Estudiante')
     const [enrichedCourses, setEnrichedCourses] = useState<EnrichedCourse[]>([])
     const [isLoadingCourses, setIsLoadingCourses] = useState(false)
+    const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
+
+    const getCurrentUserId = (): string | null => {
+        const userData = localStorage.getItem('user')
+        if (!userData) return null
+
+        try {
+            const parsedUser = JSON.parse(userData)
+            return parsedUser.id || parsedUser.idUsuario || null
+        } catch {
+            return null
+        }
+    }
 
     // Función reutilizable para cargar cursos y filtrar los creados por el usuario logueado
     const loadCourses = async () => {
         setIsLoadingCourses(true)
         try {
             const cursos = await studentService.getAllCursos()
-            const userId = localStorage.getItem('user')
-                ? JSON.parse(localStorage.getItem('user') || '{}').id
-                : null
+            const userId = getCurrentUserId()
 
-            // Excluir cursos donde idUsuario === id del usuario logueado Y mostrar solo activos
+            const normalizeId = (value: unknown) => (value == null ? '' : String(value))
+
+            // Excluir cursos creados por el usuario logueado y mostrar activos.
+            // Se toleran variantes del backend: activo boolean/number/string y distintos nombres de id usuario.
             const filtered = cursos.filter((c: any) => {
-                const isNotCreatedByUser = !userId || c.idUsuario !== userId
-                const isActive = c.activo === true
+                const courseOwnerId = c.idUsuario ?? c.id_usuario ?? c.usuarioId
+                const isNotCreatedByUser = !userId || normalizeId(courseOwnerId) !== normalizeId(userId)
+                const isActive = c.activo === undefined || c.activo === null || c.activo === true || c.activo === 1 || c.activo === '1' || c.activo === 'true'
                 return isNotCreatedByUser && isActive
             })
 
@@ -92,7 +107,36 @@ export function StudentDashboardPage() {
                 .sort((a, b) => b.porcentajeProgreso - a.porcentajeProgreso)[0] ?? null
         , [courses])
 
-    const goToCourse = (id: string) => navigate(`/student/curso/${id}`)
+    const goToCourse = (id: string) => navigate(`/student/courses/${id}`)
+
+    const handleEnrollClick = async (courseId: string) => {
+        const userId = getCurrentUserId()
+
+        if (!userId) {
+            window.alert('No fue posible identificar el usuario autenticado.')
+            return
+        }
+
+        setEnrollingCourseId(courseId)
+        try {
+            const validation = await studentService.validarInscripcion(courseId, userId)
+
+            if (!validation.enrolled) {
+                await studentService.inscribirCurso({
+                    idCurso: courseId,
+                    idUsuario: userId,
+                    fechaInicio: new Date().toISOString(),
+                })
+            }
+
+            goToCourse(courseId)
+        } catch (error) {
+            console.error('Error al validar/crear inscripción:', error)
+            window.alert('No se pudo completar la inscripción. Inténtalo de nuevo.')
+        } finally {
+            setEnrollingCourseId(null)
+        }
+    }
 
     if (isLoadingCourses) {
         return (
@@ -111,7 +155,7 @@ export function StudentDashboardPage() {
                 <p className="text-secondary mb-4">No hay cursos disponibles para mostrar.</p>
                 <button
                     onClick={loadCourses}
-                    className="inline-flex items-center gap-2.5 min-h-[40px] px-6 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
+                    className="inline-flex items-center gap-2.5 min-h-10 px-6 rounded-lg bg-primary text-tertiary font-semibold hover:bg-secondary transition-all"
                 >
                     Actualizar
                 </button>
@@ -148,6 +192,8 @@ export function StudentDashboardPage() {
             <LearningPathSection
                 courses={courses}
                 onCourseClick={goToCourse}
+                onEnrollClick={handleEnrollClick}
+                enrollingCourseId={enrollingCourseId}
             />
         </div>
     )
@@ -163,29 +209,27 @@ interface HeroBannerProps {
 
 function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
     return (
-        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-[260px]"
-             style={{background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 70%, black) 0%, var(--color-primary) 55%, color-mix(in srgb, var(--color-primary) 70%, white) 100%)'}}>
+        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-65"
+             style={{background: 'linear-gradient(135deg, #162830 0%, #223740 55%, #2d5e68 100%)'}}>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
                       bg-white/15 text-white text-xs font-semibold w-fit">
                 🔥 ¡{streak} días seguidos!
             </div>
 
-       <div>
-    <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.1]"
-        style={{ color: 'var(--color-text-on-dark)' }}>
-        Bienvenid@,<br/>{name}.
-    </h1>
-    <p className="text-sm lg:text-base leading-relaxed mt-3 max-w-md"
-       style={{ color: 'var(--color-text-on-dark)', opacity: 0.7 }}>
-        {courseName
-            ? `Estás progresando muy bien en '${courseName}'. ¿Lista para continuar?`
-            : 'Explora tus cursos y sigue aprendiendo hoy.'}
-    </p>
-</div>
+            <div>
+                <h1 className="text-4xl lg:text-5xl font-extrabold text-white leading-[1.1]">
+                    Bienvenida,<br/>{name}.
+                </h1>
+                <p className="text-sm lg:text-base text-white/70 leading-relaxed mt-3 max-w-md">
+                    {courseName
+                        ? `Estás progresando muy bien en '${courseName}'. ¿Lista para continuar?`
+                        : 'Explora tus cursos y sigue aprendiendo hoy.'}
+                </p>
+            </div>
 
             <button
                 onClick={onContinue}
-                className="flex items-center gap-2 min-h-[44px] px-6 rounded-xl mt-auto w-fit
+                className="flex items-center gap-2 min-h-11 px-6 rounded-xl mt-auto w-fit
                    border-2 border-white text-white font-semibold text-sm
                    hover:bg-white hover:text-primary transition-all duration-200"
             >
@@ -309,9 +353,13 @@ function UpNextCard({onClick}: { onClick: () => void }) {
 function LearningPathSection({
                                  courses,
                                  onCourseClick,
+                                 onEnrollClick,
+                                 enrollingCourseId,
                              }: {
     courses: EnrichedCourse[]
     onCourseClick: (id: string) => void
+    onEnrollClick: (id: string) => Promise<void>
+    enrollingCourseId: string | null
 }) {
     return (
         <section className="space-y-4">
@@ -328,6 +376,8 @@ function LearningPathSection({
                         key={course.idCurso}
                         course={course}
                         onClick={() => onCourseClick(course.idCurso)}
+                        onEnroll={() => onEnrollClick(course.idCurso)}
+                        isEnrolling={enrollingCourseId === course.idCurso}
                     />
                 ))}
             </div>
@@ -339,9 +389,13 @@ function LearningPathSection({
 function CourseGridCard({
                             course,
                             onClick,
+                            onEnroll,
+                            isEnrolling,
                         }: {
     course: EnrichedCourse
     onClick: () => void
+    onEnroll: () => Promise<void>
+    isEnrolling: boolean
 }) {
     return (
         <div
@@ -378,14 +432,15 @@ function CourseGridCard({
                 {/* Footer: botón de inscripción (solo imprime id del curso por ahora) */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
                     <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                             e.stopPropagation()
-                            console.log('Inscribirse curso:', course.idCurso)
+                            await onEnroll()
                         }}
+                        disabled={isEnrolling}
                         className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-secondary hover:bg-secondary/90 transition-colors"
+                                     bg-secondary hover:bg-secondary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        Inscribirse
+                        {isEnrolling ? 'Procesando...' : 'Inscribirse'}
                     </button>
                 </div>
             </div>
