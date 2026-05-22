@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 
 // Librería utilizada para renderizar gráfica
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList,
   BarChart, Bar, Cell,
   PieChart, Pie,
 } from "recharts";
+import { TrendingUp } from "lucide-react";
 
 // Peticiones
 import { PopularCourses } from './action/PopularCourse';
@@ -28,6 +29,62 @@ import { useInstitution } from '../../../context/InstitutionContext';
 import { ImSpinner2 } from "react-icons/im";
 import SimulateEvents from './modules/gtm/simulateEvents';
 import GraphsLooker from './modules/lookerStudio/GraphsLooker';
+
+type ChartConfig = Record<string, {
+  label: string;
+  color: string;
+}>;
+
+type ChartContainerProps = {
+  children: ReactNode;
+  className?: string;
+  config: ChartConfig;
+};
+
+type TooltipPayloadItem = {
+  dataKey?: string | number;
+  name?: string | number;
+  value?: string | number;
+  color?: string;
+};
+
+type ChartTooltipContentProps = {
+  active?: boolean;
+  indicator?: "line";
+  label?: string | number;
+  payload?: TooltipPayloadItem[];
+};
+
+function ChartContainer({ children, className = "", config }: ChartContainerProps) {
+  const chartVars: CSSProperties & Record<string, string> = {};
+
+  Object.entries(config).forEach(([key, item]) => {
+    chartVars[`--color-${key}`] = item.color;
+  });
+
+  return (
+    <div className={`h-[180px] w-full ${className}`} style={chartVars}>
+      {children}
+    </div>
+  );
+}
+
+function ChartTooltipContent({ active, label, payload }: ChartTooltipContentProps) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0];
+
+  return (
+    <div className="rounded-lg border px-3 py-2 text-xs shadow-md" style={{ background: "var(--chart-tooltip-bg)", borderColor: "var(--chart-tooltip-border)", color: "var(--chart-tooltip-text)" }}>
+      <div className="mb-1 font-medium">{label}</div>
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color ?? "var(--color-total_inscripciones)" }} />
+        <span>Inscripciones</span>
+        <span className="font-semibold">{Number(item.value ?? 0).toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
 
 const Reports = () => {
 
@@ -111,6 +168,28 @@ const Reports = () => {
     )
     : 0;
 
+  const enrollmentChartConfig = {
+    total_inscripciones: {
+      label: "Inscripciones",
+      color: colors.primary,
+    },
+  } satisfies ChartConfig;
+
+  const enrollmentTrend =
+    periodEnrollments.length > 1
+      ? Math.round(
+        ((parseInt(periodEnrollments[periodEnrollments.length - 1].total_inscripciones) -
+          parseInt(periodEnrollments[0].total_inscripciones)) /
+          Math.max(parseInt(periodEnrollments[0].total_inscripciones), 1)) *
+        100
+      )
+      : 0;
+
+  const formatEnrollmentPeriodTick = (value: string) => {
+    if (agrupacion === "anual") return value;
+    return value.slice(0, 3);
+  };
+
 
   // Calcula el pocentaje de cursos activos
   const activePercentage = activeVsInactive
@@ -182,22 +261,29 @@ const Reports = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
               <div
-                className="rounded-2xl p-5 shadow-sm"
-                style={{ background: colors.input }}
+                className="rounded-lg border p-5 shadow-sm"
+                style={{
+                  background: colors.input,
+                  borderColor: colors.border,
+                  "--chart-tooltip-bg": colors.input,
+                  "--chart-tooltip-border": colors.border,
+                  "--chart-tooltip-text": colors.textBase,
+                } as CSSProperties}
               >
-                <p className="text-xs mb-1" style={{ color: colors.textSecondary }}>
-                  Inscripciones por Periodo
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-2xl font-bold" style={{ color: colors.primary }}>
-                    {totalEnrollments.toLocaleString()} Students
-                  </h2>
-                  {/* Dropdown para cambiar la agrupación */}
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-semibold" style={{ color: colors.textBase }}>
+                      Inscripciones por Periodo
+                    </p>
+                    <p className="mt-1 text-xs" style={{ color: colors.textSecondary }}>
+                      {totalEnrollments.toLocaleString()} estudiantes registrados
+                    </p>
+                  </div>
                   <select
                     value={agrupacion}
                     onChange={(e) => setAgrupacion(e.target.value as Grouping)}
-                    className="text-xs px-3 py-1 rounded-full font-medium border-none outline-none cursor-pointer"
-                    style={{ background: colors.tertiary, color: colors.primary }}
+                    className="h-8 shrink-0 cursor-pointer rounded-md border px-3 text-xs font-medium outline-none"
+                    style={{ background: colors.tertiary, borderColor: colors.border, color: colors.primary }}
                   >
                     <option value="mensual">Mensual</option>
                     <option value="trimestral">Trimestral</option>
@@ -207,7 +293,7 @@ const Reports = () => {
                 </div>
                 {/* Muestra spinner mientras recarga la agrupación seleccionada */}
                 {loadingEnrollments ? (
-                  <div className="flex items-center justify-center h-[110px]">
+                  <div className="flex h-[180px] items-center justify-center">
                     <ImSpinner2
                       className="animate-spin"
                       style={{ color: colors.primary }}
@@ -215,30 +301,68 @@ const Reports = () => {
                     />
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={110}>
-                    <LineChart data={periodEnrollments}>
-                      <XAxis
-                        dataKey="periodo"
-                        tick={{ fontSize: 10, fill: colors.textSecondary }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => v.slice(0, 3)}
-                      />
-                      <YAxis hide />
-                      <Tooltip
-                        formatter={(value) => [Number(value).toLocaleString(), "Inscritos"]}
-                        contentStyle={{ background: colors.input, borderColor: colors.border, color: colors.textBase }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="total_inscripciones"
-                        stroke={colors.primary}
-                        strokeWidth={2}
-                        dot={{ r: 3, fill: colors.primary }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <ChartContainer config={enrollmentChartConfig}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        accessibilityLayer
+                        data={periodEnrollments}
+                        margin={{
+                          top: 24,
+                          left: 12,
+                          right: 12,
+                          bottom: 4,
+                        }}
+                      >
+                        <CartesianGrid vertical={false} stroke={colors.border} />
+                        <XAxis
+                          dataKey="periodo"
+                          tick={{ fontSize: 10, fill: colors.textSecondary }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickMargin={8}
+                          tickFormatter={formatEnrollmentPeriodTick}
+                        />
+                        <YAxis hide />
+                        <Tooltip
+                          cursor={false}
+                          content={<ChartTooltipContent indicator="line" />}
+                        />
+                        <Line
+                          type="natural"
+                          dataKey="total_inscripciones"
+                          stroke="var(--color-total_inscripciones)"
+                          strokeWidth={2}
+                          dot={{
+                            fill: "var(--color-total_inscripciones)",
+                            stroke: "var(--color-total_inscripciones)",
+                            r: 3,
+                          }}
+                          activeDot={{
+                            r: 6,
+                          }}
+                        >
+                          <LabelList
+                            position="top"
+                            offset={12}
+                            className="fill-foreground"
+                            fill={colors.textBase}
+                            fontSize={12}
+                            valueAccessor={(entry) => Number(entry.value ?? 0).toLocaleString()}
+                          />
+                        </Line>
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 )}
+                <div className="mt-4 flex flex-col items-start gap-2 text-sm">
+                  <div className="flex gap-2 font-medium leading-none" style={{ color: colors.textBase }}>
+                    Tendencia {enrollmentTrend >= 0 ? "al alza" : "a la baja"} de {Math.abs(enrollmentTrend)}%
+                    <TrendingUp className="h-4 w-4" style={{ color: colors.primary }} />
+                  </div>
+                  <div className="leading-none" style={{ color: colors.textSecondary }}>
+                    Mostrando inscripciones por periodo con agrupación {agrupacion}.
+                  </div>
+                </div>
               </div>
 
               {/* Gráfica donut */}
