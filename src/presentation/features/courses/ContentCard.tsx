@@ -7,6 +7,7 @@ interface ContentCardProps {
   content: Content
   isLast?: boolean
   onContentUpdate?: () => void
+  onEdit?: (content: Content) => void
 }
 
 const typeLabels: Record<ContentType, string> = {
@@ -18,7 +19,7 @@ const typeLabels: Record<ContentType, string> = {
   [ContentType.QUIZ_MC]:  'Opción múltiple',
 }
 
-export const ContentCard = ({ content, isLast, onContentUpdate }: ContentCardProps) => {
+export const ContentCard = ({ content, isLast, onContentUpdate, onEdit }: ContentCardProps) => {
   const isActive = content.status === 'active'
   const [showTextModal, setShowTextModal] = useState(false)
 
@@ -209,6 +210,18 @@ export const ContentCard = ({ content, isLast, onContentUpdate }: ContentCardPro
       <td className="px-6 py-5">
         <div className="flex items-center gap-2">
           {renderViewButton()}
+          {/* Edit */}
+          <button
+            onClick={() => onEdit?.(content)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+            style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+            title="Editar contenido"
+            aria-label={`Editar contenido: ${content.title}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
           {/* Delete */}
           <button
             onClick={handleDelete}

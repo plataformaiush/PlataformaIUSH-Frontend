@@ -2,12 +2,14 @@ import { CourseCard } from './CourseCard'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Search, BookOpen, Users, TrendingUp, Plus, Filter, Grid, List, MoreVertical, Edit, Trash2, Eye } from 'lucide-react'
-import { fetchCursos, toggleCursoActivo, deleteCurso } from '../../services/courseService'
+import { fetchCursos, toggleCursoActivo, deleteCurso, updateCurso } from '../../services/courseService'
 import { fetchModulos, toggleModuloActivo } from '../../services/moduleService'
 import type { Course } from '../../../domain/courses/types'
 import { logger } from '../../utils/logger'
+import { useInstitution } from '../../../context/InstitutionContext'
 
 export const CourseListPage = () => {
+  const { colors } = useInstitution()
   const navigate = useNavigate()
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -17,6 +19,11 @@ export const CourseListPage = () => {
   const [loading, setLoading] = useState(true)
   const [togglingCourse, setTogglingCourse] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editStatus, setEditStatus] = useState<'active' | 'inactive'>('inactive')
+  const [editSaving, setEditSaving] = useState(false)
 
   const loadCourses = useCallback(async () => {
     try {
@@ -157,7 +164,30 @@ export const CourseListPage = () => {
   }
   
   const handleEditCourse = (courseId: string) => {
-    navigate(`/courses/${courseId}`)
+    const course = courses.find(c => c.id === courseId)
+    if (!course) return
+    setEditingCourse(course)
+    setEditTitle(course.title)
+    setEditDescription(course.description)
+    setEditStatus(course.status)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingCourse || !editTitle.trim()) return
+    setEditSaving(true)
+    try {
+      await updateCurso(editingCourse.id, { title: editTitle.trim(), description: editDescription.trim() })
+      if (editStatus !== editingCourse.status) {
+        await toggleCursoActivo(editingCourse.id, editStatus === 'active')
+      }
+      setEditingCourse(null)
+      loadCourses()
+    } catch (err) {
+      logger.error('Error al actualizar curso', { error: err })
+      alert('Error al guardar los cambios.')
+    } finally {
+      setEditSaving(false)
+    }
   }
   
   const handleViewCourse = (courseId: string) => {
@@ -187,9 +217,7 @@ export const CourseListPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <nav className="mb-3 flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
-                <span className="hover:opacity-80 transition-opacity cursor-pointer">The Fluid Academy</span>
-                <span style={{ color: '#D1D5DB' }}>/</span>
-                <span className="hover:opacity-80 transition-opacity cursor-pointer">Cursos</span>
+                <span className="hover:opacity-80 transition-opacity cursor-pointer" style={{ color: colors.primary }}>Cursos</span>
                 <span style={{ color: '#D1D5DB' }}>/</span>
                 <span style={{ fontWeight: 500, color: '#223740' }}>Gestión</span>
               </nav>
@@ -658,6 +686,112 @@ export const CourseListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de edición */}
+      {editingCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditingCourse(null)}>
+          <div className="w-full max-w-lg mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-8 py-5 border-b flex items-center justify-between" style={{ borderColor: '#E5E7EB' }}>
+              <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Editar curso</h2>
+              <button onClick={() => setEditingCourse(null)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-8 py-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Nombre */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                  Nombre del curso <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Descripción</label>
+                <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm resize-none"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+
+              {/* Nivel + Instructor (solo visual, no persisten en backend) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                    Nivel
+                    <span className="ml-1 text-xs font-normal" style={{ color: '#9CA3AF' }}>(solo visual)</span>
+                  </label>
+                  <select disabled className="w-full px-4 py-3 rounded-xl border-2 text-sm opacity-60 cursor-not-allowed"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#F3F4F6', color: '#6B7280' }}
+                    defaultValue={editingCourse.level}>
+                    <option value="beginner">Principiante</option>
+                    <option value="intermediate">Intermedio</option>
+                    <option value="advanced">Avanzado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                    Docente
+                    <span className="ml-1 text-xs font-normal" style={{ color: '#9CA3AF' }}>(solo visual)</span>
+                  </label>
+                  <input disabled type="text" defaultValue={editingCourse.instructor}
+                    className="w-full px-4 py-3 rounded-xl border-2 text-sm opacity-60 cursor-not-allowed"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#F3F4F6', color: '#6B7280' }} />
+                </div>
+              </div>
+
+              {/* Estado */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Estado de publicación</label>
+                <div className="flex gap-3">
+                  {[
+                    { value: 'inactive' as const, label: 'Inactivo', desc: 'No visible para estudiantes' },
+                    { value: 'active'   as const, label: 'Activo',   desc: 'Visible para estudiantes' },
+                  ].map(opt => (
+                    <label key={opt.value} className="flex-1 cursor-pointer">
+                      <input type="radio" className="sr-only" name="editStatus" value={opt.value}
+                        checked={editStatus === opt.value} onChange={() => setEditStatus(opt.value)} />
+                      <div className="p-3 rounded-xl border-2 transition-all"
+                        style={{
+                          borderColor: editStatus === opt.value ? '#5A878C' : '#E5E7EB',
+                          backgroundColor: editStatus === opt.value ? '#AEEBF2' : '#FFFFFF'
+                        }}>
+                        <p className="text-sm font-bold" style={{ color: '#223740' }}>{opt.label}</p>
+                        <p className="text-xs" style={{ color: '#6B7280' }}>{opt.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs" style={{ color: '#9CA3AF' }}>
+                * Nivel y docente son campos informativos — para modificarlos usa el flujo de creación de un nuevo curso.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 py-5 border-t flex gap-3" style={{ borderColor: '#E5E7EB' }}>
+              <button onClick={() => setEditingCourse(null)}
+                className="flex-1 py-3 rounded-xl border-2 text-sm font-semibold"
+                style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}>
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={editSaving || !editTitle.trim()}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: '#223740' }}>
+                {editSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
