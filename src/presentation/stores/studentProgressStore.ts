@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { EnrolledCourse, StudentProgress } from '../../../../PlataformaIUSH-Frontend/src/domain/student/types'
+import type { EnrolledCourse, StudentProgress } from '@domain/student/types'
 
 interface StudentProgressStore {
   // Cursos en los que el estudiante está matriculado

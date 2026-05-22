@@ -1,0 +1,158 @@
+import { Institution, InstitutionColors, generateCSSVariables, defaultInstitutionColors } from './types'
+
+const API_BASE = 'http://localhost:3000'
+const BASE = `${API_BASE}/api/institucion`
+
+function authHeaders(): HeadersInit {
+  const token = localStorage.getItem('token') ?? ''
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  }
+}
+
+function normalizeInstitutionData(data: any): Institution {
+  return {
+    id: data.id || '',
+    name: data.name || '',
+    logo: data.logo_url || data.logo || '',
+    colors: {
+      background: data.background_color || defaultInstitutionColors.background,
+      textBase: data.text_primary || defaultInstitutionColors.textBase,
+      primary: data.primary_color || defaultInstitutionColors.primary,
+      secondary: data.secondary_color || defaultInstitutionColors.secondary,
+      tertiary: data.tertiary_color || defaultInstitutionColors.tertiary,
+      textSecondary: data.text_secondary || defaultInstitutionColors.textSecondary,
+      textTertiary: data.color_muted || defaultInstitutionColors.textTertiary,
+      border: data.border_color || defaultInstitutionColors.border,
+      input: data.input_color || defaultInstitutionColors.input,
+      textOnDark: data.text_on_dark || defaultInstitutionColors.textOnDark,
+    },
+    settings: data.settings || {},
+  }
+}
+
+export const institutionService = {
+  async getConfig(): Promise<Institution> {
+    try {
+      const res = await fetch(`${BASE}/config`, { 
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`)
+      }
+      
+      const data = await res.json()
+      return normalizeInstitutionData(data)
+    } catch (error) {
+      console.error('getConfig error:', error)
+      throw error
+    }
+  },
+
+  async updateConfig(data: Partial<Pick<Institution, 'logo' | 'colors'>>): Promise<Institution> {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      throw new Error('Sin token de autenticación')
+    }
+
+    try {
+      // Transformar la estructura al formato que espera el backend
+      const payload: any = {}
+      
+      // Siempre enviar algo, aunque sea null o los valores actuales
+      if (data.logo !== undefined) {
+        payload.logo_url = data.logo || null
+      }
+      
+      if (data.colors) {
+        payload.logo_url = data.logo || null
+        payload.primary_color = data.colors.primary || null
+        payload.secondary_color = data.colors.secondary || null
+        payload.tertiary_color = data.colors.tertiary || null
+        payload.background_color = data.colors.background || null
+        payload.text_primary = data.colors.textBase || null
+        payload.text_secondary = data.colors.textSecondary || null
+        payload.color_muted = data.colors.textTertiary || null
+        payload.border_color = data.colors.border || null
+        payload.input_color = data.colors.input || null
+        payload.text_on_dark = data.colors.textOnDark || null
+      }
+
+      // Evitar enviar payload vacío
+      if (Object.keys(payload).length === 0) {
+        throw new Error('No hay cambios para guardar')
+      }
+
+      const res = await fetch(`${BASE}/config`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`)
+      }
+      
+      const responseData = await res.json()
+      return normalizeInstitutionData(responseData)
+    } catch (error) {
+      console.error('updateConfig error:', error)
+      throw error
+    }
+  },
+
+  async saveCertificateTemplate(certificateHtml: string): Promise<void> {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      throw new Error('Sin token de autenticación')
+    }
+
+    try {
+      const res = await fetch(`${BASE}/certificate-template`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ html: certificateHtml }),
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`)
+      }
+    } catch (error) {
+      console.error('saveCertificateTemplate error:', error)
+      throw error
+    }
+  },
+}
+
+// Aplica los colores de la institución en toda la app
+// Mapea las variables propias (--bg-color, etc.) y las globales del proyecto
+export function applyTheme(colors: InstitutionColors): void {
+  const root = document.documentElement
+  const cssVars = generateCSSVariables(colors)
+
+  // Variables propias definidas en types.ts
+  Object.entries(cssVars).forEach(([key, value]) => {
+    root.style.setProperty(key, value)
+  })
+
+  // Variables globales del proyecto - mapeo según especificación
+  root.style.setProperty('--color-background', colors.background)
+  root.style.setProperty('--color-foreground', colors.textBase)
+  root.style.setProperty('--color-primary', colors.primary)
+  root.style.setProperty('--color-secondary', colors.secondary)
+  root.style.setProperty('--color-tertiary', colors.tertiary)
+  root.style.setProperty('--color-muted-foreground', colors.textSecondary)
+  root.style.setProperty('--color-muted', colors.textTertiary)
+  root.style.setProperty('--color-border', colors.border)
+  root.style.setProperty('--color-input', colors.input)
+  root.style.setProperty('--color-text-on-dark', colors.textOnDark)
+}

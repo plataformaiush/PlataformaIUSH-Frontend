@@ -5,5 +5,5 @@ import { allRoutes } from './definitions'
 const router = createBrowserRouter(allRoutes)
 
 export const AppRouter = () => {
-    return <RouterProvider router={router} />
+  return <RouterProvider router={router} />
 }

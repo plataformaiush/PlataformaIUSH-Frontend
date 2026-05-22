@@ -1,4 +1,3 @@
-/* CSS Variables for theme customization */
 @import "tailwindcss";
 
 @theme {
@@ -23,37 +22,26 @@
 }
 
 :root {
-  --color-background: #ffffff;
-  --color-foreground: #060a0d;
+  --color-background: #FFFAFA;
+  --color-foreground: #0F172A;
   --color-primary: #223740;
-  --color-secondary: #5a878c;
+  --color-secondary: #5a878C;
   --color-tertiary: #aeebf2;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-  --color-input: #ffffff;
-  --color-ring: #223740;
-}
-
-/* Dark theme variables */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #060a0d;
-    --color-foreground: #ffffff;
-    --color-primary: #aeebf2;
-    --color-secondary: #5a878c;
-    --color-tertiary: #223740;
-    --color-muted: #1e293b;
-    --color-muted-foreground: #94a3b8;
-    --color-border: #334155;
-    --color-input: #0f172a;
-    --color-ring: #aeebf2;
-  }
+  --color-muted: #f8f8ff;
+  --color-muted-foreground: #475569;
+  --color-border: #E2E8F0;
+  --color-input: #FFFFFF;
+  --color-text-on-dark: #F5F5F5;
+  --color-ring: #1E40AF;
 }
 
 /* Base styles */
 * {
   border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -63,6 +51,7 @@ body {
   color: var(--color-neutral);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Utility classes */
