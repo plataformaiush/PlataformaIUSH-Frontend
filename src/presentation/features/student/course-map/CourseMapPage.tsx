@@ -147,7 +147,6 @@ function getDefaultContent(id: string): AnyContentData {
 function getCurrentUserId(): string | null {
     const userData = localStorage.getItem('user')
     if (!userData) return null
-
     try {
         const parsedUser = JSON.parse(userData)
         return parsedUser.id || parsedUser.idUsuario || null
@@ -175,13 +174,7 @@ function buildContentDetail(content: {
 
     switch (type) {
         case 'video':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'video',
-                url,
-                duration: 0,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'video', url, duration: 0}
         case 'image':
             return {
                 id: content.idContenido,
@@ -189,31 +182,14 @@ function buildContentDetail(content: {
                 type: 'image',
                 url,
                 alt: content.titulo,
-                caption: content.descripcion || undefined,
+                caption: content.descripcion || undefined
             }
         case 'pdf':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'pdf',
-                url,
-                filename: content.titulo,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'pdf', url, filename: content.titulo}
         case 'xlsx':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'xlsx',
-                url,
-                filename: content.titulo,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'xlsx', url, filename: content.titulo}
         case 'quiz':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'quiz',
-                questions: [],
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'quiz', questions: []}
         case 'text':
         default:
             return {
@@ -280,6 +256,7 @@ function computeContentStatuses(
     )
 }
 
+/* ── Bug fix: conteo correcto de módulos ─────────────────────────────────── */
 function computeModuleStatuses(
     modules: typeof MOCK_COURSE.modules,
     completedIds: string[],
@@ -294,14 +271,14 @@ function computeModuleStatuses(
             result.push('current')
             currentAssigned = true
         } else {
-            result.push(result.at(-1) === 'current' || result.at(-1) === 'locked' ? 'locked' : 'upcoming')
+            result.push('locked')
         }
     }
     return result
 }
 
 interface SegmentParams {
-    stroke: string;
+    stroke: string
     opacity: number
     dasharray?: string
     strokeWidth: number
@@ -332,7 +309,7 @@ export function CourseMapPage() {
     const [loadingCourse, setLoadingCourse] = useState(true)
     const [courseError, setCourseError] = useState<string | null>(null)
 
-    // ── Estado mutable de progreso (se actualiza optimistamente) ──────────
+    /* ── Estado mutable de progreso ─────────────────────────────────────── */
     const [completedIds, setCompletedIds] = useState<string[]>([])
     const [globalProgress, setGlobalProgress] = useState(0)
     const [markingComplete, setMarkingComplete] = useState(false)
@@ -379,7 +356,7 @@ export function CourseMapPage() {
                 setCourseData({raw: data, course: mappedCourse, contentDetails})
                 setCourseError(null)
 
-                // Inicializa los IDs completados y el progreso desde el backend
+                // Inicializa completedIds y progreso desde el backend
                 const ids = data.modulos.flatMap((m) =>
                     m.contenidos
                         .filter((c) => Boolean(c.completado))
@@ -391,7 +368,6 @@ export function CourseMapPage() {
                 console.error('Error loading course detail:', error)
                 setCourseError(error instanceof Error ? error.message : 'Error al cargar curso')
                 setCourseData(null)
-
                 // Fallback al store local si falla el backend
                 setCompletedIds(progress?.completedContents ?? [])
                 setGlobalProgress(0)
@@ -463,7 +439,7 @@ export function CourseMapPage() {
         const ro = new ResizeObserver(measure)
         if (containerRef.current) ro.observe(containerRef.current)
         return () => {
-            clearTimeout(t);
+            clearTimeout(t)
             ro.disconnect()
         }
     }, [measure])
@@ -507,13 +483,12 @@ export function CourseMapPage() {
     }
 
     /**
-     * Marca el contenido actual como completado en el backend,
-     * actualiza completedIds y el porcentaje de progreso de forma
-     * optimista (sin esperar confirmación del servidor), luego navega
-     * al siguiente contenido.
+     * Marca el contenido actual como completado en el backend y cierra
+     * el modal para que el usuario vea el mapa actualizarse.
+     * Funciona también en el último contenido (alcanza el 100%).
      */
     const goNext = async () => {
-        if (!activeContent || activeIdx >= allContents.length - 1) return
+        if (!activeContent) return
 
         const currentContentId = activeContent.id
         const usuarioId = getCurrentUserId()
@@ -535,17 +510,23 @@ export function CourseMapPage() {
                 })
             } catch (err) {
                 console.error('Error al marcar contenido completado:', err)
+                // Cierra el modal igual aunque falle el request
             } finally {
                 setMarkingComplete(false)
             }
         }
 
-        setActiveContent(null) // ← cierra el modal en vez de abrir el siguiente
+        // Cierra el modal → el usuario ve el mapa actualizarse
+        setActiveContent(null)
     }
 
     const goPrev = () => {
         if (activeIdx > 0) openContent(allContents[activeIdx - 1].id, activeModuleId)
     }
+
+    /* ── hasNext: visible también en el último si aún no está completado ── */
+    const isActiveCompleted = activeContent ? completedIds.includes(activeContent.id) : false
+    const hasNext = activeIdx < allContents.length - 1 || !isActiveCompleted
 
     /* ── Render ─────────────────────────────────────────────────────────── */
     if (loadingCourse) {
@@ -553,7 +534,7 @@ export function CourseMapPage() {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div
-                        className="w-12 h-12 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                        className="w-12 h-12 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-4"/>
                     <p className="text-muted-foreground">Cargando curso...</p>
                 </div>
             </div>
@@ -580,7 +561,6 @@ export function CourseMapPage() {
 
     return (
         <div className="w-full px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto">
-
             <div className="flex flex-col lg:flex-row gap-8">
 
                 {/* ── Timeline ──────────────────────────────────────────────────── */}
@@ -589,8 +569,7 @@ export function CourseMapPage() {
                         className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm -mx-4 md:-mx-8 px-4 md:px-8 py-2 mb-4">
                         <Link
                             to="/student/dashboard"
-                            className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary
-                         hover:text-primary transition-colors"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors"
                         >
                             <ArrowLeft size={14}/>
                             Dashboard
@@ -605,7 +584,7 @@ export function CourseMapPage() {
 
                     <div ref={containerRef} className="relative mt-10 pb-4">
 
-                        {/* ── SVG: curvas con flechas de dirección ── */}
+                        {/* ── SVG: curvas con flechas ── */}
                         {circles.length >= 2 && (
                             <svg
                                 className="absolute inset-0 pointer-events-none z-0"
@@ -623,9 +602,8 @@ export function CourseMapPage() {
                                             <polygon points="0 0, 7 3, 0 6" fill={color} opacity="0.85"/>
                                         </marker>
                                     ))}
-                                    <marker id="arrow-gray"
-                                            markerWidth="7" markerHeight="6"
-                                            refX="6" refY="3" orient="auto">
+                                    <marker id="arrow-gray" markerWidth="7" markerHeight="6" refX="6" refY="3"
+                                            orient="auto">
                                         <polygon points="0 0, 7 3, 0 6" fill="#D1D5DB" opacity="0.7"/>
                                     </marker>
                                 </defs>
@@ -657,7 +635,7 @@ export function CourseMapPage() {
                             </svg>
                         )}
 
-                        {/* ── Nodos de contenido ───────────────────────────────────── */}
+                        {/* ── Nodos ── */}
                         <div>
                             {flatItems.map(item => (
                                 <div key={item.contentId}>
@@ -703,6 +681,12 @@ export function CourseMapPage() {
                                         {courseData?.raw.curso.nombreUsuario ?? 'Sin asignar'}
                                     </p>
                                 </div>
+                                <div>
+                                    <p className="text-[10px] text-mid uppercase tracking-wider mb-0.5">Módulos</p>
+                                    <p className="text-sm font-semibold text-primary">
+                                        {completedModules} / {course.modules.length}
+                                    </p>
+                                </div>
                             </div>
 
                             <div>
@@ -711,9 +695,7 @@ export function CourseMapPage() {
                                 </p>
                                 <div className="flex justify-between items-center text-xs text-secondary mb-1.5">
                                     <span className="font-semibold">{globalProgress}%</span>
-                                    <span className="text-mid">
-                                        {completedCount} / {totalContents} contenidos
-                                    </span>
+                                    <span className="text-mid">{completedCount} / {totalContents} contenidos</span>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
                                     <div
@@ -722,6 +704,22 @@ export function CourseMapPage() {
                                     />
                                 </div>
                             </div>
+
+                            {globalProgress >= 100 && (
+                                <Link
+                                    to="/student/grades"
+                                    className="flex items-center justify-center gap-2 w-full min-h-10 rounded-xl
+                   text-sm font-semibold text-white transition-all duration-300
+                   hover:opacity-90 hover:scale-[1.02]"
+                                    style={{
+                                        background: `linear-gradient(135deg, #059669, #5A878C)`,
+                                        boxShadow: '0 4px 14px #05966940',
+                                    }}
+                                >
+                                    <Check size={15} strokeWidth={2.5}/>
+                                    Ver mi certificado
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -738,7 +736,7 @@ export function CourseMapPage() {
                     onPrev={goPrev}
                     onNext={goNext}
                     hasPrev={activeIdx > 0}
-                    hasNext={activeIdx < allContents.length - 1}
+                    hasNext={hasNext}
                     isMarkingComplete={markingComplete}
                 />
             )}
@@ -755,10 +753,9 @@ function ModuleDivider({title, index, color}: { title: string; index: number; co
             <div className="h-px flex-1 rounded-full" style={{backgroundColor: color, opacity: 0.25}}/>
             <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: color}}/>
-                <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap"
-                      style={{color}}>
-          {title}
-        </span>
+                <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap" style={{color}}>
+                    {title}
+                </span>
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: color}}/>
             </div>
             <div className="h-px flex-1 rounded-full" style={{backgroundColor: color, opacity: 0.25}}/>
@@ -780,9 +777,11 @@ function ContentNodeRow({item, onAction}: { item: FlatItem; onAction: () => void
     return (
         <>
             {/* Mobile: lineal */}
-            <div data-content-id={item.contentId}
-                 className="flex md:hidden items-start gap-3 relative z-10"
-                 style={{marginBottom: `${gap * 0.6}px`}}>
+            <div
+                data-content-id={item.contentId}
+                className="flex md:hidden items-start gap-3 relative z-10"
+                style={{marginBottom: `${gap * 0.6}px`}}
+            >
                 <div className="shrink-0 mt-1">{circle}</div>
                 <div className="flex-1 min-w-0">{card}</div>
             </div>
@@ -829,8 +828,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
                 data-content-circle
                 onClick={onAction}
                 aria-label="Ver contenido"
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                   bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
             >
                 <Check size={16} className="text-gray-500" strokeWidth={2.5}/>
             </button>
@@ -842,8 +840,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
                 data-content-circle
                 onClick={onAction}
                 aria-label="Continuar aquí"
-                className="w-14 h-14 rounded-full flex items-center justify-center shrink-0
-                   cursor-pointer transition-transform hover:scale-105"
+                className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-transform hover:scale-105"
                 style={{
                     backgroundColor: color,
                     outline: `3px solid ${color}`,
@@ -858,8 +855,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
     return (
         <div
             data-content-circle
-            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0
-                 bg-gray-100 border-2 border-gray-200 cursor-not-allowed"
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gray-100 border-2 border-gray-200 cursor-not-allowed"
         >
             <Lock size={13} className="text-gray-400"/>
         </div>
@@ -868,7 +864,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
 
 /* ── Card ───────────────────────────────────────────────────────────────── */
 const CONTENT_TYPE_LABEL: Record<string, string> = {
-    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen',
+    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen', pdf: 'PDF', xlsx: 'Excel',
 }
 
 function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void }) {
@@ -881,8 +877,7 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
         return (
             <div
                 onClick={onAction}
-                className="relative overflow-hidden rounded-3xl w-full md:max-w-52.5
-                   cursor-pointer transition-all duration-300 hover:scale-[1.03]"
+                className="relative overflow-hidden rounded-3xl w-full md:max-w-52.5 cursor-pointer transition-all duration-300 hover:scale-[1.03]"
                 style={{
                     border: `3px solid ${color}`,
                     boxShadow: `0 0 0 1px ${color}30, 0 8px 28px ${color}35`,
@@ -890,33 +885,29 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
                 }}
             >
                 <div className="h-1.5 w-full" style={{backgroundColor: color}}/>
-
                 <div className="p-3.5">
                     <span
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold mb-2 text-white"
-                        style={{backgroundColor: color}}>
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"/>
-            Aquí estás
-          </span>
-
-                    <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                           text-[10px] font-semibold"
-                          style={{backgroundColor: color + '18', color}}>
-            {typeLabel}
-          </span>
-
+                        style={{backgroundColor: color}}
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"/>
+                        Aquí estás
+                    </span>
+                    <span
+                        className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        style={{backgroundColor: color + '18', color}}
+                    >
+                        {typeLabel}
+                    </span>
                     <p className="mt-2 text-sm font-bold text-primary leading-snug line-clamp-2">
                         {item.contentTitle}
                     </p>
-
                     <button
                         onClick={e => {
                             e.stopPropagation();
                             onAction()
                         }}
-                        className="mt-3 w-full flex items-center justify-center gap-1.5
-                       min-h-9 px-3 rounded-xl text-white
-                       text-xs font-semibold transition-colors hover:opacity-90"
+                        className="mt-3 w-full flex items-center justify-center gap-1.5 min-h-9 px-3 rounded-xl text-white text-xs font-semibold transition-colors hover:opacity-90"
                         style={{backgroundColor: color}}
                     >
                         <Play size={12} className="ml-0.5"/>
@@ -936,22 +927,19 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
                 isCompleted ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed',
             ].join(' ')}
         >
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                       text-[10px] font-semibold mb-2 bg-gray-200 text-gray-500">
-        {typeLabel}
-      </span>
-
+            <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mb-2 bg-gray-200 text-gray-500">
+                {typeLabel}
+            </span>
             <p className="text-sm font-semibold text-gray-500 leading-snug line-clamp-2">
                 {item.contentTitle}
             </p>
-
             {isCompleted && (
                 <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
                     <Check size={10}/>
                     Completado
                 </p>
             )}
-
             {item.status === 'locked' && (
                 <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
                     <Lock size={10}/>
