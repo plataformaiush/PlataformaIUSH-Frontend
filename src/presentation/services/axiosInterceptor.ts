@@ -6,12 +6,16 @@ export function setupAxiosInterceptors(axiosInstance: AxiosInstance): void {
   axiosInstance.interceptors.request.use(
     (config) => {
       const token = tokenManager.getToken();
+      const headers = config.headers ?? {};
+      const existingAuth =
+        (headers as Record<string, string>).Authorization ||
+        (headers as Record<string, string>).authorization;
 
-      if (token) {
-        config.headers = config.headers ?? {};
-        config.headers.Authorization = `Bearer ${token}`;
+      if (token && !existingAuth) {
+        (headers as Record<string, string>).Authorization = `Bearer ${token}`;
       }
 
+      config.headers = headers;
       return config;
     },
     (error) => Promise.reject(error)
