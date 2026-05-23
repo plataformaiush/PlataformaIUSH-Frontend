@@ -18,11 +18,10 @@ const selectSectionByRole: Record<Role, Section[]> = {
     ],
 
     Admin: [
-        { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+        { path: "/admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
         { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
         { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
         { path: "/admin/reportes", label: "Reportes", icon: <EqualizerIcon /> },
-        { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
     ],
 
     Docente: [
