@@ -15,9 +15,9 @@ type Props = {
 
 export default function PopularCoursesBar({ popularCourses, colors }: Props) {
   // Máximo de inscritos, usado para destacar el curso líder con color primario
-  const maxInscritos =
+  const totalInscritos =
     popularCourses.length > 0
-      ? Math.max(...popularCourses.map((c) => parseInt(c.total_inscritos)))
+      ? popularCourses.reduce((acc, c) => acc + parseInt(c.total_inscritos), 0)
       : 0;
 
   return (
@@ -28,7 +28,7 @@ export default function PopularCoursesBar({ popularCourses, colors }: Props) {
 
       {/* Número máximo de inscritos como métrica destacada */}
       <h2 className="text-2xl font-bold mb-3" style={{ color: colors.textBase }}>
-        {maxInscritos.toLocaleString()} inscritos
+        {totalInscritos.toLocaleString()} inscritos
       </h2>
 
       {/* Gráfica de barras: el curso con más inscritos se resalta en color primario */}
@@ -56,7 +56,7 @@ export default function PopularCoursesBar({ popularCourses, colors }: Props) {
               <Cell
                 key={course.curso_id}
                 fill={
-                  parseInt(course.total_inscritos) === maxInscritos
+                  parseInt(course.total_inscritos) === totalInscritos
                     ? colors.primary
                     : colors.secondary
                 }
