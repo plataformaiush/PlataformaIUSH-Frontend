@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { institutionService, applyTheme } from '../domain/institution/institutionService'
 import { institutionStorageService } from '../domain/institution/institutionStorageService'
 import { Institution, defaultInstitutionColors } from '../domain/institution/types'
@@ -13,13 +13,20 @@ interface InstitutionContextType {
 
 const InstitutionContext = createContext<InstitutionContextType | undefined>(undefined)
 
-const POLLING_INTERVAL = 5000 // 5 segundos
+const POLLING_INTERVAL = 60000 // 60 segundos
+
+// Función para generar hash simple de los datos de institución
+function generateConfigHash(data: Institution): string {
+  return JSON.stringify(data)
+}
 
 export function InstitutionProvider({ children }: { children: React.ReactNode }) {
   const [logo, setLogo] = useState('')
   const [colors, setColors] = useState(defaultInstitutionColors)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(false)
+  const [hasConnectionError, setHasConnectionError] = useState(false)
+  const previousConfigHashRef = useRef<string>('')
 
   // Cargar colores desde el servicio de almacenamiento
   const getStoredColors = () => {
@@ -44,21 +51,35 @@ export function InstitutionProvider({ children }: { children: React.ReactNode })
   const loadConfig = async () => {
     try {
       const data = await institutionService.getConfig()
-      setLogo(data.logo)
-      setColors(data.colors)
-      institutionStorageService.setLogo(data.logo)
-      saveColorsToStorage(data.colors)
-      setAuthError(false)
-    } catch (error) {
-      // Silenciar errores de autenticación (token expirado)
-      const errorMessage = String(error)
-      if (!errorMessage.includes('HTTP 401')) {
-        console.error('Error loading institution config:', error)
+      const currentHash = generateConfigHash(data)
+      
+      // Solo actualizar si los datos cambiaron
+      if (currentHash !== previousConfigHashRef.current) {
+        previousConfigHashRef.current = currentHash
+        setLogo(data.logo)
+        setColors(data.colors)
+        institutionStorageService.setLogo(data.logo)
+        saveColorsToStorage(data.colors)
       }
+      
+      setAuthError(false)
+      setHasConnectionError(false)
+    } catch (error) {
+      const errorMessage = String(error)
+      
       // Detectar si es error de autenticación
       if (isAuthenticationError(error)) {
         setAuthError(true)
       }
+      
+      // Detectar si es error de conexión (no 401)
+      if (!errorMessage.includes('HTTP 401') && errorMessage.includes('ERR_')) {
+        setHasConnectionError(true)
+        console.error('Connection error - polling stopped:', error)
+      } else if (!errorMessage.includes('HTTP 401')) {
+        console.error('Error loading institution config:', error)
+      }
+      
       // Cargar desde almacenamiento como fallback
       const storedColors = getStoredColors()
       setColors(storedColors)
@@ -86,15 +107,15 @@ export function InstitutionProvider({ children }: { children: React.ReactNode })
     loadConfig()
 
     // Polling periódico para detectar cambios desde otros dispositivos/pestañas
-    // Se detiene si hay error de autenticación (401)
+    // Se detiene si hay error de autenticación (401) o error de conexión
     const interval = setInterval(() => {
-      if (!authError) {
+      if (!authError && !hasConnectionError) {
         loadConfig()
       }
     }, POLLING_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [authError])
+  }, [authError, hasConnectionError])
 
   return (
     <InstitutionContext.Provider value={{ logo, colors, loading, refreshConfig: loadConfig, updateColors }}>

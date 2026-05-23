@@ -32,7 +32,7 @@ export function ModuleSection({ title, y, canvasWidth, color, isLocked }: Module
         x={badgeX} y={y - badgeH}
         width={badgeW} height={badgeH}
         rx={badgeH / 2}
-        fill={isLocked ? '#f1f5f9' : color}
+        fill={isLocked ? 'var(--color-surface-muted)' : color}
         opacity={isLocked ? 0.8 : 0.15}
       />
       <rect
@@ -40,7 +40,7 @@ export function ModuleSection({ title, y, canvasWidth, color, isLocked }: Module
         width={badgeW} height={badgeH}
         rx={badgeH / 2}
         fill="none"
-        stroke={isLocked ? '#84B9BF' : color}
+        stroke={isLocked ? 'var(--color-mid)' : color}
         strokeWidth={1.5}
         opacity={0.7}
       />
@@ -51,7 +51,7 @@ export function ModuleSection({ title, y, canvasWidth, color, isLocked }: Module
         dominantBaseline="central"
         fontSize={11}
         fontWeight="700"
-        fill={isLocked ? '#84B9BF' : color}
+        fill={isLocked ? 'var(--color-mid)' : 'var(--color-foreground)'}
         letterSpacing={0.3}
       >
         {isLocked ? '🔒  ' : ''}{title.toUpperCase()}

@@ -112,7 +112,7 @@ export function CourseMapCanvas({
                 key={`path-${content.id}`}
                 from={from}
                 to={to}
-                color={blocked ? '#84B9BF' : color}
+                color={blocked ? 'var(--color-mid)' : color}
                 opacity={blocked ? 0.25 : 0.65}
                 curvature={curvature}
               />

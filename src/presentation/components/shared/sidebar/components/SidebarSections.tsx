@@ -5,6 +5,7 @@ import SchoolIcon from "@mui/icons-material/School"
 import DescriptionIcon from "@mui/icons-material/Description"
 import PeopleIcon from "@mui/icons-material/People"
 import SettingsIcon from "@mui/icons-material/Settings"
+import EqualizerIcon from '@mui/icons-material/Equalizer';
 
 const selectSectionByRole: Record<Role, Section[]> = {
     SuperAdmin: [
@@ -12,19 +13,20 @@ const selectSectionByRole: Record<Role, Section[]> = {
         { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
         { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
         { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
+        { path: "/super-admin/reportes", label: "Reportes", icon: <EqualizerIcon /> },
         { path: "/super-admin/personalizacion", label: "Personalización", icon: <SettingsIcon /> },
     ],
 
     Admin: [
-        { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
-        { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
-        { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
+        { path: "/admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
+        { path: "/admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
+        { path: "/admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
+        { path: "/admin/reportes", label: "Reportes", icon: <EqualizerIcon /> },
     ],
 
     Docente: [
         { path: "/teacher/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
-
+        { path: "/courses", label: "Cursos", icon: <SchoolIcon /> },
     ],
 
     Estudiante: [], //No tiene sidebar

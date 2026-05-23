@@ -1,0 +1,1 @@
+En esta carpeta se debera agregar cada función que haga una petición al backend.

@@ -31,6 +31,7 @@ export default function UserManagementPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const { viewType, setViewType } = useUsersViewPreference();
 
   useEffect(() => {
@@ -145,10 +146,16 @@ export default function UserManagementPage() {
       setError(null);
       setMessage(null);
 
-      const updatedUser = await updateUser(editingUser.id, {
+      const updatePayload: any = {
         nombre: editFormData.nombre,
         roles: editFormData.roles,
-      });
+      };
+
+      if (editFormData.contrasena && editFormData.contrasena.trim()) {
+        updatePayload.contrasena = editFormData.contrasena;
+      }
+
+      const updatedUser = await updateUser(editingUser.id, updatePayload);
 
       setUsers((current) =>
         current.map((user) => (user.id === editingUser.id ? updatedUser : user))
@@ -164,16 +171,8 @@ export default function UserManagementPage() {
   };
 
   const toggleEditRole = (role: string) => {
-    setEditFormData((current) => {
-      const alreadySelected = current.roles.includes(role);
-
-      return {
-        ...current,
-        roles: alreadySelected
-          ? current.roles.filter((selectedRole) => selectedRole !== role)
-          : [...current.roles, role],
-      };
-    });
+    // Only a single role is allowed in edit mode: replace the roles array
+    setEditFormData((current) => ({ ...current, roles: [role] }));
   };
 
   return (
@@ -319,7 +318,7 @@ export default function UserManagementPage() {
 
         {editingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral/55 px-4 py-8 backdrop-blur-sm">
-            <div className="w-full max-w-3xl rounded-3xl border border-border bg-surface p-6 shadow-[0_30px_80px_rgba(15,23,42,0.25)] md:p-8">
+            <div className="w-full max-w-3xl rounded-3xl border border-border bg-surface p-6 shadow-[0_30px_80px_color-mix(in_srgb,var(--color-foreground)_25%,transparent)] md:p-8">
               <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                 <div>
                   <span className="inline-flex rounded-full bg-tertiary px-3 py-1 text-xs font-semibold text-primary">
@@ -370,14 +369,27 @@ export default function UserManagementPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-primary">Contraseña temporal</label>
-                  <input
-                    type="password"
-                    value={editFormData.contrasena}
-                    disabled
-                    className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground placeholder:text-muted-foreground caret-foreground outline-none opacity-80"
-                    placeholder="No editable desde la edición"
-                  />
+                  <label className="mb-1 block text-sm font-medium text-primary">Nueva contraseña</label>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? "text" : "password"}
+                      value={editFormData.contrasena}
+                      onChange={(event) =>
+                        setEditFormData((current) => ({ ...current, contrasena: event.target.value }))
+                      }
+                      minLength={6}
+                      className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 pr-24 text-foreground placeholder:text-muted-foreground caret-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-tertiary"
+                      placeholder="Ingresar contraseña nueva"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-semibold transition"
+                      style={{ color: 'var(--color-primary)' }}
+                    >
+                      {showEditPassword ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">

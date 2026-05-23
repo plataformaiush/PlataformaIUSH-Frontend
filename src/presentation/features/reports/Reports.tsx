@@ -1,194 +1,212 @@
-import React, { useState } from 'react';
-import Filters, { FilterOption } from "./modules/Filters";
-import MetricCard, { Metric } from "./modules/MetricCard";
-import ActivityChart from "./modules/ActivityChart";
-import CourseRanking from "./modules/CourseRanking";
+import { useState, useEffect } from "react";
+
+
+// Peticiones
+import { PopularCourses } from "./action/PopularCourse";
+import { PeriodEnrollments } from "./action/PeriodEnrollments";
+import { ModuleAttempts } from "./action/ModuleAttempts";
+import { CourseCompletionRate } from "./action/CourseCompletionRate";
+import { ActiveInactiveCourses } from "./action/ActiveInactiveCourses";
+import { Certificate } from "./action/Certificate";
+
+// Tipados de cada gráfica
+import { PopularCourseResponse } from "./types/BarChart";
+import { PeriodEnrollmentResponse, Grouping } from "./types/LineChart";
+import { ModuleAttemptResponse } from "./types/HorizontalBarChart";
+import { CourseCompletionRateResponse } from "./types/ProgressChart";
+import { ActiveVsInactiveCourses } from "./types/DonutChart";
+import { Certificates } from "./types/BarChart";
+
+// Modificación de colores
+import { useInstitution } from "../../../context/InstitutionContext";
+import SimulateEvents from "./modules/gtm/SimulateEvents";
 import GraphsLooker from "./modules/lookerStudio/GraphsLooker";
+import HeaderTagManager from "./modules/TagManager/header/HeaderTagManager";
+import EventCardsGTM from "./modules/TagManager/eventCards/EventCardsGTM";
+import EventListGTM from "./modules/TagManager/EventList/EventListGTM";
 
-import { IoPersonOutline } from "react-icons/io5";
-import { TfiBlackboard } from "react-icons/tfi";
-import { LiaCertificateSolid } from "react-icons/lia";
-import { FaRegClock } from "react-icons/fa6";
-import SimulateEvents from './modules/gtm/SimulateEvents';
+import ActiveCoursesDonut from "./modules/graphics/ActiveCoursesDonut";
+import CertificatesBarChart from "./modules/graphics/CertificatesBarChart";
+import CompletionRateChart from "./modules/graphics/CompletionRateChart";
+import EnrollmentLineChart from "./modules/graphics/EnrollmentLineChart";
+import ModuleAttemptsBar from "./modules/graphics/ModuleAttemptsBar";
+import PopularCoursesBar from "./modules/graphics/PopularCoursesBar";
 
+const Reports = () => {
+  // Permite que todos los estilos y gráficas cambien automáticamente al momento de modificar la configuración
+  const { colors } = useInstitution();
 
-const filters: FilterOption[] = [
-  {
-    label: "Rango de fechas",
-    options: [
-      "Últimos 30 días",
-      "Últimos 7 días",
-      "Este año",
-    ],
-  },
-  {
-    label: "Institución",
-    options: [
-      "Todas las Sedes",
-      "Sede Norte",
-      "Sede Sur",
-    ],
-  },
-  {
-    label: "Curso",
-    options: [
-      "Todos los cursos",
-      "UI/UX Design Master",
-      "Python Essentials",
-    ],
-  },
-];
+  // Estados para almacenar los datos de cada gráfica
+  const [popularCourses, setPopularCourses] = useState<PopularCourseResponse>([],);
+  const [periodEnrollments, setPeriodEnrollments] = useState<PeriodEnrollmentResponse>([]);
+  const [moduleAttempts, setModuleAttempts] = useState<ModuleAttemptResponse>([],);
+  const [completionRate, setCompletionRate] = useState<CourseCompletionRateResponse>([]);
+  const [activeVsInactive, setActiveVsInactive] = useState<ActiveVsInactiveCourses | null>(null);
+  const [certificates, setCertificates] = useState<Certificates | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [agrupacion, setAgrupacion] = useState<Grouping>("mensual");
+  const [loadingEnrollments, setLoadingEnrollments] = useState<boolean>(false);
 
-const metric: Metric[] = [
-  {
-    icon: IoPersonOutline,
-    value: "12,842",
-    label: "Usuarios Activos",
-    badge: "+12.5%",
-    variant: "positive",
-  },
-  {
-    icon: TfiBlackboard,
-    value: "156",
-    label: "Cursos Activos",
-    badge: "+4.2%",
-    variant: "positive",
-  },
-  {
-    icon: LiaCertificateSolid,
-    value: "3,490",
-    label: "Certificados",
-    badge: "Estable",
-    variant: "neutral",
-  },
-  {
-    icon: FaRegClock,
-    value: "45m",
-    label: "Tiempo Promedio",
-    badge: "-2.1%",
-    variant: "negative",
-  },
-];
+  // Ejecuta todas las peticiones necesarias al cargar el componente
+  useEffect(() => {
+    // Consume todos los endpoints
+    const fetchAllData = async () => {
+      try {
+        const [
+          popularCoursesData,
+          periodEnrollmentsData,
+          moduleAttemptsData,
+          completionRateData,
+          activeVsInactiveData,
+          certificatesData,
+        ] = await Promise.all([
+          PopularCourses(),
+          PeriodEnrollments(agrupacion),
+          ModuleAttempts(),
+          CourseCompletionRate(),
+          ActiveInactiveCourses(),
+          Certificate(),
+        ]);
 
-const activity = [
-  {
-    day: "Lun",
-    visualizaciones: 320,
-    completitud: 140,
-  },
-  {
-    day: "Mar",
-    visualizaciones: 450,
-    completitud: 200,
-  },
-  {
-    day: "Mié",
-    visualizaciones: 380,
-    completitud: 170,
-  },
-  {
-    day: "Jue",
-    visualizaciones: 520,
-    completitud: 240,
-  },
-  {
-    day: "Vie",
-    visualizaciones: 610,
-    completitud: 290,
-  },
-  {
-    day: "Sáb",
-    visualizaciones: 480,
-    completitud: 210,
-  },
-  {
-    day: "Dom",
-    visualizaciones: 390,
-    completitud: 160,
-  },
-];
+        // Actualiza cada estado con la data recibida
+        setPopularCourses(popularCoursesData.data);
+        setPeriodEnrollments(periodEnrollmentsData.data);
+        setModuleAttempts(moduleAttemptsData.data);
+        setCompletionRate(completionRateData.data);
+        setActiveVsInactive(activeVsInactiveData.data);
+        setCertificates(certificatesData.data);
+      } catch (error) {
+        console.error("Error fetching reports data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-const courses = [
-  {
-    name: "UI/UX Design Master",
-    visits: 2400,
-    max: 2400,
-  },
-  {
-    name: "Python Essentials",
-    visits: 1900,
-    max: 2400,
-  },
-  {
-    name: "Digital Marketing",
-    visits: 1200,
-    max: 2400,
-  },
-  {
-    name: "Soft Skills",
-    visits: 850,
-    max: 2400,
-  },
-];
+    fetchAllData();
+  }, []);
 
-export default function Reports() {
+  // Recarga solo las inscripciones cuando el usuario cambia el filtro de agrupación (mensual, trimestral, etc)
+  useEffect(() => {
+    if (loading) return;
+    const fetchEnrollments = async () => {
+      setLoadingEnrollments(true);
+      try {
+        const data = await PeriodEnrollments(agrupacion); // Consulta según el filtrado
+        setPeriodEnrollments(data.data);
+      } catch (error) {
+        console.error("Error fetching enrollments:", error);
+      } finally {
+        setLoadingEnrollments(false);
+      }
+    };
+    fetchEnrollments();
+  }, [agrupacion]);
 
+  
   return (
-    <div className="min-h-full w-full bg-[#f6f6f6] font-['Plus_Jakarta_Sans'] select-none">
-
+    <div
+      className="min-h-full w-full font-['Plus_Jakarta_Sans'] select-none"
+      style={{ background: colors.background }}
+    >
       <div className="w-full max-w-none px-10 py-8">
-
         {/* Header */}
-        <div className="pb-8">
-          <h1 className="text-[32px] font-bold text-[#223740] tracking-[-1px]">
+        <div>
+          <h1
+            className="text-[32px] font-bold"
+            style={{ color: colors.primary }}
+          >
             Reportes y Analítica Avanzada
           </h1>
-
-          <p className="text-[16.5px] text-[#3a3a3a] mt-2 font-medium">
+          <p
+            className="text-[16.5px] mt-2 font-medium"
+            style={{ color: colors.textSecondary }}
+          >
             Visualiza el rendimiento y compromisos en la plataforma.
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-8">
-          <Filters filters={filters} />
-        </div>
+        <div className="flex flex-col gap-4 mt-6">
+          {/* Gráficas backend */}
+          <section className="flex flex-col gap-4">
+            {/* Fila 1: Inscripciones | Cursos | Intentos */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <EnrollmentLineChart
+                periodEnrollments={periodEnrollments}
+                agrupacion={agrupacion}
+                onAgrupacionChange={setAgrupacion}
+                loading={loadingEnrollments}
+                colors={colors}
+              />
+              <ActiveCoursesDonut
+                activeVsInactive={activeVsInactive}
+                colors={colors}
+              />
+              <ModuleAttemptsBar
+                moduleAttempts={moduleAttempts}
+                colors={colors}
+              />
+            </div>
+            {/* Fila 2: Certificados | Inscritos por cursos */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <CertificatesBarChart 
+                certificates={certificates}
+                colors={colors}
+              />
+              <PopularCoursesBar 
+                popularCourses={popularCourses}
+                colors={colors}
+              />            
+            </div>
+            {/* Fila 3: Tasa completado por curso */}
+              <CompletionRateChart 
+                completionRate={completionRate}
+                colors={colors}
+              />
+          </section>
 
-        {/* Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 mt-8">
+          {/* Sección Tag Manager */}
+          <section className="mt-4 flex flex-col gap-5">
 
-          {metric.map((m) => (
-            <MetricCard
-              key={m.label}
-              metric={m}
-            />
-          ))}
+            <HeaderTagManager/>
 
-        </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 items-start mb-8">
+            <EventCardsGTM/>
+           
 
-          <div className="xl:col-span-2">
-            <ActivityChart data={activity} />
-          </div>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+             
+              <EventListGTM/>
 
-          <div>
-            <CourseRanking courses={courses} />
-          </div>
 
-        </div>
+              <div
+                className="rounded-lg border p-5 shadow-sm"
+                style={{ background: colors.input, borderColor: colors.border }}
+              >
+                <div className="mb-4">
+                  <p
+                    className="text-base font-semibold"
+                    style={{ color: colors.textBase }}
+                  >
+                    Simulación de eventos
+                  </p>
+                  <p
+                    className="mt-1 text-xs"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    Prueba rápida para validar el envío hacia Google Tag
+                    Manager.
+                  </p>
+                </div>
+                <SimulateEvents />
+              </div>
+            </div>
 
-        {/*GA4 & GTM*/}
-        <div className="mb-8">
-          <SimulateEvents/>
-        </div>
-
-        {/* Gráfica embebida */}
-        <div className="mt-8 mb-8">
-          <GraphsLooker />
+            <GraphsLooker />
+          </section>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Reports;

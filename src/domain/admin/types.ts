@@ -1,14 +1,11 @@
 export type AdminReportId =
-  | 'courses-attention'
-  | 'students-low-progress'
-  | 'students-most-active'
-  | 'teachers-pending-activity'
-  | 'course-quality'
-  | 'content-issues'
-  | 'security-access'
-  | 'courses-high-dropout'
-  | 'platform-recent-activity'
-  | 'course-academic-performance'
+  | 'usuarios-total-por-mi'
+  | 'usuarios-activos-por-mi'
+  | 'usuarios-por-rol-por-mi'
+  | 'estudiantes-inscritos-mis-cursos'
+  | 'estudiantes-completados-mis-cursos'
+  | 'top-cursos-inscritos-mis-cursos'
+  | 'top-cursos-completados-mis-cursos'
 
 export interface AdminReportMetric {
   id: string

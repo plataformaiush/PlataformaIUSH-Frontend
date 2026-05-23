@@ -1,72 +1,232 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import { CourseListPage } from '../../courses/CourseListPage'
+import { StatCard } from './shared/cards'
 
-const allCursos = [
-  { nombre: 'Matemáticas I', docente: 'Carlos Ruiz', modulos: 8, estudiantes: 320, estado: 'Activo' },
-  { nombre: 'Programación', docente: 'Pedro Suárez', modulos: 12, estudiantes: 280, estado: 'Activo' },
-  { nombre: 'Inglés básico', docente: 'María Torres', modulos: 6, estudiantes: 210, estado: 'Activo' },
-  { nombre: 'Física general', docente: '—', modulos: 0, estudiantes: 0, estado: 'Sin contenido' },
-  { nombre: 'Historia', docente: 'Luis Gómez', modulos: 5, estudiantes: 180, estado: 'Activo' },
-  { nombre: 'Química', docente: '—', modulos: 0, estudiantes: 0, estado: 'Sin contenido' },
-  { nombre: 'Biología', docente: 'Camila Reyes', modulos: 4, estudiantes: 140, estado: 'Activo' },
-  { nombre: 'Derecho Civil', docente: 'Juan López', modulos: 7, estudiantes: 0, estado: 'Sin inscripciones' },
-  { nombre: 'Literatura Clásica', docente: 'Sofia García', modulos: 6, estudiantes: 0, estado: 'Sin inscripciones' },
-  { nombre: 'Estadística', docente: 'Roberto Díaz', modulos: 9, estudiantes: 0, estado: 'Sin inscripciones' },
-]
+interface Curso {
+  id: string
+  titulo: string
+  docente: string
+  modulos: number
+  estudiantes: number
+  estado: string
+  contenido: string
+  inscripciones: string
+}
+
+interface CursosEstadisticas {
+  cursosActivos: number
+  conContenido: number
+  sinContenido: number
+  sinInscripciones: number
+}
+
+interface CursosViewResponse {
+  success: boolean
+  data: {
+    estadisticas: CursosEstadisticas
+    cursos: Curso[]
+  }
+}
 
 const pillStyle: Record<string, string> = {
   Activo: 'bg-green-100 text-green-800',
-  'Sin contenido': 'bg-muted text-muted-foreground',
+  Inactivo: 'bg-gray-100 text-gray-700',
+  'Con contenido': 'bg-blue-100 text-blue-800',
+  'Sin contenido': 'bg-orange-100 text-orange-700',
+  'Con inscripciones': 'bg-cyan-100 text-cyan-800',
   'Sin inscripciones': 'bg-yellow-100 text-yellow-800',
-  Borrador: 'bg-amber-100 text-amber-700',
 }
 
 const PER_PAGE = 5
 
+const statusFilters = [
+  { id: 'Todos', label: 'Todos' },
+  { id: 'Activo', label: 'Activo' },
+  { id: 'Inactivo', label: 'Inactivo' }
+]
+
+const contentFilters = [
+  { id: 'Todos', label: 'Todos' },
+  { id: 'Con contenido', label: 'Con contenido' },
+  { id: 'Sin contenido', label: 'Sin contenido' }
+]
+
+const enrollmentFilters = [
+  { id: 'Todos', label: 'Todos' },
+  { id: 'Con inscripciones', label: 'Con inscripciones' },
+  { id: 'Sin inscripciones', label: 'Sin inscripciones' }
+]
+
 export function CursosView() {
   const [search, setSearch] = useState('')
-  const [estadoFilter, setEstadoFilter] = useState('Todos')
+  const [statusFilter, setStatusFilter] = useState('Todos')
+  const [contentFilter, setContentFilter] = useState('Todos')
+  const [enrollmentFilter, setEnrollmentFilter] = useState('Todos')
   const [page, setPage] = useState(1)
+  const [selectedCurso, setSelectedCurso] = useState<Curso | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
-  const filtered = allCursos.filter((c) => {
-    const matchSearch = c.nombre.toLowerCase().includes(search.toLowerCase())
-    const matchEstado = estadoFilter === 'Todos' || c.estado === estadoFilter
-    return matchSearch && matchEstado
+  // Estado para datos del backend
+  const [cursos, setCursos] = useState<Curso[]>([])
+  const [estadisticas, setEstadisticas] = useState<CursosEstadisticas>({
+    cursosActivos: 0,
+    conContenido: 0,
+    sinContenido: 0,
+    sinInscripciones: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isFromCache, setIsFromCache] = useState(false)
+  const [viewType, setViewTypeState] = useState<'resumen' | 'gestion'>(() => {
+    const stored = localStorage.getItem('cursosViewType')
+    return (stored as 'resumen' | 'gestion') || 'resumen'
+  })
+
+  const setViewType = (value: 'resumen' | 'gestion') => {
+    setViewTypeState(value)
+    localStorage.setItem('cursosViewType', value)
+  }
+
+  // Fetch de datos del backend
+  useEffect(() => {
+    const fetchCursos = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        setIsFromCache(false)
+        const token = localStorage.getItem('token')
+        
+        if (!token) {
+          setError('Token no encontrado. Por favor, inicia sesión.')
+          return
+        }
+
+        const params = new URLSearchParams()
+        
+        // Mapear filtros UI a parámetros del API
+        if (statusFilter !== 'Todos') {
+          params.append('estado', statusFilter.toLowerCase())
+        }
+        if (contentFilter !== 'Todos') {
+          const contenidoParam = contentFilter === 'Con contenido' ? 'con_contenido' : 'sin_contenido'
+          params.append('contenido', contenidoParam)
+        }
+        if (enrollmentFilter !== 'Todos') {
+          const inscripcionesParam = enrollmentFilter === 'Con inscripciones' ? 'con_inscripciones' : 'sin_inscripciones'
+          params.append('inscripciones', inscripcionesParam)
+        }
+
+        const response = await axios.get<CursosViewResponse>(
+          `http://localhost:3000/api/superadmin/cursosView?${params}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (response.data.success) {
+          setCursos(response.data.data.cursos)
+          setEstadisticas(response.data.data.estadisticas)
+          localStorage.setItem('cursosViewCache', JSON.stringify(response.data.data))
+        }
+      } catch (err) {
+        const mensaje = axios.isAxiosError(err) 
+          ? err.response?.data?.message || err.message 
+          : 'Error desconocido'
+        
+        // Intentar cargar datos del caché
+        const cachedData = localStorage.getItem('cursosViewCache')
+        if (cachedData) {
+          try {
+            const parsed = JSON.parse(cachedData)
+            setCursos(parsed.cursos)
+            setEstadisticas(parsed.estadisticas)
+            setIsFromCache(true)
+            setError(`Error al cargar cursos: ${mensaje}. Mostrando últimos datos disponibles.`)
+          } catch {
+            setError(`Error al cargar cursos: ${mensaje}`)
+          }
+        } else {
+          setError(`Error al cargar cursos: ${mensaje}`)
+        }
+        console.error('Error fetching cursos:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCursos()
+  }, [statusFilter, contentFilter, enrollmentFilter, page])
+
+  const filtered = cursos.filter((c) => {
+    const matchSearch = c.titulo.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = statusFilter === 'Todos' || c.estado === statusFilter
+    const matchContent = contentFilter === 'Todos' || c.contenido === contentFilter
+    const matchEnrollment = enrollmentFilter === 'Todos' || c.inscripciones === enrollmentFilter
+    return matchSearch && matchStatus && matchContent && matchEnrollment
   })
 
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const slice = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
+  if (viewType === 'gestion') {
+    return (
+      <div>
+        <div className="px-6 pt-4">
+          <button
+            onClick={() => setViewType('resumen')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all hover:scale-105"
+            style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
+          >
+            ← Vista resumen
+          </button>
+        </div>
+        <CourseListPage />
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 space-y-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div>
-        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Cursos</h1>
-        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>32 cursos en la plataforma</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Cursos</h1>
+          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{cursos.length} cursos en la plataforma</p>
+        </div>
+        <button
+          onClick={() => setViewType('gestion')}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all hover:scale-105 shadow-lg"
+          style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
+        >
+          Gestión de Cursos
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[['Cursos Activos', '32'], ['Con contenido', '26'], ['Sin contenido', '6'], ['Sin inscripciones', '3']].map(([l, v]) => (
-          <div key={l} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
-            style={{
-              background: 'var(--color-muted)',
-              borderColor: 'var(--color-border)',
-              overflow: 'hidden'
-            }}>
-            {/* Header con color primario */}
-            <div className="w-full p-3 transition-all duration-300"
-              style={{ 
-                background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                color: 'white'
-              }}>
-              <p className="text-sm font-semibold uppercase tracking-wider">{l}</p>
-            </div>
-            
-            {/* Body blanco */}
-            <div className="p-5">
-              <p className="text-4xl font-bold transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-foreground)' }}>{v}</p>
-            </div>
-          </div>
-        ))}
+        <StatCard label="Cursos Activos" value={estadisticas.cursosActivos.toLocaleString()} />
+        <StatCard label="Con contenido" value={estadisticas.conContenido.toLocaleString()} />
+        <StatCard label="Sin contenido" value={estadisticas.sinContenido.toLocaleString()} />
+        <StatCard label="Sin inscripciones" value={estadisticas.sinInscripciones.toLocaleString()} />
       </div>
+
+      {/* Mostrar errores */}
+      {error && (
+        <div className="p-4 rounded-lg border border-red-500 bg-red-50"
+          style={{ borderColor: 'rgba(255, 0, 0, 0.5)', backgroundColor: 'rgba(255, 0, 0, 0.05)' }}>
+          <p className="text-sm" style={{ color: 'rgb(220, 38, 38)' }}>{error}</p>
+          {isFromCache && <p className="text-xs mt-2" style={{ color: 'rgb(220, 38, 38)' }}>Usando datos en caché</p>}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && !cursos.length && (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</div>
+        </div>
+      )}
 
       <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
         style={{
@@ -89,22 +249,72 @@ export function CursosView() {
               '--tw-ring-color': 'var(--color-primary)'
             } as React.CSSProperties}
           />
-          <div className="flex gap-1 flex-wrap mt-4 mb-6">
-            {['Todos', 'Activo', 'Sin contenido', 'Sin inscripciones'].map((f) => (
+          
+          {/* Grupo 1: Estado (Activo/Inactivo) */}
+          <div className="flex gap-2 flex-wrap mt-4 mb-4">
+            {statusFilters.map((filter) => (
               <button
-                key={f}
-                onClick={() => { setEstadoFilter(f); setPage(1) }}
-                className="text-xs px-3 py-2 rounded-lg border transition-all flex-1 md:flex-none"
-                style={estadoFilter === f ? {
+                key={filter.id}
+                onClick={() => { setStatusFilter(filter.id); setPage(1) }}
+                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
+                style={(statusFilter === filter.id) ? {
                   backgroundColor: 'var(--color-primary)',
                   borderColor: 'var(--color-primary)',
-                  color: 'white'
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                 } : {
                   borderColor: 'var(--color-border)',
-                  color: 'var(--sa-muted)'
+                  color: 'var(--color-muted-foreground)',
+                  backgroundColor: 'var(--color-input)'
                 }}
               >
-                {f}
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grupo 2: Contenido */}
+          <div className="flex gap-2 flex-wrap mb-4">
+            {contentFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setContentFilter(filter.id); setPage(1) }}
+                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
+                style={(contentFilter === filter.id) ? {
+                  backgroundColor: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                } : {
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-muted-foreground)',
+                  backgroundColor: 'var(--color-input)'
+                }}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grupo 3: Inscripciones */}
+          <div className="flex gap-2 flex-wrap mb-6">
+            {enrollmentFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setEnrollmentFilter(filter.id); setPage(1) }}
+                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
+                style={(enrollmentFilter === filter.id) ? {
+                  backgroundColor: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                } : {
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-muted-foreground)',
+                  backgroundColor: 'var(--color-input)'
+                }}
+              >
+                {filter.label}
               </button>
             ))}
           </div>
@@ -115,18 +325,20 @@ export function CursosView() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
-                {['Curso', 'Docente', 'Módulos', 'Estudiantes', 'Estado', ''].map((h) => (
+                {['Curso', 'Docente', 'Módulos', 'Estudiantes', 'Estado', 'Contenido', 'Inscripciones', ''].map((h) => (
                   <th key={h} className="text-left pb-2 text-xs font-medium" style={{ color: 'var(--color-muted-foreground)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {slice.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</td></tr>
+              {loading ? (
+                <tr><td colSpan={8} className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</td></tr>
+              ) : slice.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</td></tr>
               ) : (
                 slice.map((c) => (
-                  <tr key={c.nombre} style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
-                    <td className="py-2" style={{ color: 'var(--color-foreground)' }}>{c.nombre}</td>
+                  <tr key={c.id} style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
+                    <td className="py-2" style={{ color: 'var(--color-foreground)' }}>{c.titulo}</td>
                     <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.docente}</td>
                     <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.modulos}</td>
                     <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.estudiantes}</td>
@@ -134,10 +346,23 @@ export function CursosView() {
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.estado]}`}>{c.estado}</span>
                     </td>
                     <td className="py-2">
-                      <button className="text-xs px-2 py-1 border rounded-lg" style={{
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-muted-foreground)'
-                      }}>Ver</button>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.contenido]}`}>{c.contenido}</span>
+                    </td>
+                    <td className="py-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.inscripciones]}`}>{c.inscripciones}</span>
+                    </td>
+                    <td className="py-2">
+                      <button 
+                        onClick={() => {
+                          setSelectedCurso(c)
+                          setShowModal(true)
+                        }}
+                        className="text-xs px-2 py-1 border rounded-lg hover:bg-opacity-10 transition-colors" 
+                        style={{
+                          borderColor: 'var(--color-primary)',
+                          color: 'var(--color-primary)',
+                          backgroundColor: 'transparent'
+                        }}>Ver</button>
                     </td>
                   </tr>
                 ))
@@ -148,20 +373,26 @@ export function CursosView() {
 
         {/* Vista de cards - Mobile */}
         <div className="md:hidden space-y-3 px-8 py-6" style={{ backgroundColor: 'var(--color-muted)' }}>
-          {slice.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</div>
+          ) : slice.length === 0 ? (
             <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</div>
           ) : (
             slice.map((c) => (
-              <div key={c.nombre} className="border rounded-lg p-4" style={{
+              <div key={c.id} className="border rounded-lg p-4" style={{
                 backgroundColor: 'var(--color-muted)',
                 borderColor: 'var(--color-border)'
               }}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.nombre}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.titulo}</p>
                     <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Docente: {c.docente}</p>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${pillStyle[c.estado]}`}>{c.estado}</span>
+                </div>
+                <div className="flex gap-1 flex-wrap mb-3">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.estado]}`}>{c.estado}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.contenido]}`}>{c.contenido}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.inscripciones]}`}>{c.inscripciones}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <div>
@@ -173,11 +404,17 @@ export function CursosView() {
                     <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.estudiantes}</p>
                   </div>
                   <div className="text-right">
-                    <button className="text-xs px-3 py-1.5 border rounded-lg w-full" style={{
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-primary)',
-                      backgroundColor: 'transparent'
-                    }}>Ver</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedCurso(c)
+                        setShowModal(true)
+                      }}
+                      className="text-xs px-3 py-1.5 border rounded-lg w-full hover:bg-opacity-10 transition-colors" 
+                      style={{
+                        borderColor: 'var(--color-primary)',
+                        color: 'var(--color-primary)',
+                        backgroundColor: 'transparent'
+                      }}>Ver</button>
                   </div>
                 </div>
               </div>
@@ -189,27 +426,251 @@ export function CursosView() {
           <span className="text-xs text-muted-foreground">
             {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
           </span>
-          <div className="flex gap-1">
-            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className="text-xs w-7 h-7 rounded-lg border transition-all"
-                style={page === p ? {
-                  backgroundColor: 'var(--color-primary)',
-                  borderColor: 'var(--color-primary)',
-                  color: 'white'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)'
-                }}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === 1 ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              ←
+            </button>
+            
+            {(() => {
+              const maxVisible = 5
+              let startPage = Math.max(1, page - Math.floor(maxVisible / 2))
+              let endPage = Math.min(pages, startPage + maxVisible - 1)
+              
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1)
+              }
+              
+              const pageButtons = []
+              
+              if (startPage > 1) {
+                pageButtons.push(
+                  <button
+                    key={1}
+                    onClick={() => setPage(1)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    1
+                  </button>
+                )
+                if (startPage > 2) {
+                  pageButtons.push(
+                    <span key="dots1" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+              }
+              
+              for (let p = startPage; p <= endPage; p++) {
+                pageButtons.push(
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={page === p ? {
+                      backgroundColor: 'var(--color-primary)',
+                      borderColor: 'var(--color-primary)',
+                      color: 'white'
+                    } : {
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {p}
+                  </button>
+                )
+              }
+              
+              if (endPage < pages) {
+                if (endPage < pages - 1) {
+                  pageButtons.push(
+                    <span key="dots2" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+                pageButtons.push(
+                  <button
+                    key={pages}
+                    onClick={() => setPage(pages)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {pages}
+                  </button>
+                )
+              }
+              
+              return pageButtons
+            })()}
+            
+            <button
+              onClick={() => setPage(Math.min(pages, page + 1))}
+              disabled={page === pages}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === pages ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              →
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de detalles transparente */}
+      {showModal && selectedCurso && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowModal(false)
+            setSelectedCurso(null)
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border"
+            style={{
+              backgroundColor: 'var(--color-background)',
+              borderColor: 'var(--color-border)',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+                Detalles del Curso
+              </h2>
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setSelectedCurso(null)
+                }}
+                className="text-2xl font-bold transition-all hover:scale-110"
+                style={{ color: 'var(--color-muted-foreground)' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4">
+              {/* TÍTULO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  TÍTULO
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.titulo}
+                </p>
+              </div>
+
+              {/* DOCENTE */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  DOCENTE
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.docente}
+                </p>
+              </div>
+
+              {/* ID */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ID
+                </p>
+                <p className="text-xs font-mono break-all" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.id}
+                </p>
+              </div>
+
+              {/* ESTADO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ESTADO
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.estado]}`}>
+                  {selectedCurso.estado}
+                </span>
+              </div>
+
+              {/* MÓDULOS */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  MÓDULOS
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.modulos}
+                </p>
+              </div>
+
+              {/* ESTUDIANTES */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ESTUDIANTES INSCRITOS
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.estudiantes}
+                </p>
+              </div>
+
+              {/* CONTENIDO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  CONTENIDO
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.contenido]}`}>
+                  {selectedCurso.contenido}
+                </span>
+              </div>
+
+              {/* INSCRIPCIONES */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  INSCRIPCIONES
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.inscripciones]}`}>
+                  {selectedCurso.inscripciones}
+                </span>
+              </div>
+            </div>
+
+            {/* Footer - Close Button */}
+            <div className="mt-6">
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setSelectedCurso(null)
+                }}
+                className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-all hover:opacity-90"
+                style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

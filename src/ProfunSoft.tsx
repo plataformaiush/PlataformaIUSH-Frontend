@@ -6,6 +6,7 @@ import Header from './presentation/components/shared/header/Header'
 import SideBarResponsive from './presentation/components/shared/sidebarResponsive/SideBarResponsive'
 
 import { useHiddenNavStore } from './presentation/components/shared/sidebar/store/hiddenNavStore'
+import { useHandleRolTracker } from './presentation/features/reports/hooks/useHandleRolTracker'
 
 const ProfunSoft = () => {
 
@@ -13,6 +14,8 @@ const ProfunSoft = () => {
     const hiddenNav = useHiddenNavStore((state) => state.hiddenNav)
     const setHiddenNav = useHiddenNavStore((state) => state.setHiddenNav)
     const location = useLocation()
+
+    useHandleRolTracker() //Trackeamos el rol más usado.
 
     const handleMobileSidebarToggle = () => {
 

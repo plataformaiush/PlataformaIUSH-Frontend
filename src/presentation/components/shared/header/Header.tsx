@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack'
 import MenuOpenIcon from '@mui/icons-material/MenuOpen'
 import SettingsIcon from '@mui/icons-material/Settings'
 import logoDefault from '../img/ProfunSoft.png'
+import { tokenManager } from '../../../../presentation/services/tokenManager'
 
 interface HeaderProps{
   onMobileMenuToggle?: () => void
@@ -32,8 +33,8 @@ const Header = ({ onMobileMenuToggle, mobileMenuOpen = false }: HeaderProps) => 
 
   const showLogo = onMobileMenuToggle ? !mobileMenuOpen : hiddenNav
 
-  const userRaw = localStorage.getItem('user')
-  const userName = userRaw ? (JSON.parse(userRaw).nombre ?? 'Usuario IUSH') : 'Usuario IUSH'
+  const user = tokenManager.getUser() as { nombre?: string } | null
+  const userName = user?.nombre ?? 'Usuario IUSH'
   const userAvatar = stringAvatar(userName)
   const logoSrc = logo || logoDefault
 
