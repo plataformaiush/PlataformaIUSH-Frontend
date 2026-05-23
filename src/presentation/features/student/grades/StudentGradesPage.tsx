@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Award, Download, X, Trophy, BookOpen, ChevronRight } from 'lucide-react'
-import { studentService, type MisCursos, type Certificado } from '../services/studentService'
+import { studentService, type MisCursos, type Certificado, type CursoInscritoBackend } from '../services/studentService'
+import { tokenManager } from '../../../services/tokenManager'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', {
@@ -183,11 +184,43 @@ export function StudentGradesPage() {
     async function load() {
       try {
         setLoading(true)
-        const [cursosData, certsData] = await Promise.all([
+        const user = tokenManager.getUser() as { id?: string } | null
+        const userId = user?.id ?? ''
+
+        const [cursosData, certsData, inscritosData] = await Promise.all([
           studentService.getMisCursos(),
           studentService.getMisCertificados().catch(() => [] as Certificado[]),
+          userId
+            ? studentService.getMisCursosInscritos(userId).catch(() => [] as CursoInscritoBackend[])
+            : Promise.resolve([] as CursoInscritoBackend[]),
         ])
-        setCursos(cursosData ?? [])
+
+        // Merge: cursos del endpoint de progreso + cursos marcados completado=true
+        // en inscripciones pero que el endpoint de progreso reporta 0% (inconsistencia del backend)
+        const cursosMap = new Map((cursosData ?? []).map(c => [c.idCurso, c]))
+        for (const inscrito of inscritosData ?? []) {
+          if (!inscrito.completado) continue
+          if (cursosMap.has(inscrito.id_curso)) {
+            // Corregir el porcentaje si está mal reportado
+            const existing = cursosMap.get(inscrito.id_curso)!
+            if (existing.porcentajeProgreso < 100) {
+              cursosMap.set(inscrito.id_curso, { ...existing, porcentajeProgreso: 100 })
+            }
+          } else {
+            // Curso completado que no aparece en el endpoint de progreso
+            cursosMap.set(inscrito.id_curso, {
+              idCurso: inscrito.id_curso,
+              titulo: inscrito.titulo,
+              descripcion: inscrito.descripcion,
+              thumbnail: inscrito.thumbnail,
+              modulosTotal: inscrito.modulos_total,
+              modulosCompletados: inscrito.modulos_total,
+              porcentajeProgreso: 100,
+            })
+          }
+        }
+
+        setCursos(Array.from(cursosMap.values()))
         setCertificados(certsData ?? [])
       } catch {
         setError('No se pudo cargar la información. Intenta de nuevo.')
@@ -296,18 +329,28 @@ export function StudentGradesPage() {
                       ✓ 100% completado
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleOpenCert(course)}
-                    disabled={!cert}
-                    className="flex items-center gap-1.5 min-h-11 px-4 rounded-xl shrink-0
-                               bg-linear-to-r from-secondary to-tertiary
-                               text-primary text-xs font-bold
-                               hover:opacity-90 active:scale-95 transition-all shadow-sm
-                               disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Award size={14} />
-                    <span className="hidden sm:inline">Certificado</span>
-                  </button>
+                  {cert ? (
+                    <button
+                      onClick={() => handleOpenCert(course)}
+                      className="flex items-center gap-1.5 min-h-11 px-4 rounded-xl shrink-0
+                                 bg-linear-to-r from-secondary to-tertiary
+                                 text-primary text-xs font-bold
+                                 hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                    >
+                      <Award size={14} />
+                      <span className="hidden sm:inline">Certificado</span>
+                    </button>
+                  ) : (
+                    <div
+                      title="El certificado se está generando, intenta más tarde"
+                      className="flex items-center gap-1.5 min-h-11 px-4 rounded-xl shrink-0
+                                 bg-amber-50 border border-amber-200
+                                 text-amber-600 text-xs font-semibold cursor-default"
+                    >
+                      <Award size={14} />
+                      <span className="hidden sm:inline">Pendiente</span>
+                    </div>
+                  )}
                 </div>
               )
             })}

@@ -313,12 +313,16 @@ export const studentService = {
   },
 
   // Marcar contenido como completado (Endpoint sin /api)
-  async marcarContenidoCompletado(contenidoId: string, usuarioId: string): Promise<void> {
-    await rootAxiosInstance.post(
-        `/progreso/contenido/${contenidoId}/completar`,
-        { id_usuario: usuarioId },  // ← clave correcta
-        { headers: getStudentAuthHeaders() }
+  async marcarContenidoCompletado(
+    contenidoId: string,
+    usuarioId: string
+  ): Promise<{ completado: boolean; porcentajeActual: number; certificado: Certificado | null }> {
+    const response = await rootAxiosInstance.post(
+      `/progreso/contenido/${contenidoId}/completar`,
+      { id_usuario: usuarioId },
+      { headers: getStudentAuthHeaders() }
     )
+    return response.data.data
   },
 
   // Obtener progreso detallado de curso (Endpoint sin /api)

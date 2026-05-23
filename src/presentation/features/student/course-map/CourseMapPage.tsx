@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import {useParams, Link} from 'react-router-dom'
+import {useParams, Link, useNavigate} from 'react-router-dom'
 import {
     ArrowLeft, Check, Lock, Play,
     FileText, HelpCircle, Image as ImageIcon, Table,
@@ -298,6 +298,7 @@ function computeSegment(itemA: FlatItem): SegmentParams {
 ══════════════════════════════════════════════════════════════════════════════ */
 export function CourseMapPage() {
     const {courseId = '1'} = useParams()
+    const navigate = useNavigate()
     const progress = useStudentProgressStore(s => s.getProgress(courseId))
 
     const [activeContent, setActiveContent] = useState<AnyContentData | null>(null)
@@ -501,7 +502,7 @@ export function CourseMapPage() {
         if (!completedIds.includes(currentContentId) && !markingComplete) {
             setMarkingComplete(true)
             try {
-                await studentService.marcarContenidoCompletado(currentContentId, usuarioId ?? '')
+                const result = await studentService.marcarContenidoCompletado(currentContentId, usuarioId ?? '')
 
                 if (isFirstInModule) {
                     trackIniciarModulo(courseName, moduleName)
@@ -511,9 +512,15 @@ export function CourseMapPage() {
                     if (prev.includes(currentContentId)) return prev
                     return [...prev, currentContentId]
                 })
+
+                // Si el backend generó el certificado automáticamente, redirigir a logros
+                if (result?.completado && result?.certificado) {
+                    setActiveContent(null)
+                    navigate('/student/grades')
+                    return
+                }
             } catch (err) {
                 console.error('Error al marcar contenido completado:', err)
-                // Cierra el modal igual aunque falle el request
             } finally {
                 setMarkingComplete(false)
             }
