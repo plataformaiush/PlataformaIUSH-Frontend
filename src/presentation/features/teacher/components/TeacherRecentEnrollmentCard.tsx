@@ -36,7 +36,7 @@ export function TeacherRecentEnrollmentCard({
   );
 
   return (
-    <article className="flex flex-col gap-4 rounded-[24px] border border-[var(--teacher-border)] bg-[var(--teacher-card-soft)] p-4 transition hover:bg-[var(--teacher-card)] hover:shadow-[0_14px_30px_rgba(22,55,68,0.07)] md:flex-row md:items-center md:justify-between">
+    <article className="flex min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-[24px] border border-[var(--teacher-border)] bg-[var(--teacher-card-soft)] p-4 transition hover:bg-[var(--teacher-card)] hover:shadow-[0_14px_30px_rgba(22,55,68,0.07)] md:flex-row md:items-center md:justify-between">
       <div className="flex min-w-0 items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--teacher-primary)] to-[var(--teacher-accent)] text-sm font-black text-white">
           {enrollment.avatar ||
@@ -44,15 +44,15 @@ export function TeacherRecentEnrollmentCard({
         </div>
 
         <div className="min-w-0">
-          <h3 className="truncate text-base font-black text-[var(--teacher-text)]">
+          <h3 className="max-w-full truncate text-base font-black text-[var(--teacher-text)]">
             {enrollment.studentName || "Estudiante sin nombre"}
           </h3>
 
-          <p className="mt-1 truncate text-xs font-medium text-[var(--teacher-muted)]">
+          <p className="mt-1 max-w-full truncate text-xs font-medium text-[var(--teacher-muted)]">
             {enrollment.email || "Correo no disponible"}
           </p>
 
-          <p className="mt-1 truncate text-xs font-bold text-[var(--teacher-muted)]">
+          <p className="mt-1 max-w-full truncate text-xs font-bold text-[var(--teacher-muted)]">
             {enrollment.courseTitle || "Curso no disponible"} ·{" "}
             {formatDate(enrollment.enrolledAt)}
           </p>

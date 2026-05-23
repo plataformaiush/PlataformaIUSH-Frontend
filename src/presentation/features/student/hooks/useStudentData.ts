@@ -25,7 +25,7 @@ export function useStudentData() {
       setError(null)
     } catch (err) {
       setError('Error al cargar datos del estudiante')
-      console.error('Error loading student data:', err)
+      console.error('Error al cargar datos del estudiante:', err)
     } finally {
       setLoading(false)
     }

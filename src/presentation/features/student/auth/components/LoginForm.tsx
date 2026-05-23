@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useAuthStore } from "../../../../stores/auth.store";
 import { useInstitution } from "../../../../../context/InstitutionContext";
 
+import { trackIniciarSesion } from "../../../reports/events/TagManagerEvents";
+
 type LoginData = {
   correo: string;
   contrasena: string;
@@ -31,7 +33,7 @@ export default function LoginForm() {
 
       const response = await loginRequest(data);
 
-      console.log("LOGIN OK:", response);
+      console.log("LOGIN EXITOSO:", response);
 
       // Guarda el token y usuario en el store y localStorage
       const expiresIn = response.expiresIn || 3600; // 1 hora por defecto
@@ -39,9 +41,14 @@ export default function LoginForm() {
 
       // Redirige según el rol del usuario
       const userRoles = response.user.roles || [];
+
+      //Vinculación de inicio de sesión para tag manager.
+      trackIniciarSesion(userRoles[0]); //Trackeamos el inicio de sesión.
       
-      if (userRoles.includes("SuperAdmin") || userRoles.includes("Admin")) {
+      if (userRoles.includes("SuperAdmin")) {
         navigate("/super-admin");
+      } else if (userRoles.includes("Admin")) {
+        navigate("/admin");
       } else if (userRoles.includes("Estudiante")) {
         navigate("/student");
       } else if (userRoles.includes("Docente")) {
@@ -58,7 +65,7 @@ export default function LoginForm() {
         }, 2000);
       }
     } catch (error) {
-      console.error("Error login:", error);
+      console.error("Error en login:", error);
       const errorMessage = "Credenciales incorrectas o error del servidor";
       setErrorMsg(errorMessage);
       setError(errorMessage);

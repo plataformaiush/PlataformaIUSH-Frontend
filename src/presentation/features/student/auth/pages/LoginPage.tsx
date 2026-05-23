@@ -24,6 +24,7 @@ export default function LoginPage() {
   const accentStripe = hexToRgba(colors.tertiary, 0.09);
   const glassOverlay = hexToRgba(colors.textOnDark, 0.1);
   const brightHighlight = hexToRgba(colors.textOnDark, 0.9);
+  const cardShadow = hexToRgba(colors.textBase, 0.14);
 
   return (
     <div
@@ -48,7 +49,7 @@ export default function LoginPage() {
 
       <div
         className="relative grid w-full max-w-6xl overflow-hidden rounded-3xl border border-border bg-surface md:grid-cols-[1fr_1.05fr]"
-        style={{ boxShadow: '0 32px 70px rgba(15, 23, 42, 0.14)' }}
+        style={{ boxShadow: `0 32px 70px ${cardShadow}` }}
       >
         <aside className="relative m-3 flex min-h-135 flex-col justify-between overflow-hidden rounded-3xl bg-primary p-8 text-text-on-dark md:m-4 md:p-10">
           <div
