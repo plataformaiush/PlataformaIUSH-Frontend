@@ -1,16 +1,14 @@
 import { createAxiosInstance } from '../../../services/axiosInterceptor'
+import { tokenManager } from '../../../services/tokenManager'
 
 const API_URL = 'http://localhost:3000/api'
 const ROOT_URL = 'http://localhost:3000' // Base para las rutas que no usan /api
-const TEST_STUDENT_TOKEN = 'token-estudiante-001'
 
 const apiAxiosInstance = createAxiosInstance(API_URL)
 const rootAxiosInstance = createAxiosInstance(ROOT_URL)
 
 function getStudentAuthHeaders() {
-  return {
-    Authorization: `Bearer ${TEST_STUDENT_TOKEN}`,
-  }
+  return tokenManager.getAuthHeaders()
 }
 
 // ─── Tipos ───

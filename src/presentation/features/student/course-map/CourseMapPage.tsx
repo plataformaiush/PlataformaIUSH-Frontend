@@ -312,7 +312,6 @@ export function CourseMapPage() {
 
     /* ── Estado mutable de progreso ─────────────────────────────────────── */
     const [completedIds, setCompletedIds] = useState<string[]>([])
-    const [globalProgress, setGlobalProgress] = useState(0)
     const [markingComplete, setMarkingComplete] = useState(false)
 
     useEffect(() => {
@@ -357,21 +356,19 @@ export function CourseMapPage() {
                 setCourseData({raw: data, course: mappedCourse, contentDetails})
                 setCourseError(null)
 
-                // Inicializa completedIds y progreso desde el backend
+                // Inicializa completedIds desde el backend (progreso se deriva localmente)
                 const ids = data.modulos.flatMap((m) =>
                     m.contenidos
                         .filter((c) => Boolean(c.completado))
                         .map((c) => c.idContenido)
                 )
                 setCompletedIds(ids)
-                setGlobalProgress(data.progresoCurso.porcentaje)
             } catch (error) {
                 console.error('Error loading course detail:', error)
                 setCourseError(error instanceof Error ? error.message : 'Error al cargar curso')
                 setCourseData(null)
                 // Fallback al store local si falla el backend
                 setCompletedIds(progress?.completedContents ?? [])
-                setGlobalProgress(0)
             } finally {
                 setLoadingCourse(false)
             }
@@ -387,6 +384,9 @@ export function CourseMapPage() {
     const activeIdx = activeContent ? allContents.findIndex(c => c.id === activeContent.id) : -1
     const totalContents = allContents.length
     const completedCount = completedIds.filter(id => allContents.some(c => c.id === id)).length
+    const globalProgress = totalContents > 0
+        ? Math.round((completedCount / totalContents) * 100)
+        : 0
 
     const moduleStatuses = useMemo(
         () => computeModuleStatuses(course.modules, completedIds),
@@ -509,13 +509,7 @@ export function CourseMapPage() {
 
                 setCompletedIds((prev) => {
                     if (prev.includes(currentContentId)) return prev
-                    const updated = [...prev, currentContentId]
-                    const completedInCourse = updated.filter(id =>
-                        allContents.some(c => c.id === id)
-                    ).length
-                    const newPct = Math.round((completedInCourse / allContents.length) * 100)
-                    setGlobalProgress(newPct)
-                    return updated
+                    return [...prev, currentContentId]
                 })
             } catch (err) {
                 console.error('Error al marcar contenido completado:', err)

@@ -5,7 +5,7 @@ import {
     Play, GraduationCap, Loader, Award, X
 } from 'lucide-react'
 // ...existing code... (EmptyCoursesState removed on purpose)
-import {studentService, type MisCursos} from '../services/studentService'
+import {studentService, type MisCursos, type CursoInscritoBackend} from '../services/studentService'
 import { trackIniciarCurso } from '../../reports/events/TagManagerEvents'
 
 const STREAK_DAYS = 14
@@ -13,6 +13,9 @@ const STREAK_DAYS = 14
 interface EnrichedCourse extends MisCursos {
     displayTitle: string
     displayDescription: string
+    isEnrolled: boolean
+    idInscripcion?: string
+    completado: boolean
 }
 
 // statusOf removed: dashboard view no longer relies on course progress/status
@@ -46,10 +49,20 @@ export function StudentDashboardPage() {
     const loadCourses = async () => {
         setIsLoadingCourses(true)
         try {
-            const cursos = await studentService.getAllCursos()
             const userId = getCurrentUserId()
-
             const normalizeId = (value: unknown) => (value == null ? '' : String(value))
+
+            const [cursos, misCursos] = await Promise.all([
+                studentService.getAllCursos(),
+                userId
+                    ? studentService.getMisCursosInscritos(userId).catch(() => [] as CursoInscritoBackend[])
+                    : Promise.resolve([] as CursoInscritoBackend[]),
+            ])
+
+            const enrollmentByCurso = new Map<string, CursoInscritoBackend>()
+            for (const inscripcion of misCursos) {
+                enrollmentByCurso.set(normalizeId(inscripcion.id_curso), inscripcion)
+            }
 
             const filtered = cursos.filter((c: any) => {
                 const courseOwnerId = c.idUsuario ?? c.id_usuario ?? c.usuarioId
@@ -58,17 +71,28 @@ export function StudentDashboardPage() {
                 return isNotCreatedByUser && isActive
             })
 
-            const normalizedCourses = filtered.map((curso: any) => ({
-                idCurso: curso.idCurso,
-                titulo: curso.titulo,
-                descripcion: curso.descripcion,
-                thumbnail: (curso as any).thumbnail || undefined,
-                modulosTotal: curso.modulosCount ?? 0,
-                modulosCompletados: 0,
-                porcentajeProgreso: 0,
-                displayTitle: curso.titulo,
-                displayDescription: curso.descripcion || 'Sin descripción disponible',
-            }))
+            const normalizedCourses: EnrichedCourse[] = filtered.map((curso: any) => {
+                const enrollment = enrollmentByCurso.get(normalizeId(curso.idCurso))
+                const porcentajeProgreso = enrollment
+                    ? Math.round(parseFloat(enrollment.porcentaje_progreso || '0'))
+                    : 0
+                const completado = enrollment ? enrollment.completado || porcentajeProgreso >= 100 : false
+
+                return {
+                    idCurso: curso.idCurso,
+                    titulo: curso.titulo,
+                    descripcion: curso.descripcion,
+                    thumbnail: (curso as any).thumbnail || enrollment?.thumbnail || undefined,
+                    modulosTotal: curso.modulosCount ?? enrollment?.modulos_total ?? 0,
+                    modulosCompletados: enrollment?.contenidos_completados ?? 0,
+                    porcentajeProgreso,
+                    displayTitle: curso.titulo,
+                    displayDescription: curso.descripcion || 'Sin descripción disponible',
+                    isEnrolled: Boolean(enrollment),
+                    idInscripcion: enrollment?.id_inscripcion,
+                    completado,
+                }
+            })
 
             setEnrichedCourses(normalizedCourses)
         } catch (err) {
@@ -197,6 +221,8 @@ export function StudentDashboardPage() {
                     courses={courses}
                     // MODIFICADO: Ahora pasamos el curso completo al modal en lugar de inscribir de inmediato
                     onEnrollRequest={(course) => setCourseToEnroll(course)}
+                    onContinueCourse={(course) => goToCourse(course.idCurso)}
+                    onGoToCertificates={() => navigate('/student/grades')}
                     enrollingCourseId={enrollingCourseId}
                     onViewMisCursos={() => navigate('/student/mis-cursos')}
                 />
@@ -401,11 +427,15 @@ function UpNextCard({onClick}: { onClick: () => void }) {
 function LearningPathSection({
                                  courses,
                                  onEnrollRequest,
+                                 onContinueCourse,
+                                 onGoToCertificates,
                                  enrollingCourseId,
                                  onViewMisCursos
                               }: {
     courses: EnrichedCourse[]
     onEnrollRequest: (course: EnrichedCourse) => void
+    onContinueCourse: (course: EnrichedCourse) => void
+    onGoToCertificates: (course: EnrichedCourse) => void
     enrollingCourseId: string | null
     onViewMisCursos: () => void
 }) {
@@ -426,16 +456,26 @@ function LearningPathSection({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {courses.map(course => (
-                    <CourseGridCard
-                        key={course.idCurso}
-                        course={course}
-                        // CAMBIO AQUÍ: Ahora onClick lanza la solicitud del modal
-                        onClick={() => onEnrollRequest(course)}
-                        onEnroll={() => onEnrollRequest(course)}
-                        isEnrolling={enrollingCourseId === course.idCurso}
-                    />
-                ))}
+                {courses.map(course => {
+                    const handleAction = () => {
+                        if (course.completado) {
+                            onGoToCertificates(course)
+                        } else if (course.isEnrolled) {
+                            onContinueCourse(course)
+                        } else {
+                            onEnrollRequest(course)
+                        }
+                    }
+
+                    return (
+                        <CourseGridCard
+                            key={course.idCurso}
+                            course={course}
+                            onAction={handleAction}
+                            isEnrolling={enrollingCourseId === course.idCurso}
+                        />
+                    )
+                })}
             </div>
         </section>
     )
@@ -444,18 +484,29 @@ function LearningPathSection({
 /* ── Course Grid Card ───────────────────────────────────────────── */
 function CourseGridCard({
                             course,
-                            onClick,
-                            onEnroll,
+                            onAction,
                             isEnrolling,
                         }: {
     course: EnrichedCourse
-    onClick: () => void
-    onEnroll: () => void
+    onAction: () => void
     isEnrolling: boolean
 }) {
+    let buttonLabel = 'Inscribirse'
+    if (course.completado) {
+        buttonLabel = 'Ir a certificados'
+    } else if (course.isEnrolled) {
+        buttonLabel = 'Continuar curso'
+    }
+
+    const badge = course.completado
+        ? { text: 'Completado', cls: 'text-green-700' }
+        : course.isEnrolled
+            ? { text: 'En curso', cls: 'text-secondary' }
+            : { text: 'Curso', cls: 'text-primary' }
+
     return (
         <div
-            onClick={onClick}
+            onClick={onAction}
             className="bg-surface rounded-2xl overflow-hidden border border-mid/20
                  flex flex-col text-left hover:shadow-md transition-all duration-200 w-full cursor-pointer"
         >
@@ -472,11 +523,11 @@ function CourseGridCard({
                         <GraduationCap size={32} className="text-primary/50" />
                     </div>
                 )}
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1
+                <div className={`absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/90 backdrop-blur-sm
-                        text-[11px] font-semibold text-primary">
+                        text-[11px] font-semibold ${badge.cls}`}>
                     <GraduationCap size={12}/>
-                    Curso
+                    {badge.text}
                 </div>
             </div>
 
@@ -485,18 +536,40 @@ function CourseGridCard({
                 <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.displayTitle}</p>
                 <p className="text-xs text-secondary line-clamp-2">{course.displayDescription}</p>
 
-                {/* Footer: botón de inscripción */}
+                {/* Barra de progreso solo si está inscrito */}
+                {course.isEnrolled && (
+                    <div className="mt-2 flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center text-[11px] font-medium text-secondary">
+                            <span>Progreso</span>
+                            <span className="font-bold text-primary">{course.porcentajeProgreso}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-700 ${
+                                    course.completado ? 'bg-green-500' : 'bg-secondary'
+                                }`}
+                                style={{ width: `${course.porcentajeProgreso}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Footer: botón según estado */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            onEnroll()
+                            onAction()
                         }}
                         disabled={isEnrolling}
-                        className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
-                                     bg-secondary hover:bg-secondary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className={`w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
+                                     transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                                         course.completado
+                                             ? 'bg-primary hover:bg-primary/90'
+                                             : 'bg-secondary hover:bg-secondary/90'
+                                     }`}
                     >
-                        {isEnrolling ? 'Procesando...' : 'Inscribirse'}
+                        {isEnrolling ? 'Procesando...' : buttonLabel}
                     </button>
                 </div>
             </div>

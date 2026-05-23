@@ -11,7 +11,6 @@ import { reportsRoutes } from './reports.routes'
 import { superAdminRoutes } from './superadmin.routes'
 import { teacherRoutes } from './teacher.routes.tsx'
 import { vistaEstudiantesRutas } from './vista-estudiante.routes'
-import { studentRoutes } from './student.routes' // Tus rutas (Equipo 7)
 import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
