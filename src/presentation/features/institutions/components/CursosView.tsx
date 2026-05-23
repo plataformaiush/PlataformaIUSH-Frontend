@@ -64,6 +64,8 @@ export function CursosView() {
   const [contentFilter, setContentFilter] = useState('Todos')
   const [enrollmentFilter, setEnrollmentFilter] = useState('Todos')
   const [page, setPage] = useState(1)
+  const [selectedCurso, setSelectedCurso] = useState<Curso | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   // Estado para datos del backend
   const [cursos, setCursos] = useState<Curso[]>([])
@@ -350,10 +352,17 @@ export function CursosView() {
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.inscripciones]}`}>{c.inscripciones}</span>
                     </td>
                     <td className="py-2">
-                      <button className="text-xs px-2 py-1 border rounded-lg" style={{
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-muted-foreground)'
-                      }}>Ver</button>
+                      <button 
+                        onClick={() => {
+                          setSelectedCurso(c)
+                          setShowModal(true)
+                        }}
+                        className="text-xs px-2 py-1 border rounded-lg hover:bg-opacity-10 transition-colors" 
+                        style={{
+                          borderColor: 'var(--color-primary)',
+                          color: 'var(--color-primary)',
+                          backgroundColor: 'transparent'
+                        }}>Ver</button>
                     </td>
                   </tr>
                 ))
@@ -395,11 +404,17 @@ export function CursosView() {
                     <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.estudiantes}</p>
                   </div>
                   <div className="text-right">
-                    <button className="text-xs px-3 py-1.5 border rounded-lg w-full" style={{
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-primary)',
-                      backgroundColor: 'transparent'
-                    }}>Ver</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedCurso(c)
+                        setShowModal(true)
+                      }}
+                      className="text-xs px-3 py-1.5 border rounded-lg w-full hover:bg-opacity-10 transition-colors" 
+                      style={{
+                        borderColor: 'var(--color-primary)',
+                        color: 'var(--color-primary)',
+                        backgroundColor: 'transparent'
+                      }}>Ver</button>
                   </div>
                 </div>
               </div>
@@ -411,27 +426,251 @@ export function CursosView() {
           <span className="text-xs text-muted-foreground">
             {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
           </span>
-          <div className="flex gap-1">
-            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className="text-xs w-7 h-7 rounded-lg border transition-all"
-                style={page === p ? {
-                  backgroundColor: 'var(--color-primary)',
-                  borderColor: 'var(--color-primary)',
-                  color: 'white'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)'
-                }}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === 1 ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              ←
+            </button>
+            
+            {(() => {
+              const maxVisible = 5
+              let startPage = Math.max(1, page - Math.floor(maxVisible / 2))
+              let endPage = Math.min(pages, startPage + maxVisible - 1)
+              
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1)
+              }
+              
+              const pageButtons = []
+              
+              if (startPage > 1) {
+                pageButtons.push(
+                  <button
+                    key={1}
+                    onClick={() => setPage(1)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    1
+                  </button>
+                )
+                if (startPage > 2) {
+                  pageButtons.push(
+                    <span key="dots1" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+              }
+              
+              for (let p = startPage; p <= endPage; p++) {
+                pageButtons.push(
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={page === p ? {
+                      backgroundColor: 'var(--color-primary)',
+                      borderColor: 'var(--color-primary)',
+                      color: 'white'
+                    } : {
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {p}
+                  </button>
+                )
+              }
+              
+              if (endPage < pages) {
+                if (endPage < pages - 1) {
+                  pageButtons.push(
+                    <span key="dots2" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+                pageButtons.push(
+                  <button
+                    key={pages}
+                    onClick={() => setPage(pages)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {pages}
+                  </button>
+                )
+              }
+              
+              return pageButtons
+            })()}
+            
+            <button
+              onClick={() => setPage(Math.min(pages, page + 1))}
+              disabled={page === pages}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === pages ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              →
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de detalles transparente */}
+      {showModal && selectedCurso && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowModal(false)
+            setSelectedCurso(null)
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border"
+            style={{
+              backgroundColor: 'var(--color-background)',
+              borderColor: 'var(--color-border)',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
+                Detalles del Curso
+              </h2>
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setSelectedCurso(null)
+                }}
+                className="text-2xl font-bold transition-all hover:scale-110"
+                style={{ color: 'var(--color-muted-foreground)' }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4">
+              {/* TÍTULO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  TÍTULO
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.titulo}
+                </p>
+              </div>
+
+              {/* DOCENTE */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  DOCENTE
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.docente}
+                </p>
+              </div>
+
+              {/* ID */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ID
+                </p>
+                <p className="text-xs font-mono break-all" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.id}
+                </p>
+              </div>
+
+              {/* ESTADO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ESTADO
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.estado]}`}>
+                  {selectedCurso.estado}
+                </span>
+              </div>
+
+              {/* MÓDULOS */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  MÓDULOS
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.modulos}
+                </p>
+              </div>
+
+              {/* ESTUDIANTES */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  ESTUDIANTES INSCRITOS
+                </p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {selectedCurso.estudiantes}
+                </p>
+              </div>
+
+              {/* CONTENIDO */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  CONTENIDO
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.contenido]}`}>
+                  {selectedCurso.contenido}
+                </span>
+              </div>
+
+              {/* INSCRIPCIONES */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
+                  INSCRIPCIONES
+                </p>
+                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.inscripciones]}`}>
+                  {selectedCurso.inscripciones}
+                </span>
+              </div>
+            </div>
+
+            {/* Footer - Close Button */}
+            <div className="mt-6">
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  setSelectedCurso(null)
+                }}
+                className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-all hover:opacity-90"
+                style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

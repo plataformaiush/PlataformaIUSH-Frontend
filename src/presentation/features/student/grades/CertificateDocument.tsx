@@ -128,7 +128,7 @@ export function CertificateDocument({
           <div className="text-right">
             <div
               className="w-20 h-0.5 mb-1 ml-auto"
-              style={{ background: '#223740' }}
+              style={{ background: 'var(--color-primary)' }}
             />
             <p className="text-[10px] text-secondary uppercase tracking-wider">Director académico</p>
             <p className="text-xs font-bold text-primary">J.D. Fernández M.</p>
