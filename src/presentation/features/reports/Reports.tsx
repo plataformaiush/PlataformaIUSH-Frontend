@@ -1,30 +1,5 @@
 import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
 
-// Librería utilizada para renderizar gráfica
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  LabelList,
-  BarChart,
-  Bar,
-  Cell,
-  PieChart,
-  Pie,
-} from "recharts";
-import {
-  Activity,
-  BarChart3,
-  Gauge,
-  MousePointerClick,
-  Radio,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
 
 // Peticiones
 import { PopularCourses } from "./action/PopularCourse";
@@ -44,7 +19,6 @@ import { Certificates } from "./types/BarChart";
 
 // Modificación de colores
 import { useInstitution } from "../../../context/InstitutionContext";
-import { ImSpinner2 } from "react-icons/im";
 import SimulateEvents from "./modules/gtm/SimulateEvents";
 import GraphsLooker from "./modules/lookerStudio/GraphsLooker";
 import HeaderTagManager from "./modules/TagManager/header/HeaderTagManager";
@@ -57,87 +31,6 @@ import CompletionRateChart from "./modules/graphics/CompletionRateChart";
 import EnrollmentLineChart from "./modules/graphics/EnrollmentLineChart";
 import ModuleAttemptsBar from "./modules/graphics/ModuleAttemptsBar";
 import PopularCoursesBar from "./modules/graphics/PopularCoursesBar";
-
-type ChartConfig = Record<
-  string,
-  {
-    label: string;
-    color: string;
-  }
->;
-
-type ChartContainerProps = {
-  children: ReactNode;
-  className?: string;
-  config: ChartConfig;
-};
-
-type TooltipPayloadItem = {
-  dataKey?: string | number;
-  name?: string | number;
-  value?: string | number;
-  color?: string;
-};
-
-type ChartTooltipContentProps = {
-  active?: boolean;
-  indicator?: "line";
-  label?: string | number;
-  payload?: TooltipPayloadItem[];
-};
-
-function ChartContainer({
-  children,
-  className = "",
-  config,
-}: ChartContainerProps) {
-  const chartVars: CSSProperties & Record<string, string> = {};
-
-  Object.entries(config).forEach(([key, item]) => {
-    chartVars[`--color-${key}`] = item.color;
-  });
-
-  return (
-    <div className={`h-[180px] w-full ${className}`} style={chartVars}>
-      {children}
-    </div>
-  );
-}
-
-function ChartTooltipContent({
-  active,
-  label,
-  payload,
-}: ChartTooltipContentProps) {
-  if (!active || !payload?.length) return null;
-
-  const item = payload[0];
-
-  return (
-    <div
-      className="rounded-lg border px-3 py-2 text-xs shadow-md"
-      style={{
-        background: "var(--chart-tooltip-bg)",
-        borderColor: "var(--chart-tooltip-border)",
-        color: "var(--chart-tooltip-text)",
-      }}
-    >
-      <div className="mb-1 font-medium">{label}</div>
-      <div className="flex items-center gap-2">
-        <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{
-            background: item.color ?? "var(--color-total_inscripciones)",
-          }}
-        />
-        <span>Inscripciones</span>
-        <span className="font-semibold">
-          {Number(item.value ?? 0).toLocaleString()}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 const Reports = () => {
   // Permite que todos los estilos y gráficas cambien automáticamente al momento de modificar la configuración

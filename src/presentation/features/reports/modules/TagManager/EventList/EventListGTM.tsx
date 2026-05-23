@@ -7,6 +7,7 @@ const EventListGTM = () => {
   
   const gtmFlowItems = [
     "iniciar_sesion",
+    "rol_mas_usado",
     "iniciar_curso",
     "iniciar_modulo",
     "curso_completado",
@@ -31,10 +32,6 @@ const EventListGTM = () => {
             Eventos base enviados al dataLayer.
           </p>
         </div>
-        <MousePointerClick
-          className="h-5 w-5"
-          style={{ color: colors.primary }}
-        />
       </div>
 
       <div className="flex flex-col gap-3">

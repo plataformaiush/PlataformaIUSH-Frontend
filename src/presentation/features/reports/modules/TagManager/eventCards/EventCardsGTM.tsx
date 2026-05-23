@@ -19,7 +19,7 @@ const EventCardsGTM = () => {
     },
     {
       label: "Paneles Looker",
-      value: "4",
+      value: "6",
       detail: "vistas conectadas a GA4 y Tag Manager",
       icon: BarChart3,
     },

@@ -9,20 +9,28 @@ type LookerGraph = {
 
 const lookerGraphs: LookerGraph[] = [
   {
-    title: "Eventos por nombre",
-    src: "https://datastudio.google.com/embed/reporting/be87b050-5fee-49bc-b4cd-f8c003555a8a/page/p_lvl3tbih3d",
+    title: "Evento - Inicios de sesión",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/p_vvduqgzw3d",
   },
   {
-    title: "Eventos a lo largo del tiempo",
-    src: "https://datastudio.google.com/embed/reporting/be87b050-5fee-49bc-b4cd-f8c003555a8a/page/p_hu7f4bih3d",
+    title: "Evento - Rol más usado",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/p_uggq1d5w3d",
   },
   {
-    title: "Tabla ProfunSoft",
-    src: "https://datastudio.google.com/embed/reporting/be87b050-5fee-49bc-b4cd-f8c003555a8a/page/p_0c939bih3d",
+    title: "Evento - Inicio de modulos",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/p_qi4jca6w3d",
   },
   {
-    title: "Usuarios activos por GTM",
-    src: "https://datastudio.google.com/embed/reporting/be87b050-5fee-49bc-b4cd-f8c003555a8a/page/p_iq6x69hh3d",
+    title: "Evento - Certificado obtenido",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/p_5jqh6a5w3d",
+  },
+  {
+    title: "Evento - Curso iniciado",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/PB7yF",
+  },
+  {
+    title: "Evento - Curso Completado",
+    src: "https://datastudio.google.com/embed/reporting/26b1b0c9-9143-4b19-bd30-bc63dc7a548e/page/p_yk1viv7w3d",
   },
 ];
 
@@ -71,12 +79,9 @@ const GraphsLooker = () => {
               >
                 {graph.title}
               </h4>
-              <ExternalLink
-                className="h-4 w-4 shrink-0"
-                style={{ color: colors.primary }}
-              />
+
             </div>
-            <div className="aspect-[16/10] w-full">
+            <div className="aspect-[16/12] w-full">
               <iframe
                 title={graph.title}
                 src={graph.src}
