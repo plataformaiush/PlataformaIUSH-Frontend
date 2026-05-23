@@ -119,7 +119,7 @@ export const adminReportsService = {
           id: 'usuarios-por-rol-por-mi',
           kind: 'metrics',
           order: 3,
-          title: 'Distribución de usuarios por rol (creados por mí)',
+          title: 'Distribución de usuarios activos por rol (creados por mí)',
           description: 'Conteo por rol de los usuarios que creaste',
           metrics: (usuariosPorRol.distribucion ?? []).map((item) => ({
             id: item.rol,

@@ -18,7 +18,7 @@ export const adminRoutes: RouteObject[] = [
       { path: 'dashboard', element: createElement(AdminPage) },
       { path: 'usuarios', element: createElement(SuperAdminPage) },
       { path: 'cursos', element: createElement(SuperAdminPage) },
-      { path: 'reportes', element: createElement(SuperAdminPage) },
+      { path: 'resumen', element: createElement(SuperAdminPage) },
     ],
   },
 ]
