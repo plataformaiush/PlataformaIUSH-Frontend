@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
 import { ContentCard } from './ContentCard'
-import { fetchContenidos } from '../../services/contentService'
+import { fetchContenidos, updateContenido } from '../../services/contentService'
+import { ContentType, parseQuizData, type QuizTFData, type QuizMCData, type QuizMCOption } from '../../../domain/contents/types'
 import { fetchModuloById } from '../../services/moduleService'
 import { fetchCursoById } from '../../services/courseService'
 import type { Content } from '../../../domain/contents/types'
@@ -16,6 +17,12 @@ export const ContentListPage = () => {
   const [contents, setContents] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [editingContent, setEditingContent] = useState<Content | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editResourceUrl, setEditResourceUrl] = useState('')
+  const [editOrder, setEditOrder] = useState(1)
+  const [editSaving, setEditSaving] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!courseId || !moduleId) return
@@ -43,6 +50,39 @@ export const ContentListPage = () => {
     setRefreshKey(prev => prev + 1)
     loadData()
   }
+
+  const handleEditContent = (content: Content) => {
+    setEditingContent(content)
+    setEditTitle(content.title)
+    setEditDescription(content.description)
+    setEditResourceUrl(content.resourceUrl || '')
+    setEditOrder(content.order)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingContent || !moduleId || !editTitle.trim()) return
+    setEditSaving(true)
+    try {
+      await updateContenido(moduleId, editingContent.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        type: editingContent.type,
+        resourceUrl: editResourceUrl.trim() || undefined,
+        order: editOrder,
+        status: editingContent.status,
+      })
+      setEditingContent(null)
+      loadData()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Error al guardar los cambios.'
+      alert(msg)
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  const isUrlType = (type: ContentType) =>
+    [ContentType.VIDEO, ContentType.IMAGE, ContentType.DOCUMENT].includes(type)
 
   useEffect(() => {
     loadData()
@@ -175,6 +215,7 @@ export const ContentListPage = () => {
                       content={content} 
                       isLast={idx === contents.length - 1}
                       onContentUpdate={handleContentUpdate}
+                      onEdit={handleEditContent}
                     />
                   ))}
                 </tbody>
@@ -183,6 +224,96 @@ export const ContentListPage = () => {
           )}
         </div>
       </div>
+
+      {/* Modal edición de contenido */}
+      {editingContent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditingContent(null)}>
+          <div className="w-full max-w-lg mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-8 py-5 border-b flex items-center justify-between" style={{ borderColor: '#E5E7EB' }}>
+              <div>
+                <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Editar contenido</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
+                  {editingContent.type === ContentType.VIDEO ? 'Vídeo'
+                    : editingContent.type === ContentType.IMAGE ? 'Imagen'
+                    : editingContent.type === ContentType.DOCUMENT ? 'Documento'
+                    : editingContent.type === ContentType.TEXT ? 'Texto'
+                    : editingContent.type === ContentType.QUIZ_TF ? 'Verdadero/Falso'
+                    : 'Opción múltiple'}
+                </span>
+              </div>
+              <button onClick={() => setEditingContent(null)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-8 py-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                  Título <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Descripción</label>
+                <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={2}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm resize-none"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+
+              {/* URL / Texto / Quiz según tipo */}
+              {editingContent.type === ContentType.TEXT && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Contenido</label>
+                  <textarea value={editResourceUrl} onChange={e => setEditResourceUrl(e.target.value)} rows={5}
+                    className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm resize-none"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+                </div>
+              )}
+              {isUrlType(editingContent.type) && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                    {editingContent.type === ContentType.VIDEO ? 'URL del video' : 'URL del archivo'}
+                  </label>
+                  <input type="text" value={editResourceUrl} onChange={e => setEditResourceUrl(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
+                    placeholder="https://..." />
+                </div>
+              )}
+              {(editingContent.type === ContentType.QUIZ_TF || editingContent.type === ContentType.QUIZ_MC) && (
+                <div className="rounded-xl p-4 text-sm" style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}>
+                  Para editar preguntas de quiz elimina este contenido y crea uno nuevo.
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Orden</label>
+                <input type="number" min={1} value={editOrder} onChange={e => setEditOrder(Number(e.target.value))}
+                  className="w-32 px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+            </div>
+
+            <div className="px-8 py-5 border-t flex gap-3" style={{ borderColor: '#E5E7EB' }}>
+              <button onClick={() => setEditingContent(null)}
+                className="flex-1 py-3 rounded-xl border-2 text-sm font-semibold"
+                style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}>
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit}
+                disabled={editSaving || !editTitle.trim() || editingContent.type === ContentType.QUIZ_TF || editingContent.type === ContentType.QUIZ_MC}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: '#223740' }}>
+                {editSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

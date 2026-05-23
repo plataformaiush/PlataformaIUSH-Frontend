@@ -173,11 +173,29 @@ export interface CursoDetalleConProgreso {
   modulos: ModuloConContenidos[]
 }
 
+export interface CursoInscritoBackend {
+  id_inscripcion: string
+  inscripcion_fecha_inicio: string
+  inscripcion_fecha_finalizacion: string | null
+  id_curso: string
+  id_creador_curso: string
+  titulo: string
+  descripcion: string
+  curso_activo: boolean
+  curso_creacion: string
+  porcentaje_progreso: string
+  contenidos_completados: number
+  modulos_total: number
+  completado: boolean
+  aprobado: boolean
+  thumbnail?: string
+}
+
 // ─── Servicios ───
 export const studentService = {
   // Obtener todos los cursos disponibles (Endpoint con /api)
   async getAllCursos(): Promise<MisCursos[]> {
-    const response = await apiAxiosInstance.get('/cursos', {
+    const response = await apiAxiosInstance.get('/cursos?limit=1000', {
       headers: getStudentAuthHeaders(),
     })
     const payload = response.data?.data ?? response.data
@@ -214,6 +232,20 @@ export const studentService = {
     })
 
     return response.data?.data ?? response.data
+  },
+
+  // Eliminar inscripción de un curso
+  async eliminarInscripcion(idInscripcion: string): Promise<void> {
+    await apiAxiosInstance.delete(`/inscripciones/${idInscripcion}`, {
+      headers: getStudentAuthHeaders(),
+    })
+  },
+
+  async getMisCursosInscritos(userId: string): Promise<CursoInscritoBackend[]> {
+    const response = await apiAxiosInstance.get(`/inscripciones/mis-cursos/${userId}`, {
+      headers: getStudentAuthHeaders(),
+    })
+    return response.data?.data || []
   },
 
   // Obtener mis cursos inscritos (Endpoint sin /api)
@@ -274,10 +306,12 @@ export const studentService = {
   },
 
   // Marcar contenido como completado (Endpoint sin /api)
-  async marcarContenidoCompletado(contenidoId: string): Promise<void> {
-    await rootAxiosInstance.post(`/progreso/contenido/${contenidoId}/completar`, {}, {
-      headers: getStudentAuthHeaders(),
-    })
+  async marcarContenidoCompletado(contenidoId: string, usuarioId: string): Promise<void> {
+    await rootAxiosInstance.post(
+        `/progreso/contenido/${contenidoId}/completar`,
+        { id_usuario: usuarioId },  // ← clave correcta
+        { headers: getStudentAuthHeaders() }
+    )
   },
 
   // Obtener progreso detallado de curso (Endpoint sin /api)

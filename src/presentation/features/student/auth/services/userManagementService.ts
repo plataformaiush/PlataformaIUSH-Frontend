@@ -18,6 +18,7 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   nombre: string;
   roles: string[];
+  contrasena?: string;
 }
 
 const normalizeRole = (value: string) => value.trim().toLowerCase().replace(/[\s_]/g, "");

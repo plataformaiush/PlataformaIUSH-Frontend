@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
 import { ModuleCard } from './ModuleCard'
-import { fetchModulos } from '../../services/moduleService'
+import { fetchModulos, updateModulo } from '../../services/moduleService'
 import { fetchCursoById } from '../../services/courseService'
 import type { Module } from '../../../domain/modules/types'
 import type { Course } from '../../../domain/courses/types'
@@ -14,6 +14,11 @@ export const ModuleListPage = () => {
   const [course, setCourse] = useState<Course | null>(null)
   const [allModules, setAllModules] = useState<Module[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingModule, setEditingModule] = useState<Module | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editOrder, setEditOrder] = useState(1)
+  const [editSaving, setEditSaving] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!courseId) return
@@ -40,6 +45,32 @@ export const ModuleListPage = () => {
   const handleModuleUpdate = () => {
     setRefreshKey(prev => prev + 1)
     loadData()
+  }
+
+  const handleEditModule = (module: Module) => {
+    setEditingModule(module)
+    setEditTitle(module.title)
+    setEditDescription(module.description)
+    setEditOrder(module.order)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingModule || !courseId || !editTitle.trim()) return
+    setEditSaving(true)
+    try {
+      await updateModulo(courseId, editingModule.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        order: editOrder,
+      })
+      setEditingModule(null)
+      loadData()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Error al guardar los cambios.'
+      alert(msg)
+    } finally {
+      setEditSaving(false)
+    }
   }
   
   const filteredModules = allModules.filter((m) => {
@@ -190,6 +221,7 @@ export const ModuleListPage = () => {
                     courseId={courseId!}
                     isLast={idx === filteredModules.length - 1}
                     onModuleUpdate={handleModuleUpdate}
+                    onEdit={handleEditModule}
                   />
                 ))}
               </tbody>
@@ -197,6 +229,58 @@ export const ModuleListPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de edición de módulo */}
+      {editingModule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditingModule(null)}>
+          <div className="w-full max-w-lg mx-4 rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-8 py-5 border-b flex items-center justify-between" style={{ borderColor: '#E5E7EB' }}>
+              <h2 className="text-xl font-bold" style={{ color: '#223740' }}>Editar módulo</h2>
+              <button onClick={() => setEditingModule(null)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-8 py-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>
+                  Título <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Descripción</label>
+                <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3}
+                  className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm resize-none"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#223740' }}>Orden</label>
+                <input type="number" min={1} value={editOrder} onChange={e => setEditOrder(Number(e.target.value))}
+                  className="w-32 px-4 py-3 rounded-xl border-2 focus:outline-none text-sm"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }} />
+              </div>
+            </div>
+
+            <div className="px-8 py-5 border-t flex gap-3" style={{ borderColor: '#E5E7EB' }}>
+              <button onClick={() => setEditingModule(null)}
+                className="flex-1 py-3 rounded-xl border-2 text-sm font-semibold"
+                style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}>
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={editSaving || !editTitle.trim()}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                style={{ backgroundColor: '#223740' }}>
+                {editSaving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

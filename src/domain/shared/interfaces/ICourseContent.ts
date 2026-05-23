@@ -3,6 +3,7 @@ export type ContentType = 'video' | 'image' | 'text' | 'quiz' | 'pdf' | 'xlsx'
 export interface Course {
   id: string
   title: string
+  descripcion: string
   thumbnail: string
   modules: Module[]
 }

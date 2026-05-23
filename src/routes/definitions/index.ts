@@ -1,4 +1,4 @@
-﻿import { createElement } from 'react'
+import { createElement } from 'react'
 import { type RouteObject } from 'react-router-dom'
 
 import ProfunSoft from '../../ProfunSoft'
@@ -11,18 +11,13 @@ import { reportsRoutes } from './reports.routes'
 import { superAdminRoutes } from './superadmin.routes'
 import { teacherRoutes } from './teacher.routes.tsx'
 import { vistaEstudiantesRutas } from './vista-estudiante.routes'
+import { studentRoutes } from './student.routes' // Tus rutas (Equipo 7)
 import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 /**
  * Agregador central de rutas
  * Define la estructura base de la aplicación
  * Equipo 2: Centralización de rutas
- *
- * @example
- * export const allRoutes: RouteObject[] = [
- *     ...authRoutes,
- *     ...dashboardRoutes
- * ];
  */
 
 export const allRoutes: RouteObject[] = [
@@ -46,8 +41,4 @@ export const allRoutes: RouteObject[] = [
             },
         ],
     },
-    // Equipo 2 (Archivos): ...fileRoutes,
-    // Equipo 3 (Institución): ...institutionRoutes,
-    // Equipo 7 (Socioemocional): ...socioEmotionalRoutes,
-    // Equipo 9 (Analytics): ...analyticsRoutes,
 ]

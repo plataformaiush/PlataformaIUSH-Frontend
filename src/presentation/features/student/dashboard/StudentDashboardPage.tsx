@@ -2,7 +2,7 @@ import {useMemo, useState, useEffect} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {
     ArrowRight,
-    Play, GraduationCap, Loader, Award,
+    Play, GraduationCap, Loader, Award, X
 } from 'lucide-react'
 // ...existing code... (EmptyCoursesState removed on purpose)
 import {studentService, type MisCursos} from '../services/studentService'
@@ -27,6 +27,9 @@ export function StudentDashboardPage() {
     const [isLoadingCourses, setIsLoadingCourses] = useState(false)
     const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
 
+    // NUEVO: Estado para controlar el modal de confirmación
+    const [courseToEnroll, setCourseToEnroll] = useState<EnrichedCourse | null>(null)
+
     const getCurrentUserId = (): string | null => {
         const userData = localStorage.getItem('user')
         if (!userData) return null
@@ -39,7 +42,6 @@ export function StudentDashboardPage() {
         }
     }
 
-    // Función reutilizable para cargar cursos y filtrar los creados por el usuario logueado
     const loadCourses = async () => {
         setIsLoadingCourses(true)
         try {
@@ -48,8 +50,6 @@ export function StudentDashboardPage() {
 
             const normalizeId = (value: unknown) => (value == null ? '' : String(value))
 
-            // Excluir cursos creados por el usuario logueado y mostrar activos.
-            // Se toleran variantes del backend: activo boolean/number/string y distintos nombres de id usuario.
             const filtered = cursos.filter((c: any) => {
                 const courseOwnerId = c.idUsuario ?? c.id_usuario ?? c.usuarioId
                 const isNotCreatedByUser = !userId || normalizeId(courseOwnerId) !== normalizeId(userId)
@@ -64,7 +64,7 @@ export function StudentDashboardPage() {
                 thumbnail: (curso as any).thumbnail || undefined,
                 modulosTotal: curso.modulosCount ?? 0,
                 modulosCompletados: 0,
-                porcentajeProgreso: 0, // en el catálogo no mostramos progreso
+                porcentajeProgreso: 0,
                 displayTitle: curso.titulo,
                 displayDescription: curso.descripcion || 'Sin descripción disponible',
             }))
@@ -78,7 +78,6 @@ export function StudentDashboardPage() {
         }
     }
 
-    // Obtener nombre del estudiante desde localStorage
     useEffect(() => {
         const userData = localStorage.getItem('user')
         if (userData) {
@@ -91,14 +90,11 @@ export function StudentDashboardPage() {
         }
     }, [])
 
-    // Cargar todos los cursos desde la API
     useEffect(() => {
         loadCourses()
     }, [])
 
-    // Solo usamos los cursos provenientes de la base de datos
     const courses = enrichedCourses
-
     const hasEnrolled = courses.length > 0
 
     const inProgress = useMemo(() =>
@@ -109,15 +105,19 @@ export function StudentDashboardPage() {
 
     const goToCourse = (id: string) => navigate(`/student/courses/${id}`)
 
-    const handleEnrollClick = async (courseId: string) => {
-        const userId = getCurrentUserId()
+    // NUEVO: Función que ejecuta la inscripción tras confirmar
+    const executeEnrollment = async () => {
+        if (!courseToEnroll) return;
 
+        const userId = getCurrentUserId()
         if (!userId) {
             window.alert('No fue posible identificar el usuario autenticado.')
             return
         }
 
+        const courseId = courseToEnroll.idCurso;
         setEnrollingCourseId(courseId)
+
         try {
             const validation = await studentService.validarInscripcion(courseId, userId)
 
@@ -129,6 +129,8 @@ export function StudentDashboardPage() {
                 })
             }
 
+            // Cerramos el modal y navegamos
+            setCourseToEnroll(null)
             goToCourse(courseId)
         } catch (error) {
             console.error('Error al validar/crear inscripción:', error)
@@ -164,38 +166,83 @@ export function StudentDashboardPage() {
     }
 
     return (
-        <div className="w-full px-6 md:px-8 py-4 md:py-6 space-y-6 max-w-6xl mx-auto">
+        <>
+            <div className="w-full px-6 md:px-8 py-4 md:py-6 space-y-6 max-w-6xl mx-auto relative">
+                {/* Fila 1: Hero + Certificados */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+                    <HeroBanner
+                        name={studentName}
+                        streak={STREAK_DAYS}
+                        courseName={inProgress?.displayTitle ?? null}
+                        onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
+                    />
+                    <CertificatesCard onNavigate={() => navigate('/grades')}/>
+                </div>
 
-            {/* Fila 1: Hero + Certificados */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
-                <HeroBanner
-                    name={studentName}
-                    streak={STREAK_DAYS}
-                    courseName={inProgress?.displayTitle ?? null}
-                    onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
+                {/* Fila 2: In Progress + Up Next */}
+                {inProgress && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <InProgressCard
+                            course={inProgress}
+                            onClick={() => goToCourse(inProgress.idCurso)}
+                        />
+                        <UpNextCard onClick={() => goToCourse(inProgress.idCurso)}/>
+                    </div>
+                )}
+
+                {/* Fila 3: Your Learning Path */}
+                <LearningPathSection
+                    courses={courses}
+                    onCourseClick={goToCourse}
+                    // MODIFICADO: Ahora pasamos el curso completo al modal en lugar de inscribir de inmediato
+                    onEnrollRequest={(course) => setCourseToEnroll(course)}
+                    enrollingCourseId={enrollingCourseId}
+                    onViewMisCursos={() => navigate('/student/mis-cursos')}
                 />
-                <CertificatesCard onNavigate={() => navigate('/grades')}/>
             </div>
 
-            {/* Fila 2: In Progress + Up Next */}
-            {inProgress && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <InProgressCard
-                        course={inProgress}
-                        onClick={() => goToCourse(inProgress.idCurso)}
-                    />
-                    <UpNextCard onClick={() => goToCourse(inProgress.idCurso)}/>
+            {/* NUEVO: Modal de Confirmación */}
+            {courseToEnroll && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-surface border border-mid/20 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-lg font-bold text-primary">Confirmar inscripción</h3>
+                            <button
+                                onClick={() => setCourseToEnroll(null)}
+                                className="text-secondary hover:text-primary transition-colors"
+                                disabled={enrollingCourseId === courseToEnroll.idCurso}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <p className="text-secondary text-sm mb-6 leading-relaxed">
+                            ¿Seguro que te vas a inscribir al curso: <span className="font-bold text-primary">{courseToEnroll.displayTitle}</span>?
+                        </p>
+
+                        <div className="flex justify-end gap-3 mt-auto">
+                            <button
+                                onClick={() => setCourseToEnroll(null)}
+                                disabled={enrollingCourseId === courseToEnroll.idCurso}
+                                className="px-4 py-2.5 rounded-lg text-sm font-semibold text-secondary hover:bg-mid/10 transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={executeEnrollment}
+                                disabled={enrollingCourseId === courseToEnroll.idCurso}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-secondary hover:bg-secondary/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {enrollingCourseId === courseToEnroll.idCurso && (
+                                    <Loader size={16} className="animate-spin" />
+                                )}
+                                {enrollingCourseId === courseToEnroll.idCurso ? 'Inscribiendo...' : 'Sí, inscribirme'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-
-            {/* Fila 3: Your Learning Path */}
-            <LearningPathSection
-                courses={courses}
-                onCourseClick={goToCourse}
-                onEnrollClick={handleEnrollClick}
-                enrollingCourseId={enrollingCourseId}
-            />
-        </div>
+        </>
     )
 }
 
@@ -209,8 +256,8 @@ interface HeroBannerProps {
 
 function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
     return (
-        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-65"
-             style={{background: 'linear-gradient(135deg, #162830 0%, #223740 55%, #2d5e68 100%)'}}>
+        <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-65
+                        bg-gradient-to-br from-primary to-secondary">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
                       bg-white/15 text-white text-xs font-semibold w-fit">
                 🔥 ¡{streak} días seguidos!
@@ -352,21 +399,30 @@ function UpNextCard({onClick}: { onClick: () => void }) {
 /* ── Learning Path Section ──────────────────────────────────────── */
 function LearningPathSection({
                                  courses,
-                                 onCourseClick,
-                                 onEnrollClick,
+                                 onCourseClick, // Se mantiene en las props para no romper nada, aunque el clic ahora abra el modal
+                                 onEnrollRequest,
                                  enrollingCourseId,
+                                 onViewMisCursos
                              }: {
     courses: EnrichedCourse[]
     onCourseClick: (id: string) => void
-    onEnrollClick: (id: string) => Promise<void>
+    onEnrollRequest: (course: EnrichedCourse) => void
     enrollingCourseId: string | null
+    onViewMisCursos: () => void
 }) {
     return (
         <section className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-primary">Catálogo de cursos</h2>
-                <button className="text-sm font-semibold text-secondary hover:text-primary transition-colors">
-                    Mis cursos
+                <button
+                    onClick={onViewMisCursos}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full
+                               bg-secondary/10 text-secondary text-sm font-bold
+                               hover:bg-secondary hover:text-white cursor-pointer
+                               transition-all duration-300 shadow-sm"
+                >
+                    Ir a Mis Cursos
+                    <ArrowRight size={16} />
                 </button>
             </div>
 
@@ -375,8 +431,9 @@ function LearningPathSection({
                     <CourseGridCard
                         key={course.idCurso}
                         course={course}
-                        onClick={() => onCourseClick(course.idCurso)}
-                        onEnroll={() => onEnrollClick(course.idCurso)}
+                        // CAMBIO AQUÍ: Ahora onClick lanza la solicitud del modal
+                        onClick={() => onEnrollRequest(course)}
+                        onEnroll={() => onEnrollRequest(course)}
                         isEnrolling={enrollingCourseId === course.idCurso}
                     />
                 ))}
@@ -394,7 +451,7 @@ function CourseGridCard({
                         }: {
     course: EnrichedCourse
     onClick: () => void
-    onEnroll: () => Promise<void>
+    onEnroll: () => void
     isEnrolling: boolean
 }) {
     return (
@@ -429,12 +486,12 @@ function CourseGridCard({
                 <p className="font-bold text-sm text-primary line-clamp-2 leading-snug">{course.displayTitle}</p>
                 <p className="text-xs text-secondary line-clamp-2">{course.displayDescription}</p>
 
-                {/* Footer: botón de inscripción (solo imprime id del curso por ahora) */}
+                {/* Footer: botón de inscripción */}
                 <div className="flex flex-col gap-2 mt-auto pt-3">
                     <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                             e.stopPropagation()
-                            await onEnroll()
+                            onEnroll()
                         }}
                         disabled={isEnrolling}
                         className="w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
