@@ -15,7 +15,7 @@ export const useHandleRolTracker = () => {
 
     const interval = setInterval(() => {
       trackRolMasUsado(currentRole)
-    }, 60000)
+    }, 300000)
 
     return () => clearInterval(interval)
   }, [user?.roles])
