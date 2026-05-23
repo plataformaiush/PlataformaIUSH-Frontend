@@ -71,11 +71,11 @@ export default function StudentPersonalization({ onClose }: { onClose: () => voi
       <div className="space-y-2">
         {['Colores principales', 'Fondos', 'Texto', 'Bordes'].map((category) => (
           <div key={category}>
-            <h3 className="text-xs font-semibold uppercase mb-2" style={{ color: '#475569' }}>{category}</h3>
+            <h3 className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--color-muted-foreground)' }}>{category}</h3>
             <div className="grid grid-cols-1 gap-2">
               {COLOR_FIELDS.filter((f) => f.category === category).map(({ key, label }) => (
                 <div key={key} className="flex items-center gap-2">
-                  <label className="text-xs w-36" style={{ color: '#475569' }}>{label}</label>
+                  <label className="text-xs w-36" style={{ color: 'var(--color-muted-foreground)' }}>{label}</label>
                   <input type="color" value={colors[key]} onChange={(e) => handleChange(key, e.target.value)} className="w-10 h-8" />
                   <input type="text" value={colors[key]} onChange={(e) => handleChange(key, e.target.value)} className="flex-1 text-xs font-mono px-2 py-1.5 border rounded-lg" />
                 </div>
