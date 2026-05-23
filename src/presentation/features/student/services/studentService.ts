@@ -101,8 +101,10 @@ export interface Certificado {
   id: string
   userId: string
   courseId: string
-  courseName: string
-  fecha: string
+  courseName: string | null
+  nombreEstudiante: string | null
+  issuedAt: string
+  url?: string
 }
 
 export interface Calificacion {
@@ -247,13 +249,20 @@ export const studentService = {
   },
 
   // Obtener mis cursos inscritos (Endpoint sin /api)
-  // Obtener mis cursos inscritos (Endpoint sin /api)
   async getMisCursos(): Promise<MisCursos[]> {
-    // Al usar baseURL: ROOT_URL, la petición irá a: http://localhost:3000/progreso/mis-cursos
     const response = await rootAxiosInstance.get('/progreso/mis-cursos', {
       headers: getStudentAuthHeaders(),
     })
-    return response.data.data
+    const raw: any[] = response.data.data ?? []
+    return raw.map((r) => ({
+      idCurso:             r.id_curso           ?? r.idCurso            ?? '',
+      titulo:              r.titulo_curso        ?? r.titulo             ?? '',
+      descripcion:         r.descripcion,
+      thumbnail:           r.thumbnail,
+      modulosTotal:        r.total_contenidos    ?? r.modulosTotal       ?? 0,
+      modulosCompletados:  r.contenidos_completados ?? r.modulosCompletados ?? 0,
+      porcentajeProgreso:  Number(r.porcentaje   ?? r.porcentajeProgreso ?? 0),
+    }))
   },
 
   // Obtener detalle de curso (Endpoint con /api)
@@ -322,14 +331,13 @@ export const studentService = {
 
   // Obtener mis certificados (Endpoint sin /api)
   async getMisCertificados(): Promise<Certificado[]> {
-    const userId = localStorage.getItem('user')
-        ? JSON.parse(localStorage.getItem('user') || '{}').id
-        : null
+    const user = tokenManager.getUser() as { id?: string } | null
+    const userId = user?.id
     if (!userId) throw new Error('User ID not found')
-    const response = await rootAxiosInstance.get(`/certificates/${userId}`, {
+    const response = await rootAxiosInstance.get(`/certificates/usuario/${userId}`, {
       headers: getStudentAuthHeaders(),
     })
-    return response.data.data
+    return response.data.data ?? []
   },
 
   // Obtener mis calificaciones (Endpoint sin /api)
@@ -363,5 +371,22 @@ export const studentService = {
       headers: getStudentAuthHeaders(),
     })
     return response.data.data
+  },
+
+  // Obtener HTML de vista previa del certificado (Endpoint sin /api)
+  async previewCertificado(certId: string): Promise<string> {
+    const response = await rootAxiosInstance.get(`/certificates/${certId}/preview`, {
+      headers: getStudentAuthHeaders(),
+    })
+    return response.data
+  },
+
+  // Descargar certificado como blob HTML (Endpoint sin /api)
+  async descargarCertificado(certId: string): Promise<Blob> {
+    const response = await rootAxiosInstance.get(`/certificates/${certId}/descargar`, {
+      headers: getStudentAuthHeaders(),
+      responseType: 'blob',
+    })
+    return response.data
   },
 }

@@ -202,7 +202,7 @@ export function StudentDashboardPage() {
                         courseName={inProgress?.displayTitle ?? null}
                         onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
                     />
-                    <CertificatesCard onNavigate={() => navigate('/grades')}/>
+                    <CertificatesCard onNavigate={() => navigate('/student/grades')}/>
                 </div>
 
                 {/* Fila 2: In Progress + Up Next */}
