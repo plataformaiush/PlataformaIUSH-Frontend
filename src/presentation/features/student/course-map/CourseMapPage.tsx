@@ -229,24 +229,22 @@ function buildContentDetail(content: {
 const MODULE_COLORS = ['#5A878C', '#059669', '#7C3AED']
 
 /* ── Patrón de posición orgánica en desktop ─────────────────────────────── */
-// [leftFr, rightFr] → posición del círculo ≈ leftFr/(leftFr+rightFr)*100%
 const LAYOUT_PATTERNS: [number, number][] = [
-    [1, 9],  // ~10% — extremo izquierdo
-    [9, 1],  // ~90% — extremo derecho
-    [1, 4],  // ~20%
-    [6, 1],  // ~86%
-    [2, 5],  // ~29%
-    [5, 1],  // ~83%
-    [1, 5],  // ~17%
-    [4, 1],  // ~80%
-    [1, 3],  // ~25%
-    [5, 2],  // ~71%
-    [1, 7],  // ~12%
-    [7, 1],  // ~88%
-    [3, 5],  // ~37%
+    [1, 9],
+    [9, 1],
+    [1, 4],
+    [6, 1],
+    [2, 5],
+    [5, 1],
+    [1, 5],
+    [4, 1],
+    [1, 3],
+    [5, 2],
+    [1, 7],
+    [7, 1],
+    [3, 5],
 ]
 
-/* Espaciado vertical variado para camino orgánico (px) */
 const VERTICAL_GAPS = [56, 44, 72, 48, 64, 40, 68, 52, 44, 60, 48, 72, 52]
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
@@ -267,7 +265,6 @@ interface FlatItem {
     status: ContentStatus
 }
 
-/* Estado por contenido */
 function computeContentStatuses(
     modules: typeof MOCK_COURSE.modules,
     completedIds: string[],
@@ -283,7 +280,6 @@ function computeContentStatuses(
     )
 }
 
-/* Estado por módulo (para panel de resumen) */
 function computeModuleStatuses(
     modules: typeof MOCK_COURSE.modules,
     completedIds: string[],
@@ -304,7 +300,6 @@ function computeModuleStatuses(
     return result
 }
 
-/* Parámetros de línea para cada segmento SVG */
 interface SegmentParams {
     stroke: string;
     opacity: number
@@ -330,12 +325,17 @@ export function CourseMapPage() {
     const [activeContent, setActiveContent] = useState<AnyContentData | null>(null)
     const [activeModuleId, setActiveModuleId] = useState<string>('')
     const [courseData, setCourseData] = useState<{
-        raw: CourseDetalleConProgreso
+        raw: CursoDetalleConProgreso
         course: Course
         contentDetails: Record<string, AnyContentData>
     } | null>(null)
     const [loadingCourse, setLoadingCourse] = useState(true)
     const [courseError, setCourseError] = useState<string | null>(null)
+
+    // ── Estado mutable de progreso (se actualiza optimistamente) ──────────
+    const [completedIds, setCompletedIds] = useState<string[]>([])
+    const [globalProgress, setGlobalProgress] = useState(0)
+    const [markingComplete, setMarkingComplete] = useState(false)
 
     useEffect(() => {
         const loadCourse = async () => {
@@ -378,10 +378,23 @@ export function CourseMapPage() {
 
                 setCourseData({raw: data, course: mappedCourse, contentDetails})
                 setCourseError(null)
+
+                // Inicializa los IDs completados y el progreso desde el backend
+                const ids = data.modulos.flatMap((m) =>
+                    m.contenidos
+                        .filter((c) => Boolean(c.completado))
+                        .map((c) => c.idContenido)
+                )
+                setCompletedIds(ids)
+                setGlobalProgress(data.progresoCurso.porcentaje)
             } catch (error) {
                 console.error('Error loading course detail:', error)
                 setCourseError(error instanceof Error ? error.message : 'Error al cargar curso')
                 setCourseData(null)
+
+                // Fallback al store local si falla el backend
+                setCompletedIds(progress?.completedContents ?? [])
+                setGlobalProgress(0)
             } finally {
                 setLoadingCourse(false)
             }
@@ -391,28 +404,21 @@ export function CourseMapPage() {
     }, [courseId])
 
     const course = courseData?.course ?? MOCK_COURSE
-    console.log(course)
     const contentDetails = courseData?.contentDetails ?? MOCK_CONTENT_DETAIL
 
-    const completedIds = useMemo(() => {
-        if (courseData) {
-            return courseData.raw.modulos.flatMap((modulo) =>
-                modulo.contenidos
-                    .filter((contenido) => Boolean(contenido.completado))
-                    .map((contenido) => contenido.idContenido)
-            )
-        }
-
-        return progress?.completedContents ?? []
-    }, [courseData, progress])
     const allContents = course.modules.flatMap(m => m.contents)
     const activeIdx = activeContent ? allContents.findIndex(c => c.id === activeContent.id) : -1
     const totalContents = allContents.length
     const completedCount = completedIds.filter(id => allContents.some(c => c.id === id)).length
-    const globalProgress = courseData?.raw.progresoCurso.porcentaje ?? 0
 
-    const moduleStatuses = useMemo(() => computeModuleStatuses(course.modules, completedIds), [course.modules, completedIds])
-    const contentStatuses = useMemo(() => computeContentStatuses(course.modules, completedIds), [course.modules, completedIds])
+    const moduleStatuses = useMemo(
+        () => computeModuleStatuses(course.modules, completedIds),
+        [course.modules, completedIds]
+    )
+    const contentStatuses = useMemo(
+        () => computeContentStatuses(course.modules, completedIds),
+        [course.modules, completedIds]
+    )
     const completedModules = moduleStatuses.filter(s => s === 'completed').length
     const activeModuleName = course.modules.find(m => m.id === activeModuleId)?.title ?? ''
 
@@ -466,7 +472,7 @@ export function CourseMapPage() {
         measure()
     }, [contentStatuses, measure])
 
-    /* ── Scroll al nodo actual (carga inicial + post-completar) ─────────── */
+    /* ── Scroll al nodo actual ──────────────────────────────────────────── */
     const prevCurrentIdRef = useRef<string | null>(null)
 
     useEffect(() => {
@@ -480,8 +486,6 @@ export function CourseMapPage() {
 
         const delay = isFirstLoad ? 150 : 400
         const timer = setTimeout(() => {
-            // Hay dos nodos con el mismo data-content-id (mobile y desktop).
-            // offsetParent === null indica display:none → elegimos el visible.
             const nodes = containerRef.current?.querySelectorAll(
                 `[data-content-id="${currentItem.contentId}"]`
             )
@@ -501,9 +505,44 @@ export function CourseMapPage() {
         setActiveModuleId(moduleId)
         useStudentProgressStore.getState().updateLastAccessed(courseId)
     }
-    const goNext = () => {
-        if (activeIdx < allContents.length - 1) openContent(allContents[activeIdx + 1].id, activeModuleId)
+
+    /**
+     * Marca el contenido actual como completado en el backend,
+     * actualiza completedIds y el porcentaje de progreso de forma
+     * optimista (sin esperar confirmación del servidor), luego navega
+     * al siguiente contenido.
+     */
+    const goNext = async () => {
+        if (!activeContent || activeIdx >= allContents.length - 1) return
+
+        const currentContentId = activeContent.id
+        const usuarioId = getCurrentUserId()
+
+        if (!completedIds.includes(currentContentId) && !markingComplete) {
+            setMarkingComplete(true)
+            try {
+                await studentService.marcarContenidoCompletado(currentContentId, usuarioId ?? '')
+
+                setCompletedIds((prev) => {
+                    if (prev.includes(currentContentId)) return prev
+                    const updated = [...prev, currentContentId]
+                    const completedInCourse = updated.filter(id =>
+                        allContents.some(c => c.id === id)
+                    ).length
+                    const newPct = Math.round((completedInCourse / allContents.length) * 100)
+                    setGlobalProgress(newPct)
+                    return updated
+                })
+            } catch (err) {
+                console.error('Error al marcar contenido completado:', err)
+            } finally {
+                setMarkingComplete(false)
+            }
+        }
+
+        setActiveContent(null) // ← cierra el modal en vez de abrir el siguiente
     }
+
     const goPrev = () => {
         if (activeIdx > 0) openContent(allContents[activeIdx - 1].id, activeModuleId)
     }
@@ -566,7 +605,7 @@ export function CourseMapPage() {
 
                     <div ref={containerRef} className="relative mt-10 pb-4">
 
-                        {/* ── SVG: mapa del tesoro — curvas con flechas de dirección ── */}
+                        {/* ── SVG: curvas con flechas de dirección ── */}
                         {circles.length >= 2 && (
                             <svg
                                 className="absolute inset-0 pointer-events-none z-0"
@@ -576,7 +615,6 @@ export function CourseMapPage() {
                                 aria-hidden="true"
                             >
                                 <defs>
-                                    {/* Flecha por color de módulo (completado) */}
                                     {MODULE_COLORS.map((color, mi) => (
                                         <marker key={`arrow-mod-${mi}`}
                                                 id={`arrow-mod-${mi}`}
@@ -585,7 +623,6 @@ export function CourseMapPage() {
                                             <polygon points="0 0, 7 3, 0 6" fill={color} opacity="0.85"/>
                                         </marker>
                                     ))}
-                                    {/* Flecha gris (pendiente) */}
                                     <marker id="arrow-gray"
                                             markerWidth="7" markerHeight="6"
                                             refX="6" refY="3" orient="auto">
@@ -666,60 +703,26 @@ export function CourseMapPage() {
                                         {courseData?.raw.curso.nombreUsuario ?? 'Sin asignar'}
                                     </p>
                                 </div>
-
                             </div>
 
                             <div>
-                                <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Progreso
-                                    general</p>
+                                <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">
+                                    Progreso general
+                                </p>
                                 <div className="flex justify-between items-center text-xs text-secondary mb-1.5">
                                     <span className="font-semibold">{globalProgress}%</span>
+                                    <span className="text-mid">
+                                        {completedCount} / {totalContents} contenidos
+                                    </span>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
-                                    <div className="h-full rounded-full bg-secondary transition-all duration-700"
-                                         style={{width: `${globalProgress}%`}}/>
+                                    <div
+                                        className="h-full rounded-full bg-secondary transition-all duration-700"
+                                        style={{width: `${globalProgress}%`}}
+                                    />
                                 </div>
                             </div>
-
-                            {/*<div>*/}
-                            {/*  <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-3">Insignias obtenidas</p>*/}
-                            {/*  <div className="flex gap-2">*/}
-                            {/*    {[*/}
-                            {/*      { earned: completedModules >= 1, emoji: '🎨', color: MODULE_COLORS[0] },*/}
-                            {/*      { earned: completedModules >= 2, emoji: '⭐', color: MODULE_COLORS[1] },*/}
-                            {/*      { earned: completedModules >= 3, emoji: '🏆', color: MODULE_COLORS[2] },*/}
-                            {/*    ].map((b, i) => (*/}
-                            {/*      <div key={i}*/}
-                            {/*           className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-500"*/}
-                            {/*           style={b.earned ? { backgroundColor: b.color + '25' } : { backgroundColor: '#9CA3AF25', opacity: 0.4 }}>*/}
-                            {/*        {b.emoji}*/}
-                            {/*      </div>*/}
-                            {/*    ))}*/}
-                            {/*  </div>*/}
-                            {/*</div>*/}
-
-                            {/*<div>*/}
-                            {/*  <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-3">Recursos</p>*/}
-                            {/*  <div className="space-y-2.5">*/}
-                            {/*    <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">*/}
-                            {/*      <FileText size={15} className="shrink-0" />*/}
-                            {/*      Syllabus del curso (PDF)*/}
-                            {/*    </button>*/}
-                            {/*    <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">*/}
-                            {/*      <Link2 size={15} className="shrink-0" />*/}
-                            {/*      Biblioteca de componentes*/}
-                            {/*    </button>*/}
-                            {/*  </div>*/}
-                            {/*</div>*/}
                         </div>
-
-                        {/*<button className="w-full flex items-center justify-center gap-2 min-h-11*/}
-                        {/*                   bg-tertiary/25 rounded-2xl*/}
-                        {/*                   text-sm font-semibold text-primary*/}
-                        {/*                   hover:bg-tertiary/40 transition-colors">*/}
-                        {/*  <MessageSquare size={16} />*/}
-                        {/*  Foro del curso*/}
-                        {/*</button>*/}
                     </div>
                 </div>
             </div>
@@ -736,6 +739,7 @@ export function CourseMapPage() {
                     onNext={goNext}
                     hasPrev={activeIdx > 0}
                     hasNext={activeIdx < allContents.length - 1}
+                    isMarkingComplete={markingComplete}
                 />
             )}
         </div>
@@ -885,11 +889,9 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
                     background: `linear-gradient(160deg, white 55%, ${color}10 100%)`,
                 }}
             >
-                {/* colored top stripe */}
                 <div className="h-1.5 w-full" style={{backgroundColor: color}}/>
 
                 <div className="p-3.5">
-                    {/* "Aquí estás" badge */}
                     <span
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold mb-2 text-white"
                         style={{backgroundColor: color}}>
@@ -897,7 +899,6 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
             Aquí estás
           </span>
 
-                    {/* tipo badge */}
                     <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full
                            text-[10px] font-semibold"
                           style={{backgroundColor: color + '18', color}}>
