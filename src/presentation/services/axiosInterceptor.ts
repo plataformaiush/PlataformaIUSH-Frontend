@@ -2,23 +2,25 @@ import axios, { AxiosError, AxiosHeaders, AxiosInstance } from "axios";
 import { tokenManager } from "./tokenManager";
 
 export function setupAxiosInterceptors(axiosInstance: AxiosInstance): void {
-    axiosInstance.interceptors.request.use(
-        (config) => {
-            const token = tokenManager.getToken();
-            const headers = AxiosHeaders.from(config.headers);
+        axiosInstance.interceptors.request.use(
+                (config) => {
+                        const token = tokenManager.getToken();
+                        const headers = AxiosHeaders.from(config.headers);
+                        const existingAuth = headers.get('Authorization') ?? headers.get('authorization');
 
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`);
-                if ((config.method ?? 'get').toLowerCase() !== 'get') {
-                    headers.set('Content-Type', 'application/json');
-                }
-            }
+                        if (token && !existingAuth) {
+                                headers.set('Authorization', `Bearer ${token}`);
+                        }
 
-            config.headers = headers as any;
-            return config;
-        },
-        (error) => Promise.reject(error)
-    );
+                        if ((config.method ?? 'get').toLowerCase() !== 'get' && !headers.get('Content-Type')) {
+                                headers.set('Content-Type', 'application/json');
+                        }
+
+                        config.headers = headers as any;
+                        return config;
+                },
+                (error) => Promise.reject(error)
+        );
 
     axiosInstance.interceptors.response.use(
         (response) => response,

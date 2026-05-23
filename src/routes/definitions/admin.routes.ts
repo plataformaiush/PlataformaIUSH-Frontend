@@ -1,6 +1,7 @@
 import { createElement } from 'react'
-import { RouteObject } from 'react-router-dom'
+import { Navigate, RouteObject } from 'react-router-dom'
 import { AdminPage } from '../../presentation/features/admin/AdminPage'
+import { AdminLayout } from '../../presentation/features/admin/layout/AdminLayout'
 import RequireRole from '../guards/RequireRole'
 
 export const adminRoutes: RouteObject[] = [
@@ -9,8 +10,11 @@ export const adminRoutes: RouteObject[] = [
     element: createElement(
       RequireRole,
       { allowedRoles: ['Admin', 'SuperAdmin'], fallbackPath: '/login' },
-      createElement(AdminPage)
+      createElement(AdminLayout)
     ),
+    children: [
+      { index: true, element: createElement(Navigate, { to: 'dashboard', replace: true }) },
+      { path: 'dashboard', element: createElement(AdminPage) },
+    ],
   },
 ]
-

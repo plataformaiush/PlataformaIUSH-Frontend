@@ -16,16 +16,20 @@ export function AdminReportCard({ report }: { report: AdminReport }) {
 
       <div className="p-4">
         {report.kind === 'metrics' ? (
-          <div className="divide-y divide-border">
-            {report.metrics.map((metric) => (
-              <div key={metric.id} className="flex items-center justify-between gap-4 py-2">
-                <span className="text-sm text-foreground">{metric.label}</span>
-                <span className="text-sm font-semibold text-primary text-right whitespace-nowrap">
-                  {metric.value}
-                </span>
-              </div>
-            ))}
-          </div>
+          report.metrics.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin datos para mostrar</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {report.metrics.map((metric) => (
+                <div key={metric.id} className="flex items-center justify-between gap-4 py-2">
+                  <span className="text-sm text-muted-foreground">{metric.label}</span>
+                  <span className="text-sm font-semibold text-foreground text-right whitespace-nowrap">
+                    {metric.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             {report.sections.map((section) => (
