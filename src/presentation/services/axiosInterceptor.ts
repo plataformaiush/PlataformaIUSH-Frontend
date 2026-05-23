@@ -1,24 +1,20 @@
-import axios, {AxiosError, AxiosHeaders, AxiosInstance} from "axios";
-
-const TEST_STUDENT_TOKEN = 'token-estudiante-001';
+import axios, { AxiosError, AxiosHeaders, AxiosInstance } from "axios";
+import { tokenManager } from "./tokenManager";
 
 export function setupAxiosInterceptors(axiosInstance: AxiosInstance): void {
     axiosInstance.interceptors.request.use(
         (config) => {
-            const token = TEST_STUDENT_TOKEN;
+            const token = tokenManager.getToken();
             const headers = AxiosHeaders.from(config.headers);
 
             if (token) {
                 headers.set('Authorization', `Bearer ${token}`);
-
                 if ((config.method ?? 'get').toLowerCase() !== 'get') {
                     headers.set('Content-Type', 'application/json');
                 }
             }
 
             config.headers = headers as any;
-
-
             return config;
         },
         (error) => Promise.reject(error)

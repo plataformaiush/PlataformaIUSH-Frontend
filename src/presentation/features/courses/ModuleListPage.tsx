@@ -18,14 +18,16 @@ export const ModuleListPage = () => {
   const loadData = useCallback(async () => {
     if (!courseId) return
     try {
-      const [courseData, modulesData] = await Promise.all([
-        fetchCursoById(courseId),
-        fetchModulos(courseId)
-      ])
+      const courseData = await fetchCursoById(courseId)
       setCourse(courseData)
-      setAllModules(modulesData)
-    } catch (error) {
-      logger.error('Error al cargar datos', { error, courseId })
+      try {
+        const modulesData = await fetchModulos(courseId)
+        setAllModules(modulesData)
+      } catch (modErr) {
+        logger.error('Error al cargar módulos', { error: modErr, courseId })
+      }
+    } catch (error: any) {
+      logger.error('Error al cargar curso', { error: error?.message || error, courseId })
     } finally {
       setLoading(false)
     }
@@ -57,7 +59,15 @@ export const ModuleListPage = () => {
   if (!course) {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
-        <p className="text-sm" style={{ color: '#6B7280' }}>Curso no encontrado.</p>
+        <div className="text-center space-y-3">
+          <p className="text-sm font-semibold" style={{ color: '#223740' }}>No se pudo cargar el curso.</p>
+          <p className="text-xs" style={{ color: '#6B7280' }}>ID: {courseId}</p>
+          <button onClick={() => window.location.reload()}
+            className="text-xs px-4 py-2 rounded-lg"
+            style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
+            Reintentar
+          </button>
+        </div>
       </main>
     )
   }

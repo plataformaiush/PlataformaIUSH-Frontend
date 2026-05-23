@@ -10,7 +10,6 @@ const selectSectionByRole: Record<Role, Section[]> = {
     SuperAdmin: [
         { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
         { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/courses", label: "Gestión de Cursos", icon: <SchoolIcon /> },
         { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
         { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
         { path: "/super-admin/personalizacion", label: "Personalización", icon: <SettingsIcon /> },
@@ -19,7 +18,6 @@ const selectSectionByRole: Record<Role, Section[]> = {
     Admin: [
         { path: "/super-admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
         { path: "/super-admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/courses", label: "Gestión de Cursos", icon: <SchoolIcon /> },
         { path: "/super-admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
         { path: "/super-admin/resumen", label: "Resumen", icon: <DescriptionIcon /> },
     ],

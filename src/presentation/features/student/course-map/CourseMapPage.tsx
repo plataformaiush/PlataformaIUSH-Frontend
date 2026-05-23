@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useParams, Link} from 'react-router-dom'
 import {
     ArrowLeft, Check, Lock, Play,
-    FileText, Link2, MessageSquare, HelpCircle, Image as ImageIcon, Table,
+    FileText, HelpCircle, Image as ImageIcon, Table,
 } from 'lucide-react'
 import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
 import {studentService} from '../services/studentService'
@@ -354,6 +354,7 @@ export function CourseMapPage() {
                 const mappedCourse: Course = {
                     id: data.curso.idCurso,
                     title: data.curso.titulo,
+                    descripcion: data.curso.descripcion,
                     thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&q=80',
                     modules: data.modulos.map((modulo) => ({
                         id: modulo.idModulo,
@@ -390,6 +391,7 @@ export function CourseMapPage() {
     }, [courseId])
 
     const course = courseData?.course ?? MOCK_COURSE
+    console.log(course)
     const contentDetails = courseData?.contentDetails ?? MOCK_CONTENT_DETAIL
 
     const completedIds = useMemo(() => {
@@ -559,8 +561,7 @@ export function CourseMapPage() {
                         {course.title}
                     </h1>
                     <p className="text-sm md:text-base text-secondary leading-relaxed mt-3 max-w-xl">
-                        Aprende los fundamentos de uno de los lenguajes más versátiles del mundo.
-                        Ideal para principiantes y quienes buscan ampliar sus habilidades.
+                        {course.descripcion ?? 'Explora el mapa del curso, sigue tu progreso y accede a los contenidos de cada módulo.'}
                     </p>
 
                     <div ref={containerRef} className="relative mt-10 pb-4">
@@ -665,17 +666,13 @@ export function CourseMapPage() {
                                         {courseData?.raw.curso.nombreUsuario ?? 'Sin asignar'}
                                     </p>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] text-mid uppercase tracking-wider mb-0.5">Nivel</p>
-                                    <p className="text-sm font-semibold text-primary">Avanzado</p>
-                                </div>
+
                             </div>
 
                             <div>
                                 <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Progreso
                                     general</p>
                                 <div className="flex justify-between items-center text-xs text-secondary mb-1.5">
-                                    <span>{completedModules} de {course.modules.length} módulos completados</span>
                                     <span className="font-semibold">{globalProgress}%</span>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
