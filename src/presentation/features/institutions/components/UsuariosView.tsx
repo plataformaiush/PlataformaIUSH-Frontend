@@ -378,24 +378,112 @@ export function UsuariosView() {
           <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
             {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
           </span>
-          <div className="flex gap-1">
-            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className="text-xs w-7 h-7 rounded-lg border transition-all"
-                style={page === p ? {
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'white',
-                  borderColor: 'var(--color-primary)'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)'
-                }}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === 1 ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              ←
+            </button>
+            
+            {(() => {
+              const maxVisible = 5
+              let startPage = Math.max(1, page - Math.floor(maxVisible / 2))
+              let endPage = Math.min(pages, startPage + maxVisible - 1)
+              
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1)
+              }
+              
+              const pageButtons = []
+              
+              if (startPage > 1) {
+                pageButtons.push(
+                  <button
+                    key={1}
+                    onClick={() => setPage(1)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    1
+                  </button>
+                )
+                if (startPage > 2) {
+                  pageButtons.push(
+                    <span key="dots1" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+              }
+              
+              for (let p = startPage; p <= endPage; p++) {
+                pageButtons.push(
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={page === p ? {
+                      backgroundColor: 'var(--color-primary)',
+                      borderColor: 'var(--color-primary)',
+                      color: 'white'
+                    } : {
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {p}
+                  </button>
+                )
+              }
+              
+              if (endPage < pages) {
+                if (endPage < pages - 1) {
+                  pageButtons.push(
+                    <span key="dots2" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                  )
+                }
+                pageButtons.push(
+                  <button
+                    key={pages}
+                    onClick={() => setPage(pages)}
+                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-muted-foreground)'
+                    }}
+                  >
+                    {pages}
+                  </button>
+                )
+              }
+              
+              return pageButtons
+            })()}
+            
+            <button
+              onClick={() => setPage(Math.min(pages, page + 1))}
+              disabled={page === pages}
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={page === pages ? {
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-muted-foreground)'
+              } : {
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              →
+            </button>
           </div>
         </div>
       </div>
