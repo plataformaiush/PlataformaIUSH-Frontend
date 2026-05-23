@@ -319,7 +319,7 @@ export default function UserManagementPage() {
 
         {editingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral/55 px-4 py-8 backdrop-blur-sm">
-            <div className="w-full max-w-3xl rounded-3xl border border-border bg-surface p-6 shadow-[0_30px_80px_rgba(15,23,42,0.25)] md:p-8">
+            <div className="w-full max-w-3xl rounded-3xl border border-border bg-surface p-6 shadow-[0_30px_80px_color-mix(in_srgb,var(--color-foreground)_25%,transparent)] md:p-8">
               <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                 <div>
                   <span className="inline-flex rounded-full bg-tertiary px-3 py-1 text-xs font-semibold text-primary">

@@ -5,7 +5,6 @@ import { Award, Download, X, Trophy, BookOpen, ChevronRight } from 'lucide-react
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { CertificateDocument } from './CertificateDocument'
 import { DEMO_COURSES } from '../dashboard/components/EmptyCoursesState'
-import { trackCertificadoObtenido } from '../../reports/events/TagManagerEvents'
 
 const STUDENT_NAME = 'Ana García'
 
@@ -30,7 +29,6 @@ function CertificateModal({ courseId, courseName, completionDate, onClose }: Cer
   const hours = COURSE_HOURS[courseId] ?? 30
 
   const handlePrint = () => {
-    trackCertificadoObtenido(courseName) //Trackeamos la función de descargar certificado
 
     const el = document.getElementById('certificate-print')
     if (!el) return

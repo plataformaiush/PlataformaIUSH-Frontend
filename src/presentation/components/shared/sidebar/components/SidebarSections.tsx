@@ -27,7 +27,7 @@ const selectSectionByRole: Record<Role, Section[]> = {
 
     Docente: [
         { path: "/teacher/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
-
+        { path: "/courses", label: "Cursos", icon: <SchoolIcon /> },
     ],
 
     Estudiante: [], //No tiene sidebar

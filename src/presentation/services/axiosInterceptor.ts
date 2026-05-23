@@ -1,47 +1,48 @@
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosHeaders, AxiosInstance } from "axios";
 import { tokenManager } from "./tokenManager";
-import { useAuthStore } from "../stores/auth.store";
 
 export function setupAxiosInterceptors(axiosInstance: AxiosInstance): void {
-  axiosInstance.interceptors.request.use(
-    (config) => {
-      const token = tokenManager.getToken();
+    axiosInstance.interceptors.request.use(
+        (config) => {
+            const token = tokenManager.getToken();
+            const headers = AxiosHeaders.from(config.headers);
 
-      if (token) {
-        config.headers = config.headers ?? {};
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+            if (token) {
+                headers.set('Authorization', `Bearer ${token}`);
+                if ((config.method ?? 'get').toLowerCase() !== 'get') {
+                    headers.set('Content-Type', 'application/json');
+                }
+            }
 
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
+            config.headers = headers as any;
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
 
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-      if (error.response?.status === 401) {
-        useAuthStore.getState().logout();
-        try {
-          window.history.pushState({}, "", "/login");
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        } catch (e) {
-          // Fallback to a hard navigation if history API fails for any reason
-          window.location.href = "/login";
+    axiosInstance.interceptors.response.use(
+        (response) => response,
+        (error: AxiosError) => {
+            if (error.response?.status === 401) {
+                console.error('401 recibido en Axios (sesión no cerrada por ahora):', {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    message: error.message,
+                });
+            }
+
+            return Promise.reject(error);
         }
-      }
-
-      return Promise.reject(error);
-    }
-  );
+    );
 }
 
-export const createAxiosInstance = (baseURL: string): AxiosInstance => {
-  const instance = axios.create({
-    baseURL,
-    timeout: 10000,
-  });
 
-  setupAxiosInterceptors(instance);
-  return instance;
+export const createAxiosInstance = (baseURL: string): AxiosInstance => {
+    const instance = axios.create({
+        baseURL,
+        timeout: 10000,
+    });
+
+    setupAxiosInterceptors(instance);
+    return instance;
 };

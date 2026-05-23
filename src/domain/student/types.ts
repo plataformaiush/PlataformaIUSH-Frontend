@@ -23,6 +23,7 @@ export interface StudentStats {
 export interface EnrolledCourse {
   id: string
   title: string
+  description?: string
   thumbnail: string
   progress: number
   lastAccessedAt: string

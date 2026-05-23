@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect } from "react";
 
 
 // Peticiones
@@ -129,7 +129,7 @@ const Reports = () => {
           {/* Gráficas backend */}
           <section className="flex flex-col gap-4">
             {/* Fila 1: Inscripciones | Cursos | Intentos */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap 4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <EnrollmentLineChart
                 periodEnrollments={periodEnrollments}
                 agrupacion={agrupacion}
@@ -147,7 +147,7 @@ const Reports = () => {
               />
             </div>
             {/* Fila 2: Certificados | Inscritos por cursos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap 4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <CertificatesBarChart 
                 certificates={certificates}
                 colors={colors}

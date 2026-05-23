@@ -1,0 +1,6 @@
+export { DeleteButton } from './DeleteButton'
+export { DownloadButton } from './DownloadButton'
+export { UploadButton } from './UploadButton'
+export { PreviewButton } from './PreviewButton'
+export { UploadModal } from './Uploadmodal'
+export { FilePreviewContainer } from '../vistas/Filepreviewcontainer'
