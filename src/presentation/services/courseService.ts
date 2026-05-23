@@ -14,6 +14,7 @@ export interface CursoBackend {
 
 export interface CursosResponse {
   data: CursoBackend[];
+  meta?: { total: number; page: number; limit: number; totalPages: number };
 }
 
 function mapCursoToCourse(c: CursoBackend): Course {
@@ -35,8 +36,12 @@ function mapCursoToCourse(c: CursoBackend): Course {
 export async function fetchCursos(params?: {
   activo?: boolean;
   id_usuario?: string;
+  page?: number;
+  limit?: number;
 }): Promise<Course[]> {
-  const response = await api.get<CursosResponse>("/cursos", { params });
+  const response = await api.get<CursosResponse>("/cursos", {
+    params: { limit: 100, ...params },
+  });
   return response.data.data.map(mapCursoToCourse);
 }
 
