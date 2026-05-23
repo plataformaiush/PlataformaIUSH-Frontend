@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from 'react'
 import { BookOpen } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import api from '../../lib/axios'
+import { v4 as uuidv4 } from 'uuid'
 
 const contentSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
@@ -106,8 +107,8 @@ export const AddContentPage = () => {
   // Estado quiz Opción múltiple
   const [mcQuestion, setMcQuestion] = useState('')
   const [mcOptions, setMcOptions] = useState<QuizMCOption[]>([
-    { id: crypto.randomUUID(), text: '' },
-    { id: crypto.randomUUID(), text: '' },
+    { id: uuidv4(), text: '' },
+    { id: uuidv4(), text: '' },
   ])
   const [mcCorrectId, setMcCorrectId] = useState('')
   const [mcExplanation, setMcExplanation] = useState('')
@@ -479,7 +480,7 @@ export const AddContentPage = () => {
                       <label className="text-sm font-semibold" style={{ color: '#223740' }}>Opciones <span style={{ color: '#DC2626' }}>*</span></label>
                       <button
                         type="button"
-                        onClick={() => setMcOptions(prev => [...prev, { id: crypto.randomUUID(), text: '' }])}
+                        onClick={() => setMcOptions(prev => [...prev, { id: uuidv4(), text: '' }])}
                         className="text-xs font-semibold px-3 py-1 rounded-lg"
                         style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
                       >
