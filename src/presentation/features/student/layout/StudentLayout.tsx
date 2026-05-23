@@ -3,10 +3,13 @@ import { Outlet } from 'react-router-dom'
 import { StudentNavBar } from './StudentNavBar'
 import { StudentSidebar } from './StudentSidebar'
 import { StudentBottomNav } from './StudentBottomNav'
+import { useHandleRolTracker } from '../../reports/hooks/useHandleRolTracker'
 
 export function StudentLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const toggle = () => setSidebarOpen(o => !o)
+
+  useHandleRolTracker()
 
   return (
     <div className="min-h-screen bg-surface-muted">

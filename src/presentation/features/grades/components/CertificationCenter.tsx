@@ -6,6 +6,7 @@ import { mockCertificates } from '../data/mock-grades';
 import { PdfPreviewModal } from './PdfPreviewModal';
 import { generateCertificatePdf, downloadPdf } from '../services/certificateService';
 import { Certificate } from '../../../../domain/grades';
+import { trackCertificadoObtenido } from '../../reports/events/TagManagerEvents';
 
 
 export function CertificationCenter() {
@@ -33,6 +34,7 @@ export function CertificationCenter() {
   const handleDownload = () => {
     if (currentCertificate && pdfUrl) {
       const fileName = `${currentCertificate.certificateId}.pdf`;
+      trackCertificadoObtenido(currentCertificate.courseName);
       downloadPdf(pdfUrl, fileName);
     }
   };

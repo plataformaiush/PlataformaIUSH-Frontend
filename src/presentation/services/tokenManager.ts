@@ -49,7 +49,13 @@ export class TokenManager implements ITokenManager {
 
   getUser(): unknown | null {
     const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr) return null;
+
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
   }
 }
 

@@ -4,9 +4,11 @@ import {
     ArrowLeft, Check, Lock, Play,
     FileText, HelpCircle, Image as ImageIcon, Table,
 } from 'lucide-react'
-import {useStudentProgressStore} from '@presentation/stores/studentProgressStore'
+
+import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import {studentService} from '../services/studentService'
 import {ContentModal} from '../content-modal/ContentModal'
+import { trackIniciarModulo } from '../../reports/events/TagManagerEvents'
 import type {
     Course,
     AnyContentData
@@ -225,7 +227,6 @@ const VERTICAL_GAPS = [56, 44, 72, 48, 64, 40, 68, 52, 44, 60, 48, 72, 52]
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
 type ContentStatus = 'completed' | 'current' | 'locked'
-type ModuleStatus = 'completed' | 'current' | 'locked' | 'upcoming'
 
 interface FlatItem {
     contentId: string
@@ -492,11 +493,19 @@ export function CourseMapPage() {
 
         const currentContentId = activeContent.id
         const usuarioId = getCurrentUserId()
+        const activeModule = course.modules.find(m => m.id === activeModuleId)
+        const courseName = course.title
+        const moduleName = activeModule?.title ?? activeModuleName
+        const isFirstInModule = activeModule?.contents[0]?.id === currentContentId
 
         if (!completedIds.includes(currentContentId) && !markingComplete) {
             setMarkingComplete(true)
             try {
                 await studentService.marcarContenidoCompletado(currentContentId, usuarioId ?? '')
+
+                if (isFirstInModule) {
+                    trackIniciarModulo(courseName, moduleName)
+                }
 
                 setCompletedIds((prev) => {
                     if (prev.includes(currentContentId)) return prev

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 // ...existing code... (EmptyCoursesState removed on purpose)
 import {studentService, type MisCursos} from '../services/studentService'
+import { trackIniciarCurso } from '../../reports/events/TagManagerEvents'
 
 const STREAK_DAYS = 14
 
@@ -131,6 +132,7 @@ export function StudentDashboardPage() {
 
             // Cerramos el modal y navegamos
             setCourseToEnroll(null)
+            trackIniciarCurso(courseToEnroll.titulo) //Trackeamos la función de iniciar curso
             goToCourse(courseId)
         } catch (error) {
             console.error('Error al validar/crear inscripción:', error)
@@ -193,7 +195,6 @@ export function StudentDashboardPage() {
                 {/* Fila 3: Your Learning Path */}
                 <LearningPathSection
                     courses={courses}
-                    onCourseClick={goToCourse}
                     // MODIFICADO: Ahora pasamos el curso completo al modal en lugar de inscribir de inmediato
                     onEnrollRequest={(course) => setCourseToEnroll(course)}
                     enrollingCourseId={enrollingCourseId}
@@ -399,13 +400,11 @@ function UpNextCard({onClick}: { onClick: () => void }) {
 /* ── Learning Path Section ──────────────────────────────────────── */
 function LearningPathSection({
                                  courses,
-                                 onCourseClick, // Se mantiene en las props para no romper nada, aunque el clic ahora abra el modal
                                  onEnrollRequest,
                                  enrollingCourseId,
                                  onViewMisCursos
-                             }: {
+                              }: {
     courses: EnrichedCourse[]
-    onCourseClick: (id: string) => void
     onEnrollRequest: (course: EnrichedCourse) => void
     enrollingCourseId: string | null
     onViewMisCursos: () => void

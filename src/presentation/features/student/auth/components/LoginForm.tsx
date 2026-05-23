@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useAuthStore } from "../../../../stores/auth.store";
 import { useInstitution } from "../../../../../context/InstitutionContext";
 
+import { trackIniciarSesion } from "../../../reports/events/TagManagerEvents";
+
 type LoginData = {
   correo: string;
   contrasena: string;
@@ -39,6 +41,9 @@ export default function LoginForm() {
 
       // Redirige según el rol del usuario
       const userRoles = response.user.roles || [];
+
+      //Vinculación de inicio de sesión para tag manager.
+      trackIniciarSesion(userRoles[0]); //Trackeamos el inicio de sesión.
       
       if (userRoles.includes("SuperAdmin")) {
         navigate("/super-admin");
