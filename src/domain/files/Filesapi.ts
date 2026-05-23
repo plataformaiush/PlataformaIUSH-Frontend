@@ -145,14 +145,10 @@ const mock = {
   },
 }
 
-// ─────────────────────────────────────────────
-// Implementaciones reales con axios
-// ─────────────────────────────────────────────
 const api = createAxiosInstance(API_BASE)
 
 const real = {
   // GET /api/documentos
-  // GET /api/documentos?carpeta=imagenes
   listar: async (carpeta?: Carpeta): Promise<Documento[]> => {
     const params = carpeta ? { carpeta } : {}
     const { data } = await api.get('/api/documentos', { params })
@@ -166,8 +162,6 @@ const real = {
       carpeta: d.ruta_documento.split('/')[0] as Carpeta,
     }))
   },
-
-  // POST /api/documentos  (multipart/form-data)
   subir: async (
     archivo: File,
     onProgress?: (pct: number, cargado: number) => void
@@ -179,6 +173,9 @@ const real = {
 
     const { data } = await api.post('/api/documentos', formData, {
       timeout: 120000,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
       onUploadProgress: (evt) => {
         if (evt.total && onProgress)
           onProgress(Math.round((evt.loaded * 100) / evt.total), evt.loaded)
@@ -202,7 +199,7 @@ const real = {
     return data
   },
 
-  // GET /api/documentos/:id  (id = id_maestro_documento UUID)
+  // GET /api/documentos/:id
   obtenerPorId: async (id: string): Promise<Documento> => {
     const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
     const d = data.data
@@ -222,7 +219,7 @@ const real = {
     await api.delete(`/api/documentos/${encodeURIComponent(id)}`)
   },
 
-  // GET /api/documentos/:id/descargar  (id = id_maestro_documento UUID)
+  // GET /api/documentos/:id/descargar
   descargarUrl: (id: string): string =>
     `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`,
 }

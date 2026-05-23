@@ -78,7 +78,7 @@ function ConfigPanel({
               type="text"
               value={config.videoUrl}
               onChange={(e) => onChange({ ...config, videoUrl: e.target.value })}
-              placeholder="https://youtu.be/x0Z6xuwmkjA"
+              placeholder="https://youtu.be/RBaSiVjtKR4"
               className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-[#223740] font-mono bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#5A878C]/40 focus:border-[#5A878C] transition-all placeholder:text-gray-300"
             />
             <p className="text-[10px] text-gray-400">
@@ -139,24 +139,12 @@ export default function PagePrueba() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   // ─────────────────────────────────────────────
-  // IMPLEMENTACIÓN CORRECTA de listado con UploadButton + FileList
-  //
-  // 1. Cargar documentos desde el backend al montar el componente.
-  //    Usar un ref (hasFetched) para evitar doble fetch en caso de
-  //    re-renders o re-mounts (ej: React StrictMode).
-  //
-  // 2. Al subir un archivo (onUploaded):
-  //    - El POST devuelve el doc, pero sus datos pueden ser incompletos.
-  //    - Llamar filesApi.obtenerPorId(doc.id) para traer los datos
-  //      frescos del backend (nombre, tipo, tamaño, fecha, etc.).
-  //    - Agregar el doc fresco al inicio del listado local (sin refetch).
-  //    - Si el GET falla, usar el doc del POST como fallback.
-  //
-  // 3. Al eliminar (onDeleted):
-  //    - Filtrar el doc del estado local por id (sin refetch).
-  //    - El hasFetched ref garantiza que al cerrar el modal de upload
-  //      el listado no se resetea con un nuevo fetch.
+  // Solo muestra docs subidos en esta sesión de navegador.
+  // Los IDs se persisten en sessionStorage para sobrevivir recargas
+  // de la misma pestaña, pero se limpian al cerrar el navegador.
+  // Al recargar, se consulta cada ID al backend para traer datos frescos.
   // ─────────────────────────────────────────────
+  const SESSION_KEY = "playground_doc_ids";
   const [uploadedFiles, setUploadedFiles] = useState<Documento[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const hasFetched = useRef(false);
@@ -164,27 +152,35 @@ export default function PagePrueba() {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    filesApi.listar()
-      .then((docs) => setUploadedFiles(docs))
-      .catch(() => {/* silencioso en demo */})
+    const stored = sessionStorage.getItem(SESSION_KEY);
+    if (!stored) { setLoadingFiles(false); return; }
+    const ids: string[] = JSON.parse(stored);
+    if (ids.length === 0) { setLoadingFiles(false); return; }
+    Promise.all(ids.map((id) => filesApi.obtenerPorId(id).catch(() => null)))
+      .then((docs) => setUploadedFiles(docs.filter(Boolean) as Documento[]))
       .finally(() => setLoadingFiles(false));
   }, []);
 
-  const handleDeleteUploaded = (id: string) =>
-    setUploadedFiles((prev) => prev.filter((d) => d.id !== id));
+  const saveIds = (docs: Documento[]) =>
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(docs.map((d) => d.id)));
+
+  const handleDeleteUploaded = (id: string) => {
+    setUploadedFiles((prev) => { const next = prev.filter((d) => d.id !== id); saveIds(next); return next; });
+  };
 
   const handleUploaded = async (doc: Documento) => {
     try {
       const docFresh = await filesApi.obtenerPorId(doc.id);
-      setUploadedFiles((prev) => [docFresh, ...prev]);
+      setUploadedFiles((prev) => { const next = [docFresh, ...prev]; saveIds(next); return next; });
     } catch {
-      setUploadedFiles((prev) => [doc, ...prev]);
+      setUploadedFiles((prev) => { const next = [doc, ...prev]; saveIds(next); return next; });
     }
   };
 
+
   const [config, setConfig] = useState<PlaygroundConfig>({
     demoId: "1",
-    videoUrl: "https://youtu.be/x0Z6xuwmkjA",
+    videoUrl: "https://youtu.be/RBaSiVjtKR4",
   });
 
   const demoPreviewProps = config.demoId.startsWith("http")
@@ -214,36 +210,49 @@ export default function PagePrueba() {
         <Section
           title="1. UploadButton — Sube archivo a la API y lo agrega al listado"
           code={`// ── IMPLEMENTACIÓN CORRECTA ──────────────────────────────────────
-        // Paso 1: cargar docs del backend al montar (hasFetched evita doble fetch)
-        const [docs, setDocs] = useState<Documento[]>([])
-        const hasFetched = useRef(false)
-        useEffect(() => {
-          if (hasFetched.current) return
-          hasFetched.current = true
-          filesApi.listar().then(setDocs)
-        }, [])
+// Persiste solo los docs subidos en ESTA sesión de navegador.
+// sessionStorage sobrevive recargas de pestaña pero se limpia al cerrarla.
+// Al recargar, consulta cada ID al backend para traer datos frescos.
 
-        // Paso 2: al subir, consultar por ID para datos frescos del backend
-        const handleUploaded = async (doc: Documento) => {
-          try {
-            const docFresh = await filesApi.obtenerPorId(doc.id)
-            setDocs((prev) => [docFresh, ...prev])
-          } catch {
-            setDocs((prev) => [doc, ...prev]) // fallback con doc del POST
-          }
-        }
+const SESSION_KEY = "mis_doc_ids"
+const [docs, setDocs] = useState<Documento[]>([])
+const [loading, setLoading] = useState(true)
+const hasFetched = useRef(false)
 
-        // Paso 3: al eliminar, filtrar del estado local (sin refetch)
-        const handleDeleted = (id: string) =>
-          setDocs((prev) => prev.filter((d) => d.id !== id))
+useEffect(() => {
+  if (hasFetched.current) return
+  hasFetched.current = true
+  const ids: string[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "[]")
+  if (!ids.length) { setLoading(false); return }
+  Promise.all(ids.map((id) => filesApi.obtenerPorId(id).catch(() => null)))
+    .then((res) => setDocs(res.filter(Boolean) as Documento[]))
+    .finally(() => setLoading(false))
+}, [])
 
-        // ── USO ──────────────────────────────────────────────────────────
-        import { UploadButton } from '@presentation/features/files/components/buttons/UploadButton'
-        import { FileList }     from '@presentation/features/files/components/FileList'
-        import { filesApi, type Documento } from '@domain/files/Filesapi'
+const saveIds = (docs: Documento[]) =>
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(docs.map((d) => d.id)))
 
-        <UploadButton onUploaded={handleUploaded} />
-        <FileList documents={docs} heading="Todos los archivos" onDeleted={handleDeleted} />`}
+// Al subir: obtenerPorId trae datos frescos del backend
+const handleUploaded = async (doc: Documento) => {
+  try {
+    const fresh = await filesApi.obtenerPorId(doc.id)
+    setDocs((prev) => { const next = [fresh, ...prev]; saveIds(next); return next })
+  } catch {
+    setDocs((prev) => { const next = [doc, ...prev]; saveIds(next); return next })
+  }
+}
+
+// Al eliminar: filtrar local + actualizar sessionStorage
+const handleDeleted = (id: string) =>
+  setDocs((prev) => { const next = prev.filter((d) => d.id !== id); saveIds(next); return next })
+
+// ── USO ──────────────────────────────────────────────────────────
+import { UploadButton } from '@presentation/features/files/components/buttons/UploadButton'
+import { FileList }     from '@presentation/features/files/components/FileList'
+import { filesApi, type Documento } from '@domain/files/Filesapi'
+
+<UploadButton onUploaded={handleUploaded} />
+<FileList documents={docs} heading="Archivos de esta sesión" onDeleted={handleDeleted} />`}
         >
           <div className="w-full space-y-4">
             <UploadButton onUploaded={handleUploaded} />
@@ -255,12 +264,12 @@ export default function PagePrueba() {
               uploadedFiles.length > 0 ? (
                 <FileList
                   documents={uploadedFiles}
-                  heading="Todos los archivos"
+                  heading="Archivos de esta sesión"
                   onDeleted={handleDeleteUploaded}
                 />
               ) : (
                 <p className="text-xs text-gray-400">
-                  Aún no hay archivos en el repositorio.
+                  Aún no has subido archivos en esta sesión.
                 </p>
               )
             )}
@@ -271,11 +280,11 @@ export default function PagePrueba() {
         <Section
           title="2. DownloadButton — Descarga un archivo por ID"
           code={`import { DownloadButton } from '@presentation/features/files/components/buttons/DownloadButton'
-          <DownloadButton id="${config.demoId}" fileName="guia.pdf" />
-          // Props:
-          // id:         string   — ID del documento (requerido)
-          // fileName?:  string   — nombre sugerido para la descarga
-          // className?: string`}
+<DownloadButton id="${config.demoId}" fileName="guia.pdf" />
+// Props:
+// id:         string   — ID del documento (requerido)
+// fileName?:  string   — nombre sugerido para la descarga
+// className?: string`}
         >
           <DownloadButton id={config.demoId} fileName="Guía_Metodología.pdf" />
         </Section>
@@ -284,13 +293,13 @@ export default function PagePrueba() {
         <Section
           title="3. DeleteButton — Elimina un archivo con confirmación doble"
           code={`import { DeleteButton } from '@presentation/features/files/components/buttons/DeleteButton'
-          <DeleteButton id="${config.demoId}" onDeleted={(id) => console.log('Eliminado:', id)} />
-          <DeleteButton id="${config.demoId}" onDeleted={handleDeleted} iconOnly />
-          // Props:
-          // id:          string                — UUID del documento (id_maestro_documento)
-          // onDeleted?:  (id: string) => void  — callback tras eliminar exitosamente
-          // iconOnly?:   boolean               — muestra solo el ícono de papelera
-          // className?:  string`}
+<DeleteButton id="${config.demoId}" onDeleted={(id) => console.log('Eliminado:', id)} />
+<DeleteButton id="${config.demoId}" onDeleted={handleDeleted} iconOnly />
+// Props:
+// id:          string                — UUID del documento (id_maestro_documento)
+// onDeleted?:  (id: string) => void  — callback tras eliminar exitosamente
+// iconOnly?:   boolean               — muestra solo el ícono de papelera
+// className?:  string`}
         >
           <DeleteButton
             id={config.demoId}
@@ -307,17 +316,18 @@ export default function PagePrueba() {
         <Section
           title="4. PreviewButton — Abre modal de previsualización"
           code={`import { PreviewButton } from '@presentation/features/files/components/buttons/PreviewButton'
-          // Con ID de documento (consulta la API):
-          <PreviewButton id="${config.demoId}" label="Ver" variant="expand" />        
-          // Con URL directa (no consulta la API):
-          <PreviewButton url="${config.videoUrl}" label="Reproducir" variant="play" />
+// Con ID de documento (consulta la API):
+<PreviewButton id="${config.demoId}" label="Ver" variant="expand" />
 
-          // Props:
-          // id?:        string             — ID del documento (exclusivo con url)
-          // url?:       string             — URL directa del recurso (exclusivo con id)
-          // label?:     string             — texto del botón. Default: 'Ver'
-          // variant?:   'expand' | 'play' — ícono. Default: 'expand'
-          // className?: string`}
+// Con URL directa (no consulta la API):
+<PreviewButton url="${config.videoUrl}" label="Reproducir" variant="play" />
+
+// Props:
+// id?:        string             — ID del documento (exclusivo con url)
+// url?:       string             — URL directa del recurso (exclusivo con id)
+// label?:     string             — texto del botón. Default: 'Ver'
+// variant?:   'expand' | 'play' — ícono. Default: 'expand'
+// className?: string`}
         >
           <PreviewButton id={config.demoId} label="Ver" variant="expand" />
           <PreviewButton url={config.videoUrl} label="Reproducir" variant="play" />
@@ -327,22 +337,22 @@ export default function PagePrueba() {
         <Section
           title="5. UploadModal — Modal de subida controlado manualmente"
           code={`import { UploadModal } from '@presentation/features/files/components/buttons/Uploadmodal'
-          const [open, setOpen] = useState(false)
+const [open, setOpen] = useState(false)
 
-          <button onClick={() => setOpen(true)}>Abrir modal</button>
-          <UploadModal
-            open={open}
-            onClose={() => setOpen(false)}
-            onUploaded={(doc) => {
-              // NO llamar setOpen(false) aquí — el modal muestra el estado
-              // "¡Archivo cargado!" y el usuario lo cierra con X o "Subir otro archivo"
-              setDocs((prev) => [doc, ...prev])
-            }}
-          />
-          // Props:
-          // open:        boolean                   — controla visibilidad (requerido)
-          // onClose:     () => void                — se llama al cerrar (requerido)
-          // onUploaded?: (doc: Documento) => void  — callback con el doc subido`}
+<button onClick={() => setOpen(true)}>Abrir modal</button>
+<UploadModal
+  open={open}
+  onClose={() => setOpen(false)}
+  onUploaded={(doc) => {
+    // NO llamar setOpen(false) aquí — el modal muestra el estado
+    // "¡Archivo cargado!" y el usuario lo cierra con X o "Subir otro archivo"
+    setDocs((prev) => [doc, ...prev])
+  }}
+/>
+// Props:
+// open:        boolean                   — controla visibilidad (requerido)
+// onClose:     () => void                — se llama al cerrar (requerido)
+// onUploaded?: (doc: Documento) => void  — callback con el doc subido`}
         >
           <button
             onClick={() => setUploadModalOpen(true)}
@@ -364,19 +374,19 @@ export default function PagePrueba() {
         <Section
           title="6. FilePreviewContainer — Modal de previsualización"
           code={`import { FilePreviewContainer } from '@presentation/features/files/components/vistas/Filepreviewcontainer'
-          const [open, setOpen] = useState(false)
+const [open, setOpen] = useState(false)
 
-          // Con ID (consulta la API):
-          {open && <FilePreviewContainer id="${config.demoId}" onClose={() => setOpen(false)} />}
+// Con ID (consulta la API):
+{open && <FilePreviewContainer id="${config.demoId}" onClose={() => setOpen(false)} />}
 
-          // Con URL directa (no consulta la API):
-          {open && <FilePreviewContainer url="${config.videoUrl}" onClose={() => setOpen(false)} />}
+// Con URL directa (no consulta la API):
+{open && <FilePreviewContainer url="${config.videoUrl}" onClose={() => setOpen(false)} />}
 
-          // Props (se requiere id O url, nunca los dos):
-          // id?:       string     — ID del documento → consulta filesApi.obtenerPorId
-          // url?:      string     — URL directa → visualiza sin llamar a la API
-          // onClose:   () => void — se llama al cerrar (requerido)
-          // embedded?: boolean    — modo panel inline sin backdrop. Default: false`}
+// Props (se requiere id O url, nunca los dos):
+// id?:       string     — ID del documento → consulta filesApi.obtenerPorId
+// url?:      string     — URL directa → visualiza sin llamar a la API
+// onClose:   () => void — se llama al cerrar (requerido)
+// embedded?: boolean    — modo panel inline sin backdrop. Default: false`}
         >
           <button
             onClick={() => setPreviewModalOpen(true)}
@@ -396,10 +406,10 @@ export default function PagePrueba() {
         <Section
           title="7. FilePreviewContainer embedded — Panel inline sin modal"
           code={`// Con ID:
-          <FilePreviewContainer id="${config.demoId}" onClose={() => {}} embedded />
-                    
-          // Con URL:
-          <FilePreviewContainer url="${config.videoUrl}" onClose={() => {}} embedded />`}
+<FilePreviewContainer id="${config.demoId}" onClose={() => {}} embedded />
+
+// Con URL:
+<FilePreviewContainer url="${config.videoUrl}" onClose={() => {}} embedded />`}
         >
           <div className="w-full rounded-xl overflow-hidden border border-gray-200">
             <FilePreviewContainer
