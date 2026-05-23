@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { ContentLoader } from './components/ContentLoader'
-import { trackIniciarModulo } from '../../reports/events/TagManagerEvents'
 import type { AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
 
 const VideoContent = lazy(() =>
@@ -28,34 +27,28 @@ const XlsxContent = lazy(() =>
 interface ContentModalProps {
   content: AnyContentData
   courseId: string
-  courseName: string
   moduleName: string
   currentStep: number
   totalSteps: number
-  isFirstInModule: boolean
   onClose: () => void
   onPrev?: () => void
   onNext?: () => void
   hasPrev?: boolean
   hasNext?: boolean
+  isMarkingComplete?: boolean
 }
 
 export function ContentModal({
   content,
   courseId,
-  courseName,
-  moduleName,
-  currentStep,
-  totalSteps,
-  isFirstInModule,
   onClose,
   onPrev,
   onNext,
   hasPrev = false,
   hasNext = false,
+  isMarkingComplete = false,
 }: ContentModalProps) {
   const markContentComplete = useStudentProgressStore(s => s.markContentComplete)
-  const progress = useStudentProgressStore(s => s.getProgress(courseId))
 
   /* Bloquear scroll del body al abrir */
   useEffect(() => {
@@ -72,12 +65,6 @@ export function ContentModal({
   }, [onClose])
 
   const handleComplete = () => {
-    const wasAlreadyCompleted = progress?.completedContents.includes(content.id) ?? false
-
-    if (isFirstInModule && !wasAlreadyCompleted) {
-      trackIniciarModulo(courseName, moduleName)
-    }
-
     markContentComplete(courseId, content.id)
     onClose()
   }
@@ -155,20 +142,22 @@ export function ContentModal({
           {content.type !== 'quiz' && (
             <button
               onClick={handleComplete}
+              disabled={isMarkingComplete}
               className="min-h-[44px] px-5 rounded-xl text-sm font-semibold
-                         bg-primary text-tertiary hover:bg-secondary
-                         active:scale-95 transition-all"
+                          bg-primary text-tertiary hover:bg-secondary
+                          disabled:opacity-60 disabled:cursor-wait
+                          active:scale-95 transition-all"
             >
-              Completar
+              {isMarkingComplete ? 'Completando...' : 'Completar'}
             </button>
           )}
 
           <button
             onClick={onNext}
-            disabled={!hasNext}
+            disabled={!hasNext || isMarkingComplete}
             className="flex items-center gap-1.5 min-h-[44px] px-4 rounded-xl text-sm font-medium
-                       text-secondary hover:bg-primary/10 disabled:opacity-30
-                       disabled:cursor-not-allowed active:scale-95 transition-all"
+                        text-secondary hover:bg-primary/10 disabled:opacity-30
+                        disabled:cursor-not-allowed active:scale-95 transition-all"
           >
             Siguiente
             <ChevronRight size={16} />

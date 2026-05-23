@@ -1,4 +1,3 @@
-import { MousePointerClick } from "lucide-react";
 import { useInstitution } from "../../../../../../context/InstitutionContext";
 
 const EventListGTM = () => {

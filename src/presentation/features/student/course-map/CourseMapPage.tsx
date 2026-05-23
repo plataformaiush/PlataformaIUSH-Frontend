@@ -8,6 +8,7 @@ import {
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import {studentService} from '../services/studentService'
 import {ContentModal} from '../content-modal/ContentModal'
+import { trackIniciarModulo } from '../../reports/events/TagManagerEvents'
 import type {
     Course,
     AnyContentData
@@ -148,7 +149,6 @@ function getDefaultContent(id: string): AnyContentData {
 function getCurrentUserId(): string | null {
     const userData = localStorage.getItem('user')
     if (!userData) return null
-
     try {
         const parsedUser = JSON.parse(userData)
         return parsedUser.id || parsedUser.idUsuario || null
@@ -176,13 +176,7 @@ function buildContentDetail(content: {
 
     switch (type) {
         case 'video':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'video',
-                url,
-                duration: 0,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'video', url, duration: 0}
         case 'image':
             return {
                 id: content.idContenido,
@@ -190,31 +184,14 @@ function buildContentDetail(content: {
                 type: 'image',
                 url,
                 alt: content.titulo,
-                caption: content.descripcion || undefined,
+                caption: content.descripcion || undefined
             }
         case 'pdf':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'pdf',
-                url,
-                filename: content.titulo,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'pdf', url, filename: content.titulo}
         case 'xlsx':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'xlsx',
-                url,
-                filename: content.titulo,
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'xlsx', url, filename: content.titulo}
         case 'quiz':
-            return {
-                id: content.idContenido,
-                title: content.titulo,
-                type: 'quiz',
-                questions: [],
-            }
+            return {id: content.idContenido, title: content.titulo, type: 'quiz', questions: []}
         case 'text':
         default:
             return {
@@ -230,24 +207,22 @@ function buildContentDetail(content: {
 const MODULE_COLORS = ['#5A878C', '#059669', '#7C3AED']
 
 /* ── Patrón de posición orgánica en desktop ─────────────────────────────── */
-// [leftFr, rightFr] → posición del círculo ≈ leftFr/(leftFr+rightFr)*100%
 const LAYOUT_PATTERNS: [number, number][] = [
-    [1, 9],  // ~10% — extremo izquierdo
-    [9, 1],  // ~90% — extremo derecho
-    [1, 4],  // ~20%
-    [6, 1],  // ~86%
-    [2, 5],  // ~29%
-    [5, 1],  // ~83%
-    [1, 5],  // ~17%
-    [4, 1],  // ~80%
-    [1, 3],  // ~25%
-    [5, 2],  // ~71%
-    [1, 7],  // ~12%
-    [7, 1],  // ~88%
-    [3, 5],  // ~37%
+    [1, 9],
+    [9, 1],
+    [1, 4],
+    [6, 1],
+    [2, 5],
+    [5, 1],
+    [1, 5],
+    [4, 1],
+    [1, 3],
+    [5, 2],
+    [1, 7],
+    [7, 1],
+    [3, 5],
 ]
 
-/* Espaciado vertical variado para camino orgánico (px) */
 const VERTICAL_GAPS = [56, 44, 72, 48, 64, 40, 68, 52, 44, 60, 48, 72, 52]
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
@@ -267,7 +242,6 @@ interface FlatItem {
     status: ContentStatus
 }
 
-/* Estado por contenido */
 function computeContentStatuses(
     modules: typeof MOCK_COURSE.modules,
     completedIds: string[],
@@ -283,10 +257,29 @@ function computeContentStatuses(
     )
 }
 
-/* Estado por módulo (para panel de resumen) */
-/* Parámetros de línea para cada segmento SVG */
+/* ── Bug fix: conteo correcto de módulos ─────────────────────────────────── */
+function computeModuleStatuses(
+    modules: typeof MOCK_COURSE.modules,
+    completedIds: string[],
+): ModuleStatus[] {
+    const result: ModuleStatus[] = []
+    let currentAssigned = false
+    for (const mod of modules) {
+        const allDone = mod.contents.every(c => completedIds.includes(c.id))
+        if (allDone) {
+            result.push('completed')
+        } else if (!currentAssigned) {
+            result.push('current')
+            currentAssigned = true
+        } else {
+            result.push('locked')
+        }
+    }
+    return result
+}
+
 interface SegmentParams {
-    stroke: string;
+    stroke: string
     opacity: number
     dasharray?: string
     strokeWidth: number
@@ -310,12 +303,17 @@ export function CourseMapPage() {
     const [activeContent, setActiveContent] = useState<AnyContentData | null>(null)
     const [activeModuleId, setActiveModuleId] = useState<string>('')
     const [courseData, setCourseData] = useState<{
-        raw: CourseDetalleConProgreso
+        raw: CursoDetalleConProgreso
         course: Course
         contentDetails: Record<string, AnyContentData>
     } | null>(null)
     const [loadingCourse, setLoadingCourse] = useState(true)
     const [courseError, setCourseError] = useState<string | null>(null)
+
+    /* ── Estado mutable de progreso ─────────────────────────────────────── */
+    const [completedIds, setCompletedIds] = useState<string[]>([])
+    const [globalProgress, setGlobalProgress] = useState(0)
+    const [markingComplete, setMarkingComplete] = useState(false)
 
     useEffect(() => {
         const loadCourse = async () => {
@@ -358,10 +356,22 @@ export function CourseMapPage() {
 
                 setCourseData({raw: data, course: mappedCourse, contentDetails})
                 setCourseError(null)
+
+                // Inicializa completedIds y progreso desde el backend
+                const ids = data.modulos.flatMap((m) =>
+                    m.contenidos
+                        .filter((c) => Boolean(c.completado))
+                        .map((c) => c.idContenido)
+                )
+                setCompletedIds(ids)
+                setGlobalProgress(data.progresoCurso.porcentaje)
             } catch (error) {
                 console.error('Error loading course detail:', error)
                 setCourseError(error instanceof Error ? error.message : 'Error al cargar curso')
                 setCourseData(null)
+                // Fallback al store local si falla el backend
+                setCompletedIds(progress?.completedContents ?? [])
+                setGlobalProgress(0)
             } finally {
                 setLoadingCourse(false)
             }
@@ -371,26 +381,22 @@ export function CourseMapPage() {
     }, [courseId])
 
     const course = courseData?.course ?? MOCK_COURSE
-    console.log(course)
     const contentDetails = courseData?.contentDetails ?? MOCK_CONTENT_DETAIL
 
-    const completedIds = useMemo(() => {
-        if (courseData) {
-            return courseData.raw.modulos.flatMap((modulo) =>
-                modulo.contenidos
-                    .filter((contenido) => Boolean(contenido.completado))
-                    .map((contenido) => contenido.idContenido)
-            )
-        }
-
-        return progress?.completedContents ?? []
-    }, [courseData, progress])
     const allContents = course.modules.flatMap(m => m.contents)
     const activeIdx = activeContent ? allContents.findIndex(c => c.id === activeContent.id) : -1
     const totalContents = allContents.length
-    const globalProgress = courseData?.raw.progresoCurso.porcentaje ?? 0
+    const completedCount = completedIds.filter(id => allContents.some(c => c.id === id)).length
 
-    const contentStatuses = useMemo(() => computeContentStatuses(course.modules, completedIds), [course.modules, completedIds])
+    const moduleStatuses = useMemo(
+        () => computeModuleStatuses(course.modules, completedIds),
+        [course.modules, completedIds]
+    )
+    const contentStatuses = useMemo(
+        () => computeContentStatuses(course.modules, completedIds),
+        [course.modules, completedIds]
+    )
+    const completedModules = moduleStatuses.filter(s => s === 'completed').length
     const activeModuleName = course.modules.find(m => m.id === activeModuleId)?.title ?? ''
 
     /* Lista plana de contenidos */
@@ -434,7 +440,7 @@ export function CourseMapPage() {
         const ro = new ResizeObserver(measure)
         if (containerRef.current) ro.observe(containerRef.current)
         return () => {
-            clearTimeout(t);
+            clearTimeout(t)
             ro.disconnect()
         }
     }, [measure])
@@ -443,7 +449,7 @@ export function CourseMapPage() {
         measure()
     }, [contentStatuses, measure])
 
-    /* ── Scroll al nodo actual (carga inicial + post-completar) ─────────── */
+    /* ── Scroll al nodo actual ──────────────────────────────────────────── */
     const prevCurrentIdRef = useRef<string | null>(null)
 
     useEffect(() => {
@@ -457,8 +463,6 @@ export function CourseMapPage() {
 
         const delay = isFirstLoad ? 150 : 400
         const timer = setTimeout(() => {
-            // Hay dos nodos con el mismo data-content-id (mobile y desktop).
-            // offsetParent === null indica display:none → elegimos el visible.
             const nodes = containerRef.current?.querySelectorAll(
                 `[data-content-id="${currentItem.contentId}"]`
             )
@@ -478,12 +482,60 @@ export function CourseMapPage() {
         setActiveModuleId(moduleId)
         useStudentProgressStore.getState().updateLastAccessed(courseId)
     }
-    const goNext = () => {
-        if (activeIdx < allContents.length - 1) openContent(allContents[activeIdx + 1].id, activeModuleId)
+
+    /**
+     * Marca el contenido actual como completado en el backend y cierra
+     * el modal para que el usuario vea el mapa actualizarse.
+     * Funciona también en el último contenido (alcanza el 100%).
+     */
+    const goNext = async () => {
+        if (!activeContent) return
+
+        const currentContentId = activeContent.id
+        const usuarioId = getCurrentUserId()
+        const activeModule = course.modules.find(m => m.id === activeModuleId)
+        const courseName = course.title
+        const moduleName = activeModule?.title ?? activeModuleName
+        const isFirstInModule = activeModule?.contents[0]?.id === currentContentId
+
+        if (!completedIds.includes(currentContentId) && !markingComplete) {
+            setMarkingComplete(true)
+            try {
+                await studentService.marcarContenidoCompletado(currentContentId, usuarioId ?? '')
+
+                if (isFirstInModule) {
+                    trackIniciarModulo(courseName, moduleName)
+                }
+
+                setCompletedIds((prev) => {
+                    if (prev.includes(currentContentId)) return prev
+                    const updated = [...prev, currentContentId]
+                    const completedInCourse = updated.filter(id =>
+                        allContents.some(c => c.id === id)
+                    ).length
+                    const newPct = Math.round((completedInCourse / allContents.length) * 100)
+                    setGlobalProgress(newPct)
+                    return updated
+                })
+            } catch (err) {
+                console.error('Error al marcar contenido completado:', err)
+                // Cierra el modal igual aunque falle el request
+            } finally {
+                setMarkingComplete(false)
+            }
+        }
+
+        // Cierra el modal → el usuario ve el mapa actualizarse
+        setActiveContent(null)
     }
+
     const goPrev = () => {
         if (activeIdx > 0) openContent(allContents[activeIdx - 1].id, activeModuleId)
     }
+
+    /* ── hasNext: visible también en el último si aún no está completado ── */
+    const isActiveCompleted = activeContent ? completedIds.includes(activeContent.id) : false
+    const hasNext = activeIdx < allContents.length - 1 || !isActiveCompleted
 
     /* ── Render ─────────────────────────────────────────────────────────── */
     if (loadingCourse) {
@@ -491,7 +543,7 @@ export function CourseMapPage() {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div
-                        className="w-12 h-12 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                        className="w-12 h-12 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-4"/>
                     <p className="text-muted-foreground">Cargando curso...</p>
                 </div>
             </div>
@@ -518,7 +570,6 @@ export function CourseMapPage() {
 
     return (
         <div className="w-full px-4 md:px-8 py-6 md:py-8 max-w-5xl mx-auto">
-
             <div className="flex flex-col lg:flex-row gap-8">
 
                 {/* ── Timeline ──────────────────────────────────────────────────── */}
@@ -527,8 +578,7 @@ export function CourseMapPage() {
                         className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm -mx-4 md:-mx-8 px-4 md:px-8 py-2 mb-4">
                         <Link
                             to="/student/dashboard"
-                            className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary
-                         hover:text-primary transition-colors"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors"
                         >
                             <ArrowLeft size={14}/>
                             Dashboard
@@ -543,7 +593,7 @@ export function CourseMapPage() {
 
                     <div ref={containerRef} className="relative mt-10 pb-4">
 
-                        {/* ── SVG: mapa del tesoro — curvas con flechas de dirección ── */}
+                        {/* ── SVG: curvas con flechas ── */}
                         {circles.length >= 2 && (
                             <svg
                                 className="absolute inset-0 pointer-events-none z-0"
@@ -553,7 +603,6 @@ export function CourseMapPage() {
                                 aria-hidden="true"
                             >
                                 <defs>
-                                    {/* Flecha por color de módulo (completado) */}
                                     {MODULE_COLORS.map((color, mi) => (
                                         <marker key={`arrow-mod-${mi}`}
                                                 id={`arrow-mod-${mi}`}
@@ -562,10 +611,8 @@ export function CourseMapPage() {
                                             <polygon points="0 0, 7 3, 0 6" fill={color} opacity="0.85"/>
                                         </marker>
                                     ))}
-                                    {/* Flecha gris (pendiente) */}
-                                    <marker id="arrow-gray"
-                                            markerWidth="7" markerHeight="6"
-                                            refX="6" refY="3" orient="auto">
+                                    <marker id="arrow-gray" markerWidth="7" markerHeight="6" refX="6" refY="3"
+                                            orient="auto">
                                         <polygon points="0 0, 7 3, 0 6" fill="#D1D5DB" opacity="0.7"/>
                                     </marker>
                                 </defs>
@@ -597,7 +644,7 @@ export function CourseMapPage() {
                             </svg>
                         )}
 
-                        {/* ── Nodos de contenido ───────────────────────────────────── */}
+                        {/* ── Nodos ── */}
                         <div>
                             {flatItems.map(item => (
                                 <div key={item.contentId}>
@@ -643,60 +690,46 @@ export function CourseMapPage() {
                                         {courseData?.raw.curso.nombreUsuario ?? 'Sin asignar'}
                                     </p>
                                 </div>
-
+                                <div>
+                                    <p className="text-[10px] text-mid uppercase tracking-wider mb-0.5">Módulos</p>
+                                    <p className="text-sm font-semibold text-primary">
+                                        {completedModules} / {course.modules.length}
+                                    </p>
+                                </div>
                             </div>
 
                             <div>
-                                <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">Progreso
-                                    general</p>
+                                <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-2">
+                                    Progreso general
+                                </p>
                                 <div className="flex justify-between items-center text-xs text-secondary mb-1.5">
                                     <span className="font-semibold">{globalProgress}%</span>
+                                    <span className="text-mid">{completedCount} / {totalContents} contenidos</span>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-mid/25 overflow-hidden">
-                                    <div className="h-full rounded-full bg-secondary transition-all duration-700"
-                                         style={{width: `${globalProgress}%`}}/>
+                                    <div
+                                        className="h-full rounded-full bg-secondary transition-all duration-700"
+                                        style={{width: `${globalProgress}%`}}
+                                    />
                                 </div>
                             </div>
 
-                            {/*<div>*/}
-                            {/*  <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-3">Insignias obtenidas</p>*/}
-                            {/*  <div className="flex gap-2">*/}
-                            {/*    {[*/}
-                            {/*      { earned: completedModules >= 1, emoji: '🎨', color: MODULE_COLORS[0] },*/}
-                            {/*      { earned: completedModules >= 2, emoji: '⭐', color: MODULE_COLORS[1] },*/}
-                            {/*      { earned: completedModules >= 3, emoji: '🏆', color: MODULE_COLORS[2] },*/}
-                            {/*    ].map((b, i) => (*/}
-                            {/*      <div key={i}*/}
-                            {/*           className="w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-500"*/}
-                            {/*           style={b.earned ? { backgroundColor: b.color + '25' } : { backgroundColor: '#9CA3AF25', opacity: 0.4 }}>*/}
-                            {/*        {b.emoji}*/}
-                            {/*      </div>*/}
-                            {/*    ))}*/}
-                            {/*  </div>*/}
-                            {/*</div>*/}
-
-                            {/*<div>*/}
-                            {/*  <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-3">Recursos</p>*/}
-                            {/*  <div className="space-y-2.5">*/}
-                            {/*    <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">*/}
-                            {/*      <FileText size={15} className="shrink-0" />*/}
-                            {/*      Syllabus del curso (PDF)*/}
-                            {/*    </button>*/}
-                            {/*    <button className="flex items-center gap-2.5 text-sm text-secondary hover:text-primary transition-colors w-full text-left">*/}
-                            {/*      <Link2 size={15} className="shrink-0" />*/}
-                            {/*      Biblioteca de componentes*/}
-                            {/*    </button>*/}
-                            {/*  </div>*/}
-                            {/*</div>*/}
+                            {globalProgress >= 100 && (
+                                <Link
+                                    to="/student/grades"
+                                    className="flex items-center justify-center gap-2 w-full min-h-10 rounded-xl
+                   text-sm font-semibold text-white transition-all duration-300
+                   hover:opacity-90 hover:scale-[1.02]"
+                                    style={{
+                                        background: `linear-gradient(135deg, #059669, #5A878C)`,
+                                        boxShadow: '0 4px 14px #05966940',
+                                    }}
+                                >
+                                    <Check size={15} strokeWidth={2.5}/>
+                                    Ver mi certificado
+                                </Link>
+                            )}
                         </div>
-
-                        {/*<button className="w-full flex items-center justify-center gap-2 min-h-11*/}
-                        {/*                   bg-tertiary/25 rounded-2xl*/}
-                        {/*                   text-sm font-semibold text-primary*/}
-                        {/*                   hover:bg-tertiary/40 transition-colors">*/}
-                        {/*  <MessageSquare size={16} />*/}
-                        {/*  Foro del curso*/}
-                        {/*</button>*/}
                     </div>
                 </div>
             </div>
@@ -712,7 +745,8 @@ export function CourseMapPage() {
                     onPrev={goPrev}
                     onNext={goNext}
                     hasPrev={activeIdx > 0}
-                    hasNext={activeIdx < allContents.length - 1}
+                    hasNext={hasNext}
+                    isMarkingComplete={markingComplete}
                 />
             )}
         </div>
@@ -728,10 +762,9 @@ function ModuleDivider({title, index, color}: { title: string; index: number; co
             <div className="h-px flex-1 rounded-full" style={{backgroundColor: color, opacity: 0.25}}/>
             <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: color}}/>
-                <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap"
-                      style={{color}}>
-          {title}
-        </span>
+                <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap" style={{color}}>
+                    {title}
+                </span>
                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: color}}/>
             </div>
             <div className="h-px flex-1 rounded-full" style={{backgroundColor: color, opacity: 0.25}}/>
@@ -753,9 +786,11 @@ function ContentNodeRow({item, onAction}: { item: FlatItem; onAction: () => void
     return (
         <>
             {/* Mobile: lineal */}
-            <div data-content-id={item.contentId}
-                 className="flex md:hidden items-start gap-3 relative z-10"
-                 style={{marginBottom: `${gap * 0.6}px`}}>
+            <div
+                data-content-id={item.contentId}
+                className="flex md:hidden items-start gap-3 relative z-10"
+                style={{marginBottom: `${gap * 0.6}px`}}
+            >
                 <div className="shrink-0 mt-1">{circle}</div>
                 <div className="flex-1 min-w-0">{card}</div>
             </div>
@@ -802,8 +837,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
                 data-content-circle
                 onClick={onAction}
                 aria-label="Ver contenido"
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                   bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
             >
                 <Check size={16} className="text-gray-500" strokeWidth={2.5}/>
             </button>
@@ -815,8 +849,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
                 data-content-circle
                 onClick={onAction}
                 aria-label="Continuar aquí"
-                className="w-14 h-14 rounded-full flex items-center justify-center shrink-0
-                   cursor-pointer transition-transform hover:scale-105"
+                className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-transform hover:scale-105"
                 style={{
                     backgroundColor: color,
                     outline: `3px solid ${color}`,
@@ -831,8 +864,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
     return (
         <div
             data-content-circle
-            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0
-                 bg-gray-100 border-2 border-gray-200 cursor-not-allowed"
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gray-100 border-2 border-gray-200 cursor-not-allowed"
         >
             <Lock size={13} className="text-gray-400"/>
         </div>
@@ -841,7 +873,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
 
 /* ── Card ───────────────────────────────────────────────────────────────── */
 const CONTENT_TYPE_LABEL: Record<string, string> = {
-    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen',
+    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen', pdf: 'PDF', xlsx: 'Excel',
 }
 
 function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void }) {
@@ -854,45 +886,37 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
         return (
             <div
                 onClick={onAction}
-                className="relative overflow-hidden rounded-3xl w-full md:max-w-52.5
-                   cursor-pointer transition-all duration-300 hover:scale-[1.03]"
+                className="relative overflow-hidden rounded-3xl w-full md:max-w-52.5 cursor-pointer transition-all duration-300 hover:scale-[1.03]"
                 style={{
                     border: `3px solid ${color}`,
                     boxShadow: `0 0 0 1px ${color}30, 0 8px 28px ${color}35`,
                     background: `linear-gradient(160deg, white 55%, ${color}10 100%)`,
                 }}
             >
-                {/* colored top stripe */}
                 <div className="h-1.5 w-full" style={{backgroundColor: color}}/>
-
                 <div className="p-3.5">
-                    {/* "Aquí estás" badge */}
                     <span
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold mb-2 text-white"
-                        style={{backgroundColor: color}}>
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"/>
-            Aquí estás
-          </span>
-
-                    {/* tipo badge */}
-                    <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                           text-[10px] font-semibold"
-                          style={{backgroundColor: color + '18', color}}>
-            {typeLabel}
-          </span>
-
+                        style={{backgroundColor: color}}
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"/>
+                        Aquí estás
+                    </span>
+                    <span
+                        className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        style={{backgroundColor: color + '18', color}}
+                    >
+                        {typeLabel}
+                    </span>
                     <p className="mt-2 text-sm font-bold text-primary leading-snug line-clamp-2">
                         {item.contentTitle}
                     </p>
-
                     <button
                         onClick={e => {
                             e.stopPropagation();
                             onAction()
                         }}
-                        className="mt-3 w-full flex items-center justify-center gap-1.5
-                       min-h-9 px-3 rounded-xl text-white
-                       text-xs font-semibold transition-colors hover:opacity-90"
+                        className="mt-3 w-full flex items-center justify-center gap-1.5 min-h-9 px-3 rounded-xl text-white text-xs font-semibold transition-colors hover:opacity-90"
                         style={{backgroundColor: color}}
                     >
                         <Play size={12} className="ml-0.5"/>
@@ -912,22 +936,19 @@ function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void })
                 isCompleted ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed',
             ].join(' ')}
         >
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                       text-[10px] font-semibold mb-2 bg-gray-200 text-gray-500">
-        {typeLabel}
-      </span>
-
+            <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold mb-2 bg-gray-200 text-gray-500">
+                {typeLabel}
+            </span>
             <p className="text-sm font-semibold text-gray-500 leading-snug line-clamp-2">
                 {item.contentTitle}
             </p>
-
             {isCompleted && (
                 <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
                     <Check size={10}/>
                     Completado
                 </p>
             )}
-
             {item.status === 'locked' && (
                 <p className="mt-1.5 text-[10px] font-medium flex items-center gap-1 text-gray-400">
                     <Lock size={10}/>

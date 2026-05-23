@@ -195,7 +195,7 @@ export interface CursoInscritoBackend {
 export const studentService = {
   // Obtener todos los cursos disponibles (Endpoint con /api)
   async getAllCursos(): Promise<MisCursos[]> {
-    const response = await apiAxiosInstance.get('/cursos', {
+    const response = await apiAxiosInstance.get('/cursos?limit=1000', {
       headers: getStudentAuthHeaders(),
     })
     const payload = response.data?.data ?? response.data
@@ -306,10 +306,12 @@ export const studentService = {
   },
 
   // Marcar contenido como completado (Endpoint sin /api)
-  async marcarContenidoCompletado(contenidoId: string): Promise<void> {
-    await rootAxiosInstance.post(`/progreso/contenido/${contenidoId}/completar`, {}, {
-      headers: getStudentAuthHeaders(),
-    })
+  async marcarContenidoCompletado(contenidoId: string, usuarioId: string): Promise<void> {
+    await rootAxiosInstance.post(
+        `/progreso/contenido/${contenidoId}/completar`,
+        { id_usuario: usuarioId },  // ← clave correcta
+        { headers: getStudentAuthHeaders() }
+    )
   },
 
   // Obtener progreso detallado de curso (Endpoint sin /api)
