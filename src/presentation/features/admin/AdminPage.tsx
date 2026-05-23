@@ -255,6 +255,7 @@ export function AdminPage() {
                       height={48}
                       tickFormatter={(value) => String(value).slice(0, 18)}
                     />
+
                     <YAxis
                       tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                       axisLine={false}
@@ -262,6 +263,7 @@ export function AdminPage() {
                       width={34}
                       allowDecimals={false}
                     />
+                    
                     <Tooltip
                       contentStyle={chartTooltipStyle}
                       labelStyle={{ color: 'var(--color-foreground)' }}
