@@ -9,7 +9,6 @@ import { ContentType, type QuizTFData, type QuizMCData, type QuizMCOption } from
 import type { Course } from '../../../domain/courses/types'
 import type { Module } from '../../../domain/modules/types'
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import api from '../../lib/axios'
 import { v4 as uuidv4 } from 'uuid'
@@ -92,9 +91,6 @@ export const AddContentPage = () => {
   const navigate = useNavigate()
   const [course, setCourse] = useState<Course | null>(null)
   const [module, setModule] = useState<Module | null>(null)
-  const [pageLoading, setPageLoading] = useState(true)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [showSaveIndicator, setShowSaveIndicator] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<{ name: string } | null>(null)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -130,7 +126,6 @@ export const AddContentPage = () => {
         setValue('order', maxOrder + 1)
       })
       .catch(err => logger.error('Error al cargar datos', { error: err, courseId, moduleId }))
-      .finally(() => setPageLoading(false))
   }, [courseId, moduleId])
 
   const {
