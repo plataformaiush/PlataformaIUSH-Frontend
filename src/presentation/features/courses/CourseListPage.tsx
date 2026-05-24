@@ -24,19 +24,29 @@ export const CourseListPage = () => {
   const [editDescription, setEditDescription] = useState('')
   const [editStatus, setEditStatus] = useState<'active' | 'inactive'>('inactive')
   const [editSaving, setEditSaving] = useState(false)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(10)
+  const [hasMore, setHasMore] = useState(true)
 
-  const loadCourses = useCallback(async () => {
+  const loadCourses = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
       setError(null)
-      const data = await fetchCursos()
-      setCourses(data)
+      if (!append) setLoading(true)
+      const data = await fetchCursos({ page: pageNum, limit })
+      if (append) {
+        setCourses(prev => [...prev, ...data])
+      } else {
+        setCourses(data)
+      }
+      setHasMore(data.length === limit)
+      setPage(pageNum)
     } catch (error) {
       logger.error('Error al cargar cursos', { error })
       setError('No se pudieron cargar los cursos. Por favor intenta nuevamente.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [limit])
 
   useEffect(() => {
     loadCourses()
@@ -44,7 +54,12 @@ export const CourseListPage = () => {
 
   const handleCourseUpdate = () => {
     setRefreshKey(prev => prev + 1)
-    loadCourses()
+    setPage(1)
+    loadCourses(1, false)
+  }
+
+  const handleLoadMore = () => {
+    loadCourses(page + 1, true)
   }
 
   const handleToggleStatus = async (courseId: string, currentStatus: string) => {
@@ -489,6 +504,22 @@ export const CourseListPage = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Botón Cargar Más */}
+              {hasMore && !loading && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={handleLoadMore}
+                    className="px-6 py-3 rounded-xl font-medium text-sm transition-all hover:opacity-80"
+                    style={{
+                      backgroundColor: '#AEEBF2',
+                      color: '#5A878C'
+                    }}
+                  >
+                    Cargar más cursos
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Mobile Card View (Table Mode) */}

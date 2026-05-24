@@ -13,6 +13,7 @@ import { BookOpen } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import api from '../../lib/axios'
 import { v4 as uuidv4 } from 'uuid'
+import ReactPlayer from 'react-player'
 
 const contentSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
@@ -146,6 +147,7 @@ export const AddContentPage = () => {
   const selectedType = watch('type')
   const watchedTitle = watch('title')
   const watchedStatus = watch('status')
+  const watchedResourceUrl = watch('resourceUrl')
 
   const handleFileUpload = async (file: File) => {
     setUploading(true)
@@ -555,6 +557,22 @@ export const AddContentPage = () => {
                     />
                     {errors.resourceUrl && <p className="mt-2 text-xs font-medium" style={{ color: '#DC2626' }}>⚠ {errors.resourceUrl.message}</p>}
                   </div>
+                  
+                  {/* Preview del video */}
+                  {watchedResourceUrl && ReactPlayer.canPlay(watchedResourceUrl) && (
+                    <div className="mt-4">
+                      <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Preview</label>
+                      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#000' }}>
+                        <ReactPlayer
+                          url={watchedResourceUrl}
+                          width="100%"
+                          height="300px"
+                          controls
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Duración (minutos)</label>
                     <input
@@ -622,6 +640,21 @@ export const AddContentPage = () => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Preview de imagen */}
+                  {selectedType === ContentType.IMAGE && watchedResourceUrl && (
+                    <div className="mt-4">
+                      <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Preview</label>
+                      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FAFAFA', border: '2px solid #E5E7EB' }}>
+                        <img
+                          src={watchedResourceUrl}
+                          alt="Preview"
+                          className="w-full h-auto max-h-64 object-contain"
+                          onError={() => setValue('resourceUrl', '')}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
