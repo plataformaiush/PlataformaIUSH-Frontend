@@ -53,7 +53,7 @@ export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onToggleS
             <div className="flex items-center gap-4 mt-3" style={{ fontSize: '12px', color: '#6B7280' }}>
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" />
-                {course.studentCount} estudiantes
+                {course.studentCount ?? 'N/A'} estudiantes
               </span>
               <span className="flex items-center gap-1">
                 <BookOpen className="w-3 h-3" />
@@ -87,7 +87,7 @@ export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onToggleS
           </div>
           <div className="flex flex-col justify-center">
             <span className="text-sm font-semibold" style={{ color: '#223740' }}>
-              {course.studentCount.toLocaleString()}
+              {course.studentCount?.toLocaleString() ?? 'N/A'}
             </span>
             <span className="text-xs" style={{ color: '#6B7280' }}>estudiantes</span>
           </div>

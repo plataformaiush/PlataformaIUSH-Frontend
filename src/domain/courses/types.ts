@@ -5,9 +5,9 @@ export interface Course {
   id: string
   title: string
   description: string
-  instructor: string
-  level: CourseLevel
+  instructor?: string  // Opcional - backend no lo devuelve actualmente
+  level?: CourseLevel  // Opcional - backend no lo devuelve actualmente
   status: CourseStatus
   moduleIds: string[]
-  studentCount: number
+  studentCount?: number  // Opcional - backend no lo devuelve actualmente
 }

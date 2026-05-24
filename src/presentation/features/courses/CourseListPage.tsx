@@ -140,14 +140,14 @@ export const CourseListPage = () => {
         searchTerm === '' || 
         c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.instructor.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.instructor?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
       
       return matchesFilter && matchesSearch
     })
   }, [courses, filter, searchTerm])
   
   const activeCourses = useMemo(() => courses.filter((c) => c.status === 'active'), [courses])
-  const totalStudents = useMemo(() => courses.reduce((sum, c) => sum + c.studentCount, 0), [courses])
+  const totalStudents = useMemo(() => courses.reduce((sum, c) => sum + (c.studentCount ?? 0), 0), [courses])
   const newThisMonth = useMemo(() => Math.floor(Math.random() * 5) + 1, []) // Simulated data
   
   const handleDeleteCourse = async (courseId: string) => {

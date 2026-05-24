@@ -22,14 +22,14 @@ function mapCursoToCourse(c: CursoBackend): Course {
     id: c.idCurso,
     title: c.titulo,
     description: c.descripcion,
-    instructor: "",
-    level: "beginner",
+    instructor: undefined,  // Backend no lo devuelve actualmente
+    level: undefined,  // Backend no lo devuelve actualmente
     status: c.activo ? "active" : "inactive",
     moduleIds: Array.from(
       { length: c.modulosCount },
       (_, i) => `${c.idCurso}-mod-${i}`,
     ),
-    studentCount: 0,
+    studentCount: undefined,  // Backend no lo devuelve actualmente
   };
 }
 
