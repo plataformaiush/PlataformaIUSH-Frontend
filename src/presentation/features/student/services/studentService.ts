@@ -369,6 +369,19 @@ export const studentService = {
     return response.data.data
   },
 
+  // Sincronizar progreso_curso desde progreso_estudiante y generar certificado si aplica
+  async sincronizarProgreso(
+    idUsuario: string,
+    idCurso: string
+  ): Promise<{ porcentaje: number; completado: boolean; certificado: Certificado | null }> {
+    const response = await rootAxiosInstance.post(
+      '/progreso/sincronizar',
+      { id_usuario: idUsuario, id_curso: idCurso },
+      { headers: getStudentAuthHeaders() }
+    )
+    return response.data.data
+  },
+
   // Obtener resultado de evaluación (Endpoint sin /api)
   async getResultadoEvaluacion(contenidoId: string, userId: string): Promise<any> {
     const response = await rootAxiosInstance.get(`/evaluaciones/contenido/${contenidoId}/resultado/${userId}`, {
