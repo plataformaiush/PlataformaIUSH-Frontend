@@ -30,25 +30,32 @@ const ProfunSoft = () => {
     }, [location.pathname])
 
     return (
-        <div className="min-h-screen overflow-hidden bg-slate-100">
-            <div className={`hidden h-screen grid-cols-[220px_1fr] grid-rows-[auto_1fr] overflow-hidden transition-[grid-template-columns] duration-300 md:grid ${hiddenNav ? 'md:grid-cols-[72px_1fr]' : 'md:grid-cols-[220px_1fr]'}`}>
+        <div className="h-screen overflow-hidden bg-slate-100">
+
+            {/* ── Desktop layout ── */}
+            <div className="hidden h-full md:flex overflow-hidden">
+
                 {/* Sidebar */}
-                <div className="row-span-2 h-screen overflow-hidden">
+                <div className={`flex-shrink-0 h-full overflow-hidden transition-all duration-300 ${hiddenNav ? 'w-[72px]' : 'w-[220px]'}`}>
                     <Sidebar />
                 </div>
 
-                {/* Header */}
-                <div className="sticky top-0 z-20">
-                    <Header />
-                </div>
+                {/* Contenido principal */}
+                <div className="flex flex-1 flex-col h-full overflow-hidden">
+                    {/* Header */}
+                    <div className="flex-shrink-0 h-[70px] z-20">
+                        <Header />
+                    </div>
 
-                {/* Outlet */}
-                <div className="min-h-0 overflow-y-auto bg-slate-100">
-                    <Outlet />
+                    {/* Outlet — único scroll */}
+                    <div className="flex-1 overflow-y-auto bg-slate-100">
+                        <Outlet />
+                    </div>
                 </div>
             </div>
 
-            <div className="flex min-h-screen flex-col md:hidden">
+            {/* ── Mobile layout ── */}
+            <div className="flex h-full flex-col md:hidden">
                 <div className="fixed top-0 left-0 right-0 z-40">
                     <Header onMobileMenuToggle={handleMobileSidebarToggle}
                         mobileMenuOpen={mobileSidebarOpen}

@@ -232,14 +232,14 @@ export const AddContentPage = () => {
 
   if (!course || !module) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+      <main className="flex items-center justify-center" style={{ backgroundColor: '#FAFAFA', minHeight: '100%' }}>
         <p className="text-sm" style={{ color: '#6B7280' }}>Curso o módulo no encontrado.</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+    <main style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
       {/* Top bar — igual que ModuleListPage y ContentListPage */}
       <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
         <div className="px-8 py-4">

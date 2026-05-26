@@ -173,20 +173,7 @@ export function CursosView() {
   const slice = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   if (viewType === 'gestion') {
-    return (
-      <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-        <div className="px-8 pt-6 pb-2" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
-          <button
-            onClick={() => setViewType('resumen')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
-            style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
-          >
-            ← Vista resumen
-          </button>
-        </div>
-        <CourseListPage />
-      </div>
-    )
+    return <CourseListPage onBack={() => setViewType('resumen')} />
   }
 
   return (

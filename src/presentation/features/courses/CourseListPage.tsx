@@ -25,7 +25,11 @@ import type { Course } from '../../../domain/courses/types'
 import { logger } from '../../utils/logger'
 import { smartActivateCourse } from '../../../services/courseBusinessLogic'
 
-export const CourseListPage = () => {
+interface CourseListPageProps {
+  onBack?: () => void
+}
+
+export const CourseListPage = ({ onBack }: CourseListPageProps = {}) => {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -286,6 +290,15 @@ export const CourseListPage = () => {
       {/* Encabezado */}
       <div className="border-b" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-background)' }}>
         <div className="px-8 py-6">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-2 px-4 py-2 mb-4 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+              style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
+            >
+              ← Vista resumen
+            </button>
+          )}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl" style={{ backgroundColor: 'var(--color-tertiary)' }}>

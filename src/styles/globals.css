@@ -40,10 +40,14 @@
 }
 
 html {
+  height: 100%;
+  overflow: hidden;
   scroll-behavior: smooth;
 }
 
 body {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background-color: var(--color-surface-muted);
@@ -51,6 +55,11 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Utility classes */
