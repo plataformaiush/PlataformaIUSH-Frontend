@@ -746,7 +746,6 @@ export function CourseMapPage() {
             {activeContent && (
                 <ContentModal
                     content={activeContent}
-                    courseId={courseId}
                     currentStep={activeIdx + 1}
                     totalSteps={totalContents}
                     moduleName={activeModuleName}

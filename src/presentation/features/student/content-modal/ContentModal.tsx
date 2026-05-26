@@ -1,7 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { ContentLoader } from './components/ContentLoader'
 import { NoContentAvailable } from './components/NoContentAvailable'
 import type { AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
@@ -27,7 +26,6 @@ const XlsxContent = lazy(() =>
 
 interface ContentModalProps {
   content: AnyContentData
-  courseId: string
   moduleName: string
   currentStep: number
   totalSteps: number
@@ -41,7 +39,6 @@ interface ContentModalProps {
 
 export function ContentModal({
   content,
-  courseId,
   onClose,
   onPrev,
   onNext,
@@ -49,8 +46,6 @@ export function ContentModal({
   hasNext = false,
   isMarkingComplete = false,
 }: ContentModalProps) {
-  const markContentComplete = useStudentProgressStore(s => s.markContentComplete)
-
   /* Bloquear scroll del body al abrir */
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -65,25 +60,20 @@ export function ContentModal({
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const handleComplete = () => {
-    markContentComplete(courseId, content.id)
-    onClose()
-  }
-
   const renderContent = () => {
     switch (content.type) {
       case 'video':
-        return <VideoContent data={content} onComplete={handleComplete} />
+        return <VideoContent data={content} onComplete={onClose} />
       case 'image':
-        return <ImageContent data={content} onComplete={handleComplete} />
+        return <ImageContent data={content} onComplete={onClose} />
       case 'text':
-        return <TextContent data={content} onComplete={handleComplete} />
+        return <TextContent data={content} onComplete={onClose} />
       case 'quiz':
-        return <QuizContent data={content} onComplete={handleComplete} />
+        return <QuizContent data={content} onComplete={onClose} />
       case 'pdf':
-        return <PdfContent data={content} onComplete={handleComplete} />
+        return <PdfContent data={content} onComplete={onClose} />
       case 'xlsx':
-        return <XlsxContent data={content} onComplete={handleComplete} />
+        return <XlsxContent data={content} onComplete={onClose} />
       default:
         return <NoContentAvailable onClose={onClose} />
     }
@@ -142,27 +132,15 @@ export function ContentModal({
             Anterior
           </button>
 
-          {content.type !== 'quiz' && (
-            <button
-              onClick={handleComplete}
-              disabled={isMarkingComplete}
-              className="min-h-[44px] px-5 rounded-xl text-sm font-semibold
-                          bg-primary text-tertiary hover:bg-secondary
-                          disabled:opacity-60 disabled:cursor-wait
-                          active:scale-95 transition-all"
-            >
-              {isMarkingComplete ? 'Completando...' : 'Completar'}
-            </button>
-          )}
-
           <button
             onClick={onNext}
             disabled={!hasNext || isMarkingComplete}
-            className="flex items-center gap-1.5 min-h-[44px] px-4 rounded-xl text-sm font-medium
-                        text-secondary hover:bg-primary/10 disabled:opacity-30
-                        disabled:cursor-not-allowed active:scale-95 transition-all"
+            className="flex items-center gap-1.5 min-h-[44px] px-5 rounded-xl text-sm font-semibold
+                        bg-primary text-tertiary hover:bg-secondary
+                        disabled:opacity-30 disabled:cursor-not-allowed
+                        active:scale-95 transition-all"
           >
-            Siguiente
+            {isMarkingComplete ? 'Completando...' : 'Siguiente'}
             <ChevronRight size={16} />
           </button>
         </div>
