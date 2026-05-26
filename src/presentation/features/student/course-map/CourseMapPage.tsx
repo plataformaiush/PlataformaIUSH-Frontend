@@ -329,11 +329,13 @@ export function CourseMapPage() {
                 const data = await studentService.getCursoDetalleConProgreso(courseId, usuarioId)
                 console.log('📚 Curso detallado:', data)
 
+                const cursoImagenUrl = studentService.getImagenUrl(data.curso.idImagen)
+
                 const mappedCourse: Course = {
                     id: data.curso.idCurso,
                     title: data.curso.titulo,
                     descripcion: data.curso.descripcion,
-                    thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&q=80',
+                    thumbnail: cursoImagenUrl ?? 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&q=80',
                     modules: data.modulos.map((modulo) => ({
                         id: modulo.idModulo,
                         title: modulo.titulo,

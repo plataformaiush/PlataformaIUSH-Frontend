@@ -78,11 +78,17 @@ export function StudentDashboardPage() {
                     : 0
                 const completado = enrollment ? enrollment.completado || porcentajeProgreso >= 100 : false
 
+                const thumbnail: string | undefined =
+                    (curso as any).thumbnail
+                    || enrollment?.thumbnail
+                    || studentService.getImagenUrl(curso.idImagen)
+                    || undefined
+
                 return {
                     idCurso: curso.idCurso,
                     titulo: curso.titulo,
                     descripcion: curso.descripcion,
-                    thumbnail: (curso as any).thumbnail || enrollment?.thumbnail || undefined,
+                    thumbnail,
                     modulosTotal: curso.modulosCount ?? enrollment?.modulos_total ?? 0,
                     modulosCompletados: enrollment?.contenidos_completados ?? 0,
                     porcentajeProgreso,
