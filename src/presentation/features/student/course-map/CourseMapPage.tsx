@@ -159,8 +159,13 @@ function getCurrentUserId(): string | null {
 
 function mapContentType(type: string): Course['modules'][number]['contents'][number]['type'] {
     if (type === 'texto') return 'text'
+    if (type === 'imagen') return 'image'
     if (type === 'archivo') return 'pdf'
     return type as Course['modules'][number]['contents'][number]['type']
+}
+
+function isXlsx(url: string) {
+    return /\.(xlsx|xls)(\?|$)/i.test(url)
 }
 
 function buildContentDetail(content: {
@@ -176,7 +181,7 @@ function buildContentDetail(content: {
 
     switch (type) {
         case 'video':
-            return {id: content.idContenido, title: content.titulo, type: 'video', url, duration: 0}
+            return { id: content.idContenido, title: content.titulo, type: 'video', url }
         case 'image':
             return {
                 id: content.idContenido,
@@ -184,21 +189,22 @@ function buildContentDetail(content: {
                 type: 'image',
                 url,
                 alt: content.titulo,
-                caption: content.descripcion || undefined
+                caption: content.descripcion || undefined,
             }
         case 'pdf':
-            return {id: content.idContenido, title: content.titulo, type: 'pdf', url, filename: content.titulo}
-        case 'xlsx':
-            return {id: content.idContenido, title: content.titulo, type: 'xlsx', url, filename: content.titulo}
+            if (isXlsx(url)) {
+                return { id: content.idContenido, title: content.titulo, type: 'xlsx', url }
+            }
+            return { id: content.idContenido, title: content.titulo, type: 'pdf', url }
         case 'quiz':
-            return {id: content.idContenido, title: content.titulo, type: 'quiz', questions: []}
+            return { id: content.idContenido, title: content.titulo, type: 'quiz', questions: [] }
         case 'text':
         default:
             return {
                 id: content.idContenido,
                 title: content.titulo,
                 type: 'text',
-                body: `<h3>${content.titulo}</h3><p>${content.descripcion || url || 'Sin contenido disponible'}</p>`,
+                body: url || content.descripcion || 'Sin contenido disponible',
             }
     }
 }

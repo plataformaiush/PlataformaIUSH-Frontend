@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import { ContentLoader } from './components/ContentLoader'
+import { NoContentAvailable } from './components/NoContentAvailable'
 import type { AnyContentData } from '../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
 
 const VideoContent = lazy(() =>
@@ -83,6 +84,8 @@ export function ContentModal({
         return <PdfContent data={content} onComplete={handleComplete} />
       case 'xlsx':
         return <XlsxContent data={content} onComplete={handleComplete} />
+      default:
+        return <NoContentAvailable onClose={onClose} />
     }
   }
 

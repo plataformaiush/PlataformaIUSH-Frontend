@@ -86,10 +86,8 @@ export function MisCursosPage() {
         setIsDeleting(true)
         try {
             await studentService.eliminarInscripcion(courseToDelete.idInscripcion)
-            // Quitamos el curso de la interfaz
-            setMisCursos((prev) => prev.filter(curso => curso.id_inscripcion !== courseToDelete.idInscripcion))
-            // Cerramos el modal
             setCourseToDelete(null)
+            navigate('/student/dashboard')
         } catch (error) {
             console.error('Error eliminando inscripción:', error)
             window.alert('Hubo un error al intentar eliminar la inscripción. Por favor intenta de nuevo.')
