@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Award, Download, X, Trophy, BookOpen, ChevronRight } from 'lucide-react'
+import { Award, Download, X, Trophy, BookOpen, ChevronRight, ArrowLeft } from 'lucide-react'
 import { studentService, type MisCursos, type Certificado, type CursoInscritoBackend } from '../services/studentService'
 import { tokenManager } from '../../../services/tokenManager'
 
@@ -322,6 +322,19 @@ export function StudentGradesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-8">
+
+      {/* Botón volver sticky */}
+      <div className="sticky top-4 z-10 self-start">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-mid/20
+                     shadow-sm text-sm font-semibold text-secondary
+                     hover:text-primary hover:border-primary/30 transition-all"
+        >
+          <ArrowLeft size={16} />
+          Volver
+        </button>
+      </div>
 
       {/* Encabezado */}
       <div>
