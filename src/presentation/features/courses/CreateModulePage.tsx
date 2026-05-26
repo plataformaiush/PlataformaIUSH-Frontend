@@ -6,7 +6,7 @@ import { fetchCursoById } from '../../services/courseService'
 import { createModulo, fetchModulos } from '../../services/moduleService'
 import { useState, useEffect, useCallback } from 'react'
 import type { Course } from '../../../domain/courses/types'
-import { BookOpen, Save, RotateCcw, CheckCircle2, Users, Target } from 'lucide-react'
+import { BookOpen, Save, RotateCcw, CheckCircle2 } from 'lucide-react'
 import { logger } from '../../utils/logger'
 
 const moduleSchema = z.object({
@@ -93,7 +93,7 @@ export const CreateModulePage = () => {
     watch,
     setValue,
     reset,
-    formState: { errors, isSubmitting, isValid }
+    formState: { errors, isSubmitting }
   } = useForm<ModuleFormData>({
     resolver: zodResolver(moduleSchema),
     defaultValues: { 
@@ -182,7 +182,7 @@ export const CreateModulePage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+      <main className="flex items-center justify-center" style={{ backgroundColor: '#FAFAFA', minHeight: '100%' }}>
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-secondary)', borderTopColor: 'transparent' }} />
           <p className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>Cargando curso...</p>
@@ -193,7 +193,7 @@ export const CreateModulePage = () => {
 
   if (!course) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+      <main className="flex items-center justify-center" style={{ backgroundColor: '#FAFAFA', minHeight: '100%' }}>
         <div className="text-center">
           <p className="text-lg font-semibold mb-2" style={{ color: 'var(--color-primary)' }}>Curso no encontrado</p>
           <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>El curso que buscas no existe o ha sido eliminado.</p>
@@ -210,7 +210,7 @@ export const CreateModulePage = () => {
   }
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+    <main style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
       {/* Header */}
       <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
         <div className="px-8 py-6">
