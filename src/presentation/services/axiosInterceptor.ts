@@ -26,11 +26,17 @@ export function setupAxiosInterceptors(axiosInstance: AxiosInstance): void {
         (response) => response,
         (error: AxiosError) => {
             if (error.response?.status === 401) {
-                console.error('401 recibido en Axios (sesión no cerrada por ahora):', {
-                    url: error.config?.url,
-                    method: error.config?.method,
-                    message: error.message,
-                });
+                // Sesión inválida/expirada: limpiamos credenciales y redirigimos a login
+                // (evitamos que el usuario quede "atrapado" con un token vencido).
+                tokenManager.clearToken();
+
+                if (typeof window !== 'undefined') {
+                    const currentPath = window.location.pathname;
+                    if (!currentPath.startsWith('/login')) {
+                        const redirect = encodeURIComponent(currentPath + window.location.search);
+                        window.location.assign(`/login?redirect=${redirect}`);
+                    }
+                }
             }
 
             return Promise.reject(error);

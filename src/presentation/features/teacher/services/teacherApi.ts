@@ -7,6 +7,7 @@ import {
   TeacherDashboardData,
   TeacherHealthResponse,
 } from "../../../../domain/teacher/teacherTypes";
+import { tokenManager } from "../../../services/tokenManager";
 
 type RuntimeImportMeta = ImportMeta & {
   env?: {
@@ -45,14 +46,8 @@ const TEACHER_RECENT_STUDENTS_ENDPOINT =
 const REQUEST_TIMEOUT_MS = 8000;
 
 function getAuthToken() {
-  return (
-    localStorage.getItem("auth_token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("auth_token") ||
-    sessionStorage.getItem("access_token") ||
-    sessionStorage.getItem("token")
-  );
+  // El backend devuelve la key `token` y `tokenManager` la persiste con ese mismo nombre.
+  return tokenManager.getToken();
 }
 
 async function request<T>(endpoint: string): Promise<T> {

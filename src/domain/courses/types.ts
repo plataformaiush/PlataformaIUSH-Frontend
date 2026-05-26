@@ -10,4 +10,5 @@ export interface Course {
   status: CourseStatus
   moduleIds: string[]
   studentCount?: number  // Opcional - backend no lo devuelve actualmente
+  imageId?: string  // ID del documento del equipo 2 (referencia a la imagen)
 }

@@ -1,7 +1,28 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
-import { ModuleCard } from './ModuleCard'
-import { fetchModulos, updateModulo } from '../../services/moduleService'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { ModuleCard, ModuleCardCells } from './ModuleCard'
+import { SortableRow } from './SortableRow'
+import { TableRowSkeleton, PageHeaderSkeleton } from './Skeletons'
+import {
+  fetchModulos,
+  updateModulo,
+  reorderModulos,
+} from '../../services/moduleService'
 import { fetchCursoById } from '../../services/courseService'
 import type { Module } from '../../../domain/modules/types'
 import type { Course } from '../../../domain/courses/types'
@@ -19,6 +40,46 @@ export const ModuleListPage = () => {
   const [editDescription, setEditDescription] = useState('')
   const [editOrder, setEditOrder] = useState(1)
   const [editSaving, setEditSaving] = useState(false)
+
+  // --- Reorder (drag & drop) ---
+  const [reorderMode, setReorderMode] = useState(false)
+  const [reorderSaving, setReorderSaving] = useState(false)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const noopToggleStatus = () => {
+    // En modo reordenar deshabilitamos las acciones de activar/desactivar
+    // para evitar disparos accidentales mientras se arrastra.
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id || !courseId) return
+
+    const oldIndex = allModules.findIndex(m => m.id === active.id)
+    const newIndex = allModules.findIndex(m => m.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    const reordered = arrayMove(allModules, oldIndex, newIndex)
+    // Optimistic update con `order` recalculado (1-based)
+    const withNewOrder = reordered.map((m, idx) => ({ ...m, order: idx + 1 }))
+    setAllModules(withNewOrder)
+    setReorderSaving(true)
+
+    try {
+      const payload = withNewOrder.map((m, idx) => ({ id_modulo: m.id, orden: idx + 1 }))
+      const updated = await reorderModulos(courseId, payload)
+      setAllModules(updated)
+    } catch (error) {
+      logger.error('Error al reordenar módulos', { error, courseId })
+      // Revertir si falla
+      loadData()
+    } finally {
+      setReorderSaving(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     if (!courseId) return
@@ -81,8 +142,22 @@ export const ModuleListPage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
-        <p className="text-sm" style={{ color: '#6B7280' }}>Cargando...</p>
+      <main className="min-h-screen" style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+        <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+          <div className="px-8 py-4">
+            <div className="h-8 w-40 rounded-lg animate-pulse" style={{ backgroundColor: '#E5E7EB' }} />
+          </div>
+        </div>
+        <div className="px-8 py-6">
+          <PageHeaderSkeleton />
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <table className="w-full">
+              <tbody>
+                <TableRowSkeleton cols={4} rows={5} />
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
     )
   }
@@ -143,13 +218,28 @@ export const ModuleListPage = () => {
               Al crear un módulo, el sistema redirige automáticamente al formulario de contenidos
             </p>
           </div>
-          <Link
-            to={`/courses/${courseId}/modules/new`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
-          >
-            + Crear módulo
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setReorderMode(prev => !prev)}
+              disabled={reorderSaving || allModules.length < 2}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
+              style={{
+                backgroundColor: reorderMode ? '#5A878C' : '#AEEBF2',
+                color: reorderMode ? '#FFFFFF' : '#223740',
+              }}
+              title={allModules.length < 2 ? 'Necesitas al menos 2 módulos para reordenar' : ''}
+            >
+              {reorderMode ? 'Terminar reordenar' : 'Reordenar'}
+            </button>
+            <Link
+              to={`/courses/${courseId}/modules/new`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
+            >
+              + Crear módulo
+            </Link>
+          </div>
         </div>
 
         {/* Filter tabs + count */}
@@ -177,55 +267,75 @@ export const ModuleListPage = () => {
           </span>
         </div>
 
+        {/* Aviso de modo reordenar */}
+        {reorderMode && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm flex items-center gap-2"
+            style={{ borderColor: '#AEEBF2', backgroundColor: '#F0FDFA', color: '#223740' }}>
+            <span className="font-semibold">Modo reordenar activo:</span>
+            arrastra las filas usando el ícono <span className="font-mono">⋮⋮</span> para cambiar el orden.
+            {reorderSaving && <span className="ml-2 text-xs" style={{ color: '#5A878C' }}>Guardando…</span>}
+          </div>
+        )}
+
         {/* Table */}
         <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
-                  <th
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: '#6B7280' }}
-                    scope="col"
-                  >
-                    Módulo
-                  </th>
-                  <th
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: '#6B7280' }}
-                    scope="col"
-                  >
-                    Contenidos
-                  </th>
-                  <th
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: '#6B7280' }}
-                    scope="col"
-                  >
-                    Estado
-                  </th>
-                  <th
-                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                    style={{ color: '#6B7280' }}
-                    scope="col"
-                  >
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredModules.map((module, idx) => (
-                  <ModuleCard
-                    key={`${module.id}-${refreshKey}`}
-                    module={module}
-                    courseId={courseId!}
-                    isLast={idx === filteredModules.length - 1}
-                    onModuleUpdate={handleModuleUpdate}
-                    onEdit={handleEditModule}
-                  />
-                ))}
-              </tbody>
-            </table>
+            {reorderMode ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext
+                  items={allModules.map(m => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
+                        <th className="px-3 py-4 w-10" scope="col" aria-label="Reordenar" />
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Módulo</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Contenidos</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Estado</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allModules.map((module) => (
+                        <SortableRow key={`sortable-${module.id}`} id={module.id} disabled={reorderSaving}>
+                          <ModuleCardCells
+                            module={module}
+                            courseId={courseId!}
+                            onEdit={handleEditModule}
+                            handleToggleStatus={noopToggleStatus}
+                            onModuleUpdate={handleModuleUpdate}
+                          />
+                        </SortableRow>
+                      ))}
+                    </tbody>
+                  </table>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Módulo</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Contenidos</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Estado</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredModules.map((module, idx) => (
+                    <ModuleCard
+                      key={`${module.id}-${refreshKey}`}
+                      module={module}
+                      courseId={courseId!}
+                      isLast={idx === filteredModules.length - 1}
+                      onModuleUpdate={handleModuleUpdate}
+                      onEdit={handleEditModule}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

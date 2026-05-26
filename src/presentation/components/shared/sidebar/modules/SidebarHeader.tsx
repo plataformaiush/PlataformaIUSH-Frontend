@@ -12,23 +12,25 @@ const SidebarHeader = ({ showToggle = true }: SidebarProps) => {
   const logoSrc = logo || logoDefault
 
   return (
-    <div className={`flex gap-1.5 w-full p-2 ${
+    <div className={`flex items-center w-full p-4 ${
         hiddenNav ? 'justify-center' : 'justify-between'
       }`}
     >
       {!hiddenNav && (
         <div className="flex-1 flex justify-center">
-          <img src={logoSrc} alt="Logo Institucional" className="w-30 h-30 object-fill"/>
+          <img src={logoSrc} alt="Logo Institucional" className="h-10 w-auto object-contain"/>
         </div>
       )}
 
       {showToggle && (
-        <MenuOpenIcon
+        <button
           onClick={toggleHiddenNav}
-          sx={{ fontSize: 30 }}
-          className="cursor-pointer hover:opacity-80 transition-opacity"
-          style={{ color: 'var(--color-text-on-dark)' }}
-        />
+          className="p-2 rounded-xl transition-all hover:opacity-80"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'var(--color-text-on-dark)' }}
+          aria-label={hiddenNav ? 'Expandir sidebar' : 'Contraer sidebar'}
+        >
+          <MenuOpenIcon sx={{ fontSize: 24 }} className={`${hiddenNav ? 'rotate-180' : ''} transition-transform duration-300`} />
+        </button>
       )}
     </div>
   )

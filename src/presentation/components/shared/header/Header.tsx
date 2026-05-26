@@ -1,4 +1,3 @@
-import { useHiddenNavStore } from '../sidebar/store/hiddenNavStore'
 import { useInstitution } from '../../../../context/InstitutionContext'
 import Avatar from '@mui/material/Avatar'
 import Stack from '@mui/material/Stack'
@@ -28,10 +27,9 @@ const stringAvatar = (name: string) => {
 
 const Header = ({ onMobileMenuToggle, mobileMenuOpen = false }: HeaderProps) => {
 
-  const { hiddenNav } = useHiddenNavStore()
   const { logo } = useInstitution()
 
-  const showLogo = onMobileMenuToggle ? !mobileMenuOpen : hiddenNav
+  const showLogo = false
 
   const user = tokenManager.getUser() as { nombre?: string } | null
   const userName = user?.nombre ?? 'Usuario IUSH'
@@ -39,7 +37,7 @@ const Header = ({ onMobileMenuToggle, mobileMenuOpen = false }: HeaderProps) => 
   const logoSrc = logo || logoDefault
 
   return (
-    <div className='flex h-[70px] items-center justify-between px-3 md:px-4'
+    <div className='flex h-[70px] items-center justify-between px-4 md:px-6'
       style={{
         backgroundColor: 'var(--color-primary)',
         color: 'var(--color-text-on-dark)'
@@ -49,29 +47,29 @@ const Header = ({ onMobileMenuToggle, mobileMenuOpen = false }: HeaderProps) => 
         <img
           src={logoSrc}
           alt="Institution logo"
-          className="w-17 max-w-[108px] object-contain"
+          className="h-10 w-auto object-contain"
         />
       )}
 
-      <Stack direction="row" spacing={0.75} sx={{ marginLeft: 'auto', alignItems: 'center' }}>
+      <Stack direction="row" spacing={2} sx={{ marginLeft: 'auto', alignItems: 'center' }}>
         <button
           type="button"
           aria-label="Configuración"
-          className="inline-flex cursor-pointer items-center justify-center rounded-full p-2 transition-colors hover:opacity-80"
+          className="inline-flex cursor-pointer items-center justify-center rounded-xl p-2.5 transition-all hover:opacity-80"
           style={{
             color: 'var(--color-text-on-dark)',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+            backgroundColor: 'rgba(255, 255, 255, 0.1)'
           }}
         >
-          <SettingsIcon sx={{ fontSize: 18 }} />
+          <SettingsIcon sx={{ fontSize: 20 }} />
         </button>
 
         <Avatar {...userAvatar}
           sx={{
             ...userAvatar.sx,
-            width: { xs: 30, md: 34 },
-            height: { xs: 30, md: 34 },
-            fontSize: { xs: 12, md: 13 },
+            width: { xs: 36, md: 40 },
+            height: { xs: 36, md: 40 },
+            fontSize: { xs: 13, md: 14 },
             fontWeight: 700,
             color: 'var(--color-text-on-dark)'
           }}
@@ -81,12 +79,12 @@ const Header = ({ onMobileMenuToggle, mobileMenuOpen = false }: HeaderProps) => 
           <button
             type="button"
             onClick={onMobileMenuToggle}
-            className="inline-flex items-center justify-center rounded-full p-2 transition-colors hover:opacity-80 md:hidden"
-            style={{ color: 'var(--color-text-on-dark)' }}
+            className="inline-flex items-center justify-center rounded-xl p-2.5 transition-all hover:opacity-80 md:hidden"
+            style={{ color: 'var(--color-text-on-dark)', backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
             aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
             <MenuOpenIcon
-              sx={{ fontSize: 28 }}
+              sx={{ fontSize: 24 }}
               className={`${mobileMenuOpen ? 'rotate-180' : ''} transition-transform duration-300`}
             />
           </button>

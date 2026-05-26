@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { tokenManager } from "../services/tokenManager";
 
 const api = axios.create({
@@ -14,5 +14,23 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      // Sesión expirada/invalidada: limpiar credenciales y redirigir a login.
+      tokenManager.clearToken();
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith("/login")) {
+          const redirect = encodeURIComponent(currentPath + window.location.search);
+          window.location.assign(`/login?redirect=${redirect}`);
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

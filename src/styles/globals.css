@@ -22,17 +22,16 @@
 }
 
 :root {
-  --color-background: #FFFAFA;
-  --color-foreground: #0F172A;
   --color-primary: #223740;
-  --color-secondary: #5a878C;
+  --color-background: #ffffff;
+  --color-foreground: #060a0d;
+  --color-secondary: #5a878c;
   --color-tertiary: #aeebf2;
-  --color-muted: #f8f8ff;
-  --color-muted-foreground: #475569;
-  --color-border: #E2E8F0;
-  --color-input: #FFFFFF;
-  --color-text-on-dark: #F5F5F5;
-  --color-ring: #1E40AF;
+  --color-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-muted-foreground: #64748b;
+  --color-text-on-dark: #f5f5f5;
+  --color-ring: #223740;
 }
 
 /* Base styles */

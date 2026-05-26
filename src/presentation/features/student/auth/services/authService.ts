@@ -7,13 +7,14 @@ export const axiosInstance = createAxiosInstance(API_URL);
 
 interface LoginResponse {
   token: string;
+  token_expires?: string; // ISO string — lo que el backend realmente devuelve
   user: {
     id: string;
     correo: string;
     nombre?: string;
     roles?: string[];
   };
-  expiresIn?: number; // Segundos hasta expiración
+  expiresIn?: number; // El backend no lo envía actualmente (usa token_expires)
 }
 
 /**
@@ -36,10 +37,6 @@ export const loginRequest = async (data: {
  * Realiza logout del usuario
  */
 export const logoutRequest = async (): Promise<void> => {
-  try {
-    await axiosInstance.post(`/api/auth/logout`);
-  } catch (error) {
-    // Aunque falle la solicitud, limpiamos la sesión local
-    console.error("Error al hacer logout en servidor:", error);
-  }
+  // TODO: llamar POST /api/auth/logout cuando el backend lo implemente.
+  // Por ahora el token expira naturalmente; la sesión local se limpia en el caller.
 };

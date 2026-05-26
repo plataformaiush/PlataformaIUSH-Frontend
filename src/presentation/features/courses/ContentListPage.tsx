@@ -1,8 +1,29 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
-import { ContentCard } from './ContentCard'
-import { fetchContenidos, updateContenido } from '../../services/contentService'
-import { ContentType, parseQuizData, type QuizTFData, type QuizMCData, type QuizMCOption } from '../../../domain/contents/types'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { ContentCard, ContentCardCells } from './ContentCard'
+import { SortableRow } from './SortableRow'
+import { TableRowSkeleton, PageHeaderSkeleton } from './Skeletons'
+import {
+  fetchContenidos,
+  updateContenido,
+  reorderContenidos,
+} from '../../services/contentService'
+import { ContentType } from '../../../domain/contents/types'
 import { fetchModuloById } from '../../services/moduleService'
 import { fetchCursoById } from '../../services/courseService'
 import type { Content } from '../../../domain/contents/types'
@@ -23,6 +44,39 @@ export const ContentListPage = () => {
   const [editResourceUrl, setEditResourceUrl] = useState('')
   const [editOrder, setEditOrder] = useState(1)
   const [editSaving, setEditSaving] = useState(false)
+
+  // --- Reorder (drag & drop) ---
+  const [reorderMode, setReorderMode] = useState(false)
+  const [reorderSaving, setReorderSaving] = useState(false)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id || !moduleId) return
+
+    const oldIndex = contents.findIndex(c => c.id === active.id)
+    const newIndex = contents.findIndex(c => c.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    const reordered = arrayMove(contents, oldIndex, newIndex)
+    const withNewOrder = reordered.map((c, idx) => ({ ...c, order: idx + 1 }))
+    setContents(withNewOrder)
+    setReorderSaving(true)
+
+    try {
+      const payload = withNewOrder.map((c, idx) => ({ id_contenido: c.id, orden: idx + 1 }))
+      const updated = await reorderContenidos(moduleId, payload)
+      setContents(updated)
+    } catch (error) {
+      logger.error('Error al reordenar contenidos', { error, moduleId })
+      loadData()
+    } finally {
+      setReorderSaving(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     if (!courseId || !moduleId) return
@@ -90,8 +144,22 @@ export const ContentListPage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
-        <p className="text-sm" style={{ color: '#6B7280' }}>Cargando...</p>
+      <main className="min-h-screen" style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+        <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+          <div className="px-8 py-4">
+            <div className="h-8 w-44 rounded-lg animate-pulse" style={{ backgroundColor: '#E5E7EB' }} />
+          </div>
+        </div>
+        <div className="px-8 py-6">
+          <PageHeaderSkeleton />
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+            <table className="w-full">
+              <tbody>
+                <TableRowSkeleton cols={4} rows={4} />
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
     )
   }
@@ -151,13 +219,28 @@ export const ContentListPage = () => {
               Contenidos de este módulo
             </p>
           </div>
-          <Link
-            to={`/courses/${courseId}/modules/${moduleId}/contents/new`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
-          >
-            + Agregar contenido
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setReorderMode(prev => !prev)}
+              disabled={reorderSaving || contents.length < 2}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
+              style={{
+                backgroundColor: reorderMode ? '#5A878C' : '#AEEBF2',
+                color: reorderMode ? '#FFFFFF' : '#223740',
+              }}
+              title={contents.length < 2 ? 'Necesitas al menos 2 contenidos para reordenar' : ''}
+            >
+              {reorderMode ? 'Terminar reordenar' : 'Reordenar'}
+            </button>
+            <Link
+              to={`/courses/${courseId}/modules/${moduleId}/contents/new`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
+            >
+              + Agregar contenido
+            </Link>
+          </div>
         </div>
 
         {/* Table */}
@@ -175,51 +258,68 @@ export const ContentListPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
-                    <th 
-                      className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: '#6B7280' }}
-                      scope="col"
-                    >
-                      Contenido
-                    </th>
-                    <th 
-                      className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: '#6B7280' }}
-                      scope="col"
-                    >
-                      Tipo
-                    </th>
-                    <th 
-                      className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: '#6B7280' }}
-                      scope="col"
-                    >
-                      Orden
-                    </th>
-                    <th 
-                      className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: '#6B7280' }}
-                      scope="col"
-                    >
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contents.map((content, idx) => (
-                    <ContentCard 
-                      key={`${content.id}-${refreshKey}`} 
-                      content={content} 
-                      isLast={idx === contents.length - 1}
-                      onContentUpdate={handleContentUpdate}
-                      onEdit={handleEditContent}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              {reorderMode && (
+                <div className="px-4 py-3 text-sm flex items-center gap-2 border-b"
+                  style={{ borderColor: '#AEEBF2', backgroundColor: '#F0FDFA', color: '#223740' }}>
+                  <span className="font-semibold">Modo reordenar activo:</span>
+                  arrastra las filas usando el ícono <span className="font-mono">⋮⋮</span> para cambiar el orden.
+                  {reorderSaving && <span className="ml-2 text-xs" style={{ color: '#5A878C' }}>Guardando…</span>}
+                </div>
+              )}
+              {reorderMode ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={contents.map(c => c.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <table className="w-full">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
+                          <th className="px-3 py-4 w-10" scope="col" aria-label="Reordenar" />
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Contenido</th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Tipo</th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Orden</th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contents.map((content) => (
+                          <SortableRow key={`sortable-${content.id}`} id={content.id} disabled={reorderSaving}>
+                            <ContentCardCells
+                              content={content}
+                              onEdit={handleEditContent}
+                              handleDelete={() => { /* deshabilitado en modo reordenar */ }}
+                              renderViewButton={() => null}
+                            />
+                          </SortableRow>
+                        ))}
+                      </tbody>
+                    </table>
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Contenido</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Tipo</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Orden</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }} scope="col">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contents.map((content, idx) => (
+                      <ContentCard
+                        key={`${content.id}-${refreshKey}`}
+                        content={content}
+                        isLast={idx === contents.length - 1}
+                        onContentUpdate={handleContentUpdate}
+                        onEdit={handleEditContent}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>

@@ -33,7 +33,7 @@ const SidebarNavigation = () => {
     };
 
     return (
-        <div>
+        <div className="px-2 py-2">
         {actuallySection.map((v, i) => (
             <Tooltip key={i} describeChild arrow
                 title={v.label}
@@ -41,9 +41,9 @@ const SidebarNavigation = () => {
                 disableHoverListener={!hiddenNav}
             >
             <nav onClick={() => handleNavigationClick(v.label, v.path)}
-                className={`flex items-center p-3 m-2 rounded-[7px] cursor-pointer transition-all ${
-                sectionSelected === v.label ? "opacity-100 bg-black/20"
-                    : "hover:bg-black/20 hover:opacity-80 opacity-70 bg-transparent"
+                className={`flex items-center px-3 py-2.5 mx-1 rounded-xl cursor-pointer transition-all ${
+                sectionSelected === v.label ? "bg-white/15 shadow-sm"
+                    : "hover:bg-white/10 opacity-80 hover:opacity-100 bg-transparent"
                 }`}
             >
                 <div className={`flex items-center transition-all`}
@@ -51,19 +51,19 @@ const SidebarNavigation = () => {
                         color:
                         sectionSelected === v.label
                             ? "var(--color-text-on-dark)"
-                            : "var(--color-foreground)",
+                            : "rgba(255, 255, 255, 0.8)",
                     }}
                     >
                     {v.icon}
                 </div>
 
                 {!hiddenNav && (
-                    <h1 className={`text-[13px] font-semibold px-2 mb-1 tracking-widest transition-all`}
+                    <h1 className={`text-sm font-semibold px-3 transition-all`}
                         style={{
                         color:
                             sectionSelected === v.label
                             ? "var(--color-text-on-dark)"
-                            : "var(--color-foreground)",
+                            : "rgba(255, 255, 255, 0.8)",
                         }}
                     >
                         {v.label}

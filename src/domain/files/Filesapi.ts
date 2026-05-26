@@ -1,6 +1,6 @@
-import { createAxiosInstance } from '../../presentation/services/axiosInterceptor'
+import api from '../../presentation/lib/axios'
 
-const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:3000'
+const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || 'http://localhost:3000/api'
 
 // ─────────────────────────────────────────────
 // Pon en true para usar datos falsos sin backend
@@ -145,19 +145,17 @@ const mock = {
   },
 }
 
-const api = createAxiosInstance(API_BASE)
-
 const real = {
   // GET /api/documentos
   listar: async (carpeta?: Carpeta): Promise<Documento[]> => {
     const params = carpeta ? { carpeta } : {}
-    const { data } = await api.get('/api/documentos', { params })
+    const { data } = await api.get('/documentos', { params })
     return data.data.map((d: any) => ({
       id: d.id_maestro_documento,
       nombre: d.numero_documento,
       tipo: d.tipo_extension,
       tamaño: d.tamanno,
-      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      url: `${API_BASE}/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
       creadoEn: d.fecha_creacion,
       carpeta: d.ruta_documento.split('/')[0] as Carpeta,
     }))
@@ -171,7 +169,7 @@ const real = {
     formData.append('archivo', archivo)
     formData.append('carpeta', carpeta)
 
-    const { data } = await api.post('/api/documentos', formData, {
+    const { data } = await api.post('/documentos', formData, {
       timeout: 120000,
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -188,27 +186,27 @@ const real = {
       nombre: d.numero_documento,
       tipo: d.tipo_extension,
       tamaño: d.tamanno,
-      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      url: `${API_BASE}/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
       creadoEn: d.fecha_creacion,
       carpeta,
     }
   },
 
   buscar: async (query: string): Promise<Documento[]> => {
-    const { data } = await api.get('/api/documentos/buscar', { params: { q: query } })
+    const { data } = await api.get('/documentos/buscar', { params: { q: query } })
     return data
   },
 
   // GET /api/documentos/:id
   obtenerPorId: async (id: string): Promise<Documento> => {
-    const { data } = await api.get(`/api/documentos/${encodeURIComponent(id)}`)
+    const { data } = await api.get(`/documentos/${encodeURIComponent(id)}`)
     const d = data.data
     return {
       id: d.id_maestro_documento,
       nombre: d.numero_documento,
       tipo: d.tipo_extension,
       tamaño: d.tamanno,
-      url: `${API_BASE}/api/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
+      url: `${API_BASE}/documentos/${encodeURIComponent(d.id_maestro_documento)}/descargar`,
       creadoEn: d.fecha_creacion,
       carpeta: d.ruta_documento.split('/')[0] as Carpeta,
     }
@@ -216,12 +214,12 @@ const real = {
 
   // DELETE /api/documentos/:id
   eliminar: async (id: string): Promise<void> => {
-    await api.delete(`/api/documentos/${encodeURIComponent(id)}`)
+    await api.delete(`/documentos/${encodeURIComponent(id)}`)
   },
 
   // GET /api/documentos/:id/descargar
   descargarUrl: (id: string): string =>
-    `${API_BASE}/api/documentos/${encodeURIComponent(id)}/descargar`,
+    `${API_BASE}/documentos/${encodeURIComponent(id)}/descargar`,
 }
 
 // ─────────────────────────────────────────────

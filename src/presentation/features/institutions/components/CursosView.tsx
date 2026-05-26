@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { CourseListPage } from '../../courses/CourseListPage'
-import { StatCard } from './shared/cards'
+import { BookOpen, Users, TrendingUp, AlertCircle, Search, Eye } from 'lucide-react'
 
 interface Curso {
   id: string
@@ -29,13 +29,13 @@ interface CursosViewResponse {
   }
 }
 
-const pillStyle: Record<string, string> = {
-  Activo: 'bg-green-100 text-green-800',
-  Inactivo: 'bg-gray-100 text-gray-700',
-  'Con contenido': 'bg-blue-100 text-blue-800',
-  'Sin contenido': 'bg-orange-100 text-orange-700',
-  'Con inscripciones': 'bg-cyan-100 text-cyan-800',
-  'Sin inscripciones': 'bg-yellow-100 text-yellow-800',
+const pillStyle: Record<string, React.CSSProperties> = {
+  Activo: { backgroundColor: '#AEEBF2', color: '#5A878C' },
+  Inactivo: { backgroundColor: '#F3F4F6', color: '#6B7280' },
+  'Con contenido': { backgroundColor: '#DBEAFE', color: '#1D4ED8' },
+  'Sin contenido': { backgroundColor: '#FEF3C7', color: '#B45309' },
+  'Con inscripciones': { backgroundColor: '#CFFAFE', color: '#0E7490' },
+  'Sin inscripciones': { backgroundColor: '#FEF9C3', color: '#A16207' },
 }
 
 const PER_PAGE = 5
@@ -174,12 +174,12 @@ export function CursosView() {
 
   if (viewType === 'gestion') {
     return (
-      <div>
-        <div className="px-6 pt-4">
+      <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+        <div className="px-8 pt-6 pb-2" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E5E7EB' }}>
           <button
             onClick={() => setViewType('resumen')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all hover:scale-105"
-            style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+            style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
           >
             ← Vista resumen
           </button>
@@ -190,480 +190,361 @@ export function CursosView() {
   }
 
   return (
-    <div className="p-6 space-y-4" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Cursos</h1>
-          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{cursos.length} cursos en la plataforma</p>
+    <main style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+      {/* Encabezado */}
+      <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl" style={{ backgroundColor: '#AEEBF2' }}>
+                <BookOpen className="w-6 h-6" style={{ color: '#5A878C' }} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold" style={{ color: '#223740' }}>Cursos</h1>
+                <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{cursos.length} cursos en la plataforma</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setViewType('gestion')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
+            >
+              Gestión de Cursos
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setViewType('gestion')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all hover:scale-105 shadow-lg"
-          style={{ backgroundColor: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }}
-        >
-          Gestión de Cursos
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Cursos Activos" value={estadisticas.cursosActivos.toLocaleString()} />
-        <StatCard label="Con contenido" value={estadisticas.conContenido.toLocaleString()} />
-        <StatCard label="Sin contenido" value={estadisticas.sinContenido.toLocaleString()} />
-        <StatCard label="Sin inscripciones" value={estadisticas.sinInscripciones.toLocaleString()} />
-      </div>
-
-      {/* Mostrar errores */}
-      {error && (
-        <div className="p-4 rounded-lg border border-red-500 bg-red-50"
-          style={{ borderColor: 'rgba(255, 0, 0, 0.5)', backgroundColor: 'rgba(255, 0, 0, 0.05)' }}>
-          <p className="text-sm" style={{ color: 'rgb(220, 38, 38)' }}>{error}</p>
-          {isFromCache && <p className="text-xs mt-2" style={{ color: 'rgb(220, 38, 38)' }}>Usando datos en caché</p>}
-        </div>
-      )}
-
-      {/* Loading state */}
-      {loading && !cursos.length && (
-        <div className="flex justify-center items-center py-12">
-          <div className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</div>
-        </div>
-      )}
-
-      <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
-        style={{
-          borderColor: 'var(--color-border)'
-        }}>
-        <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
-          <p className="text-sm font-semibold uppercase tracking-wider">Listado de cursos</p>
-        </div>
-        <div className="p-8" style={{ backgroundColor: 'var(--color-muted)' }}>
-          <input
-            type="text"
-            placeholder="Buscar curso..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="w-full text-sm px-3 py-2 border rounded-lg outline-none transition-all focus:ring-2"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'var(--color-input)',
-              color: 'var(--color-foreground)',
-              '--tw-ring-color': 'var(--color-primary)'
-            } as React.CSSProperties}
-          />
-          
-          {/* Grupo 1: Estado (Activo/Inactivo) */}
-          <div className="flex gap-2 flex-wrap mt-4 mb-4">
-            {statusFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => { setStatusFilter(filter.id); setPage(1) }}
-                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
-                style={(statusFilter === filter.id) ? {
-                  backgroundColor: 'var(--color-primary)',
-                  borderColor: 'var(--color-primary)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)',
-                  backgroundColor: 'var(--color-input)'
-                }}
-              >
-                {filter.label}
-              </button>
-            ))}
+      <div className="px-8 py-8">
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl border flex items-start gap-3" style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA' }}>
+            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#DC2626' }} />
+            <div className="flex-1">
+              <p className="text-sm font-medium" style={{ color: '#DC2626' }}>{error}</p>
+              {isFromCache && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>Usando datos en caché</p>}
+            </div>
+            <button onClick={() => setError(null)} className="ml-auto hover:opacity-70 transition-opacity text-lg leading-none" style={{ color: '#DC2626' }}>×</button>
           </div>
+        )}
 
-          {/* Grupo 2: Contenido */}
-          <div className="flex gap-2 flex-wrap mb-4">
-            {contentFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => { setContentFilter(filter.id); setPage(1) }}
-                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
-                style={(contentFilter === filter.id) ? {
-                  backgroundColor: 'var(--color-primary)',
-                  borderColor: 'var(--color-primary)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)',
-                  backgroundColor: 'var(--color-input)'
-                }}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Grupo 3: Inscripciones */}
-          <div className="flex gap-2 flex-wrap mb-6">
-            {enrollmentFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => { setEnrollmentFilter(filter.id); setPage(1) }}
-                className="text-xs px-4 py-2.5 rounded-lg border transition-all duration-200 font-medium hover:scale-105 active:scale-95"
-                style={(enrollmentFilter === filter.id) ? {
-                  backgroundColor: 'var(--color-primary)',
-                  borderColor: 'var(--color-primary)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                } : {
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-muted-foreground)',
-                  backgroundColor: 'var(--color-input)'
-                }}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Vista de tabla - Desktop/Tablet */}
-        <div className="hidden md:block px-8 py-6" style={{ backgroundColor: 'var(--color-muted)' }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
-                {['Curso', 'Docente', 'Módulos', 'Estudiantes', 'Estado', 'Contenido', 'Inscripciones', ''].map((h) => (
-                  <th key={h} className="text-left pb-2 text-xs font-medium" style={{ color: 'var(--color-muted-foreground)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={8} className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</td></tr>
-              ) : slice.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</td></tr>
-              ) : (
-                slice.map((c) => (
-                  <tr key={c.id} style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
-                    <td className="py-2" style={{ color: 'var(--color-foreground)' }}>{c.titulo}</td>
-                    <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.docente}</td>
-                    <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.modulos}</td>
-                    <td className="py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{c.estudiantes}</td>
-                    <td className="py-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.estado]}`}>{c.estado}</span>
-                    </td>
-                    <td className="py-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.contenido]}`}>{c.contenido}</span>
-                    </td>
-                    <td className="py-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.inscripciones]}`}>{c.inscripciones}</span>
-                    </td>
-                    <td className="py-2">
-                      <button 
-                        onClick={() => {
-                          setSelectedCurso(c)
-                          setShowModal(true)
-                        }}
-                        className="text-xs px-2 py-1 border rounded-lg hover:bg-opacity-10 transition-colors" 
-                        style={{
-                          borderColor: 'var(--color-primary)',
-                          color: 'var(--color-primary)',
-                          backgroundColor: 'transparent'
-                        }}>Ver</button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Vista de cards - Mobile */}
-        <div className="md:hidden space-y-3 px-8 py-6" style={{ backgroundColor: 'var(--color-muted)' }}>
-          {loading ? (
-            <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Cargando cursos...</div>
-          ) : slice.length === 0 ? (
-            <div className="text-center py-6 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sin resultados</div>
-          ) : (
-            slice.map((c) => (
-              <div key={c.id} className="border rounded-lg p-4" style={{
-                backgroundColor: 'var(--color-muted)',
-                borderColor: 'var(--color-border)'
-              }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.titulo}</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Docente: {c.docente}</p>
-                  </div>
+        {/* Tarjetas de estadísticas */}
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {([
+            { label: 'Cursos Activos', value: estadisticas.cursosActivos, Icon: BookOpen },
+            { label: 'Con contenido', value: estadisticas.conContenido, Icon: Users },
+            { label: 'Sin contenido', value: estadisticas.sinContenido, Icon: TrendingUp },
+            { label: 'Sin inscripciones', value: estadisticas.sinInscripciones, Icon: AlertCircle },
+          ] as const).map(({ label, value, Icon }) => (
+            <div key={label} className="p-6 rounded-2xl border" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#6B7280' }}>{label}</p>
+                  <p className="text-3xl font-bold mt-1" style={{ color: '#223740' }}>{value.toLocaleString()}</p>
                 </div>
-                <div className="flex gap-1 flex-wrap mb-3">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.estado]}`}>{c.estado}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.contenido]}`}>{c.contenido}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[c.inscripciones]}`}>{c.inscripciones}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div>
-                    <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>Módulos</p>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.modulos}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>Estudiantes</p>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{c.estudiantes}</p>
-                  </div>
-                  <div className="text-right">
-                    <button 
-                      onClick={() => {
-                        setSelectedCurso(c)
-                        setShowModal(true)
-                      }}
-                      className="text-xs px-3 py-1.5 border rounded-lg w-full hover:bg-opacity-10 transition-colors" 
-                      style={{
-                        borderColor: 'var(--color-primary)',
-                        color: 'var(--color-primary)',
-                        backgroundColor: 'transparent'
-                      }}>Ver</button>
-                  </div>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#AEEBF2' }}>
+                  <Icon className="w-6 h-6" style={{ color: '#5A878C' }} />
                 </div>
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </div>
 
-        <div className="flex justify-between items-center pt-3 px-8 pb-6 border-t border-border mt-2" style={{ backgroundColor: 'var(--color-muted)' }}>
-          <span className="text-xs text-muted-foreground">
-            {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
-          </span>
-          <div className="flex gap-1 items-center">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={page === 1 ? {
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-muted-foreground)'
-              } : {
-                borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)'
-              }}
-            >
-              ←
-            </button>
-            
-            {(() => {
-              const maxVisible = 5
-              let startPage = Math.max(1, page - Math.floor(maxVisible / 2))
-              let endPage = Math.min(pages, startPage + maxVisible - 1)
-              
-              if (endPage - startPage + 1 < maxVisible) {
-                startPage = Math.max(1, endPage - maxVisible + 1)
-              }
-              
-              const pageButtons = []
-              
-              if (startPage > 1) {
-                pageButtons.push(
+        {/* Loading state */}
+        {loading && !cursos.length && (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-sm" style={{ color: '#6B7280' }}>Cargando cursos...</div>
+          </div>
+        )}
+
+        {/* Tabla principal */}
+        <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+          {/* Búsqueda y filtros */}
+          <div className="px-6 py-4 border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}>
+            <div className="flex gap-4 items-center mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#9CA3AF', width: '20px', height: '20px' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar curso por título o docente..."
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus:ring-2"
+                  style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#223740', fontSize: '14px' }}
+                />
+              </div>
+              <div className="text-sm shrink-0" style={{ color: '#6B7280' }}>
+                {filtered.length} {filtered.length === 1 ? 'curso' : 'cursos'}
+              </div>
+            </div>
+
+            <div className="flex gap-3 flex-wrap">
+              {/* Estado */}
+              <div className="flex items-center rounded-xl p-1" style={{ backgroundColor: '#F3F4F6' }}>
+                {statusFilters.map((f) => (
                   <button
-                    key={1}
-                    onClick={() => setPage(1)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-muted-foreground)'
-                    }}
+                    key={f.id}
+                    onClick={() => { setStatusFilter(f.id); setPage(1) }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === f.id ? 'bg-white shadow-sm' : ''}`}
+                    style={{ color: statusFilter === f.id ? '#223740' : '#6B7280' }}
                   >
-                    1
+                    {f.label}
                   </button>
-                )
-                if (startPage > 2) {
+                ))}
+              </div>
+
+              {/* Contenido */}
+              <div className="flex items-center rounded-xl p-1" style={{ backgroundColor: '#F3F4F6' }}>
+                {contentFilters.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => { setContentFilter(f.id); setPage(1) }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${contentFilter === f.id ? 'bg-white shadow-sm' : ''}`}
+                    style={{ color: contentFilter === f.id ? '#223740' : '#6B7280' }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Inscripciones */}
+              <div className="flex items-center rounded-xl p-1" style={{ backgroundColor: '#F3F4F6' }}>
+                {enrollmentFilters.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => { setEnrollmentFilter(f.id); setPage(1) }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${enrollmentFilter === f.id ? 'bg-white shadow-sm' : ''}`}
+                    style={{ color: enrollmentFilter === f.id ? '#223740' : '#6B7280' }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Vista tabla - Desktop */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA' }}>
+                  {['Curso', 'Docente', 'Módulos', 'Estudiantes', 'Estado', 'Contenido', 'Inscripciones', ''].map((h) => (
+                    <th key={h} className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={8} className="text-center py-12 text-sm" style={{ color: '#6B7280' }}>Cargando cursos...</td></tr>
+                ) : slice.length === 0 ? (
+                  <tr><td colSpan={8} className="text-center py-12 text-sm" style={{ color: '#6B7280' }}>Sin resultados</td></tr>
+                ) : (
+                  slice.map((c, idx) => (
+                    <tr
+                      key={c.id}
+                      className="transition-colors hover:bg-gray-50"
+                      style={{ borderBottom: idx !== slice.length - 1 ? '1px solid #E5E7EB' : 'none' }}
+                    >
+                      <td className="px-6 py-4 font-medium text-sm" style={{ color: '#223740' }}>{c.titulo}</td>
+                      <td className="px-6 py-4 text-sm text-center" style={{ color: '#6B7280' }}>{c.docente}</td>
+                      <td className="px-6 py-4 text-sm text-center" style={{ color: '#6B7280' }}>{c.modulos}</td>
+                      <td className="px-6 py-4 text-sm text-center" style={{ color: '#6B7280' }}>{c.estudiantes}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.estado]}>{c.estado}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.contenido]}>{c.contenido}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.inscripciones]}>{c.inscripciones}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => { setSelectedCurso(c); setShowModal(true) }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80 mx-auto"
+                          style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Vista cards - Mobile */}
+          <div className="md:hidden space-y-4 px-6 py-4">
+            {loading ? (
+              <div className="text-center py-6 text-sm" style={{ color: '#6B7280' }}>Cargando cursos...</div>
+            ) : slice.length === 0 ? (
+              <div className="text-center py-6 text-sm" style={{ color: '#6B7280' }}>Sin resultados</div>
+            ) : (
+              slice.map((c) => (
+                <div key={c.id} className="rounded-2xl border overflow-hidden transition-all hover:shadow-sm" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+                  <div className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#AEEBF2' }}>
+                        <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate" style={{ color: '#223740', fontSize: '14px' }}>{c.titulo}</p>
+                        <p className="text-sm mt-1 truncate" style={{ color: '#6B7280' }}>Docente: {c.docente}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-wrap mb-3">
+                      <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.estado]}>{c.estado}</span>
+                      <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.contenido]}>{c.contenido}</span>
+                      <span className="text-xs px-2 py-1 rounded-full font-medium" style={pillStyle[c.inscripciones]}>{c.inscripciones}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm" style={{ color: '#6B7280' }}>
+                        <span>{c.modulos} módulos</span>
+                        <span>{c.estudiantes} estudiantes</span>
+                      </div>
+                      <button
+                        onClick={() => { setSelectedCurso(c); setShowModal(true) }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all hover:opacity-80"
+                        style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Paginación */}
+          <div className="flex justify-between items-center px-6 py-4 border-t" style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}>
+            <span className="text-sm" style={{ color: '#6B7280' }}>
+              {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex gap-1 items-center">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="text-xs w-8 h-8 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: page === 1 ? '#E5E7EB' : '#223740', color: page === 1 ? '#9CA3AF' : '#223740' }}
+              >
+                ←
+              </button>
+
+              {(() => {
+                const maxVisible = 5
+                let startPage = Math.max(1, page - Math.floor(maxVisible / 2))
+                let endPage = Math.min(pages, startPage + maxVisible - 1)
+                if (endPage - startPage + 1 < maxVisible) {
+                  startPage = Math.max(1, endPage - maxVisible + 1)
+                }
+                const pageButtons = []
+                if (startPage > 1) {
                   pageButtons.push(
-                    <span key="dots1" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                    <button key={1} onClick={() => setPage(1)} className="text-xs w-8 h-8 rounded-lg border transition-all" style={{ borderColor: '#E5E7EB', color: '#6B7280' }}>1</button>
+                  )
+                  if (startPage > 2) {
+                    pageButtons.push(<span key="dots1" className="text-xs px-1" style={{ color: '#6B7280' }}>...</span>)
+                  }
+                }
+                for (let p = startPage; p <= endPage; p++) {
+                  pageButtons.push(
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className="text-xs w-8 h-8 rounded-lg border transition-all"
+                      style={page === p ? { backgroundColor: '#223740', borderColor: '#223740', color: 'white' } : { borderColor: '#E5E7EB', color: '#6B7280' }}
+                    >
+                      {p}
+                    </button>
                   )
                 }
-              }
-              
-              for (let p = startPage; p <= endPage; p++) {
-                pageButtons.push(
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
-                    style={page === p ? {
-                      backgroundColor: 'var(--color-primary)',
-                      borderColor: 'var(--color-primary)',
-                      color: 'white'
-                    } : {
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-muted-foreground)'
-                    }}
-                  >
-                    {p}
-                  </button>
-                )
-              }
-              
-              if (endPage < pages) {
-                if (endPage < pages - 1) {
+                if (endPage < pages) {
+                  if (endPage < pages - 1) {
+                    pageButtons.push(<span key="dots2" className="text-xs px-1" style={{ color: '#6B7280' }}>...</span>)
+                  }
                   pageButtons.push(
-                    <span key="dots2" className="text-xs px-1" style={{ color: 'var(--color-muted-foreground)' }}>...</span>
+                    <button key={pages} onClick={() => setPage(pages)} className="text-xs w-8 h-8 rounded-lg border transition-all" style={{ borderColor: '#E5E7EB', color: '#6B7280' }}>{pages}</button>
                   )
                 }
-                pageButtons.push(
-                  <button
-                    key={pages}
-                    onClick={() => setPage(pages)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-muted-foreground)'
-                    }}
-                  >
-                    {pages}
-                  </button>
-                )
-              }
-              
-              return pageButtons
-            })()}
-            
-            <button
-              onClick={() => setPage(Math.min(pages, page + 1))}
-              disabled={page === pages}
-              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={page === pages ? {
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-muted-foreground)'
-              } : {
-                borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)'
-              }}
-            >
-              →
-            </button>
+                return pageButtons
+              })()}
+
+              <button
+                onClick={() => setPage(Math.min(pages, page + 1))}
+                disabled={page === pages}
+                className="text-xs w-8 h-8 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: page === pages ? '#E5E7EB' : '#223740', color: page === pages ? '#9CA3AF' : '#223740' }}
+              >
+                →
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modal de detalles transparente */}
+      {/* Modal de detalles */}
       {showModal && selectedCurso && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setShowModal(false)
-            setSelectedCurso(null)
-          }}
+          onClick={() => { setShowModal(false); setSelectedCurso(null) }}
         >
-          <div 
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border"
-            style={{
-              backgroundColor: 'var(--color-background)',
-              borderColor: 'var(--color-border)',
-              maxHeight: '90vh',
-              overflowY: 'auto'
-            }}
+          <div
+            className="rounded-2xl shadow-2xl max-w-md w-full p-6 border"
+            style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--color-foreground)' }}>
-                Detalles del Curso
-              </h2>
+              <h2 className="text-lg font-bold" style={{ color: '#223740' }}>Detalles del Curso</h2>
               <button
-                onClick={() => {
-                  setShowModal(false)
-                  setSelectedCurso(null)
-                }}
-                className="text-2xl font-bold transition-all hover:scale-110"
-                style={{ color: 'var(--color-muted-foreground)' }}
+                onClick={() => { setShowModal(false); setSelectedCurso(null) }}
+                className="text-2xl font-bold transition-all hover:opacity-60 leading-none"
+                style={{ color: '#6B7280' }}
               >
                 ×
               </button>
             </div>
 
-            {/* Content */}
-            <div className="space-y-4">
-              {/* TÍTULO */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  TÍTULO
-                </p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  {selectedCurso.titulo}
-                </p>
-              </div>
+            <div className="space-y-3">
+              {[
+                { label: 'TÍTULO', value: selectedCurso.titulo, mono: false },
+                { label: 'DOCENTE', value: selectedCurso.docente, mono: false },
+                { label: 'ID', value: selectedCurso.id, mono: true },
+              ].map(({ label, value, mono }) => (
+                <div key={label} className="p-4 rounded-xl" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#6B7280' }}>{label}</p>
+                  <p className={`text-sm font-medium break-all ${mono ? 'font-mono' : ''}`} style={{ color: '#223740' }}>{value}</p>
+                </div>
+              ))}
 
-              {/* DOCENTE */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  DOCENTE
-                </p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  {selectedCurso.docente}
-                </p>
-              </div>
+              {[
+                { label: 'ESTADO', value: selectedCurso.estado },
+                { label: 'CONTENIDO', value: selectedCurso.contenido },
+                { label: 'INSCRIPCIONES', value: selectedCurso.inscripciones },
+              ].map(({ label, value }) => (
+                <div key={label} className="p-4 rounded-xl" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#6B7280' }}>{label}</p>
+                  <span className="text-xs px-3 py-1 rounded-full font-medium inline-block" style={pillStyle[value]}>{value}</span>
+                </div>
+              ))}
 
-              {/* ID */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  ID
-                </p>
-                <p className="text-xs font-mono break-all" style={{ color: 'var(--color-foreground)' }}>
-                  {selectedCurso.id}
-                </p>
-              </div>
-
-              {/* ESTADO */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
-                  ESTADO
-                </p>
-                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.estado]}`}>
-                  {selectedCurso.estado}
-                </span>
-              </div>
-
-              {/* MÓDULOS */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  MÓDULOS
-                </p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  {selectedCurso.modulos}
-                </p>
-              </div>
-
-              {/* ESTUDIANTES */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  ESTUDIANTES INSCRITOS
-                </p>
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  {selectedCurso.estudiantes}
-                </p>
-              </div>
-
-              {/* CONTENIDO */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
-                  CONTENIDO
-                </p>
-                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.contenido]}`}>
-                  {selectedCurso.contenido}
-                </span>
-              </div>
-
-              {/* INSCRIPCIONES */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-muted)' }}>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
-                  INSCRIPCIONES
-                </p>
-                <span className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedCurso.inscripciones]}`}>
-                  {selectedCurso.inscripciones}
-                </span>
-              </div>
+              {[
+                { label: 'MÓDULOS', value: selectedCurso.modulos },
+                { label: 'ESTUDIANTES INSCRITOS', value: selectedCurso.estudiantes },
+              ].map(({ label, value }) => (
+                <div key={label} className="p-4 rounded-xl" style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#6B7280' }}>{label}</p>
+                  <p className="text-2xl font-bold" style={{ color: '#223740' }}>{value}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Footer - Close Button */}
             <div className="mt-6">
               <button
-                onClick={() => {
-                  setShowModal(false)
-                  setSelectedCurso(null)
-                }}
-                className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-all hover:opacity-90"
-                style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                onClick={() => { setShowModal(false); setSelectedCurso(null) }}
+                className="w-full px-4 py-3 text-sm font-semibold rounded-xl transition-all hover:opacity-90"
+                style={{ backgroundColor: '#223740', color: 'white' }}
               >
                 Cerrar
               </button>
@@ -671,6 +552,6 @@ export function CursosView() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   )
 }

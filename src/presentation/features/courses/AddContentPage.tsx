@@ -8,24 +8,69 @@ import { createContenido, fetchContenidos } from '../../services/contentService'
 import { ContentType, type QuizTFData, type QuizMCData, type QuizMCOption } from '../../../domain/contents/types'
 import type { Course } from '../../../domain/courses/types'
 import type { Module } from '../../../domain/modules/types'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { logger } from '../../utils/logger'
-import api from '../../lib/axios'
 import { v4 as uuidv4 } from 'uuid'
 import ReactPlayer from 'react-player'
+import { UploadButton } from '../files/components/buttons/UploadButton'
+import type { Documento } from '../../../domain/files/Filesapi'
 
-const contentSchema = z.object({
-  title: z.string().min(1, 'El título es requerido'),
-  description: z.string().optional().default(''),
-  type: z.nativeEnum(ContentType),
-  resourceUrl: z.string().optional(),
-  durationMinutes: z.preprocess(
-    (v) => (v === '' || v === null || Number.isNaN(v) ? undefined : Number(v)),
-    z.number().positive().optional()
-  ),
-  order: z.number().min(1, 'El orden debe ser al menos 1'),
-  status: z.enum(['active', 'draft'])
-})
+// Tipos cuyo `resourceUrl` debe ser una URL absoluta válida.
+const URL_BASED_TYPES = new Set<ContentType>([
+  ContentType.VIDEO,
+  ContentType.IMAGE,
+  ContentType.DOCUMENT,
+])
+
+const isValidHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const contentSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'El título es requerido')
+      .max(150, 'El título no puede exceder 150 caracteres')
+      // Sanitización defensiva: no permitir caracteres tipo `<`/`>` que faciliten XSS
+      .regex(/^[^<>]*$/, 'El título contiene caracteres no permitidos (<, >)')
+      .default(''),
+    description: z
+      .string()
+      .max(1000, 'La descripción no puede exceder 1000 caracteres')
+      .optional()
+      .default(''),
+    type: z.nativeEnum(ContentType),
+    resourceUrl: z
+      .string()
+      .max(2000, 'La URL/recurso no puede exceder 2000 caracteres')
+      .optional(),
+    order: z.number().int().min(1, 'El orden debe ser al menos 1').max(999),
+    status: z.enum(['active', 'draft'])
+  })
+  .superRefine((data, ctx) => {
+    if (URL_BASED_TYPES.has(data.type)) {
+      const url = data.resourceUrl?.trim()
+      if (!url) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['resourceUrl'],
+          message: 'La URL es requerida para este tipo de contenido',
+        })
+      } else if (!isValidHttpUrl(url)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['resourceUrl'],
+          message: 'Ingresa una URL válida (http:// o https://)',
+        })
+      }
+    }
+  })
 
 type ContentFormData = z.infer<typeof contentSchema>
 
@@ -40,47 +85,11 @@ const contentTypes = [
     )
   },
   {
-    type: ContentType.IMAGE,
-    label: 'Imagen',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    )
-  },
-  {
     type: ContentType.DOCUMENT,
     label: 'Documento',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    )
-  },
-  {
-    type: ContentType.TEXT,
-    label: 'Texto',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-      </svg>
-    )
-  },
-  {
-    type: ContentType.QUIZ_TF,
-    label: 'Verdadero/Falso',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )
-  },
-  {
-    type: ContentType.QUIZ_MC,
-    label: 'Opción múltiple',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     )
   }
@@ -92,9 +101,13 @@ export const AddContentPage = () => {
   const [course, setCourse] = useState<Course | null>(null)
   const [module, setModule] = useState<Module | null>(null)
   const [uploadedFile, setUploadedFile] = useState<{ name: string } | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadedDoc, setUploadedDoc] = useState<Documento | null>(null)
+
+  const handleFileUploaded = (doc: Documento) => {
+    setUploadedDoc(doc)
+    setValue('resourceUrl', doc.url || '')
+    setUploadedFile({ name: doc.nombre })
+  }
 
   // Estado quiz Verdadero/Falso
   const [tfQuestion, setTfQuestion] = useState('')
@@ -136,7 +149,7 @@ export const AddContentPage = () => {
     formState: { errors, isSubmitting }
   } = useForm<ContentFormData>({
     resolver: zodResolver(contentSchema),
-    defaultValues: { order: 1, type: ContentType.VIDEO, status: 'active' }
+    defaultValues: { title: '', description: '', order: 1, type: ContentType.VIDEO, status: 'active' }
   })
 
   const selectedType = watch('type')
@@ -144,28 +157,15 @@ export const AddContentPage = () => {
   const watchedStatus = watch('status')
   const watchedResourceUrl = watch('resourceUrl')
 
-  const handleFileUpload = async (file: File) => {
-    setUploading(true)
+  const isValidVideoUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false
     try {
-      const carpeta = selectedType === ContentType.IMAGE ? 'imagenes' : 'documentos'
-      const formData = new FormData()
-      formData.append('archivo', file)
-      formData.append('carpeta', carpeta)
-      const response = await api.post<{ success: boolean; data: { id: string; name: string } }>(
-        '/documentos',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      )
-      if (response.data.success) {
-        const downloadUrl = `http://localhost:3000/api/documentos/${encodeURIComponent(response.data.data.id)}/descargar`
-        setValue('resourceUrl', downloadUrl)
-        setUploadedFile({ name: response.data.data.name })
-      }
-    } catch (error) {
-      logger.error('Error al subir archivo', { error })
-      alert('Error al subir el archivo. Por favor intenta nuevamente.')
-    } finally {
-      setUploading(false)
+      const urlObj = new URL(url)
+      // Validar que sea un dominio de video soportado
+      const validDomains = ['youtube.com', 'youtu.be', 'vimeo.com', 'vimeo']
+      return validDomains.some(domain => urlObj.hostname.includes(domain))
+    } catch {
+      return false
     }
   }
 
@@ -223,7 +223,11 @@ export const AddContentPage = () => {
   }
 
   const onFormError = (errors: Record<string, unknown>) => {
-    logger.error('Errores de validación en formulario de contenido', { errors })
+    const errorMessages = Object.entries(errors)
+      .filter(([_, value]) => value && typeof value === 'object' && 'message' in value)
+      .map(([field, value]) => `${field}: ${(value as { message?: string }).message}`)
+      .join(', ')
+    logger.error('Errores de validación en formulario de contenido', { errorMessages })
   }
 
   if (!course || !module) {
@@ -554,7 +558,7 @@ export const AddContentPage = () => {
                   </div>
                   
                   {/* Preview del video */}
-                  {watchedResourceUrl && ReactPlayer.canPlay(watchedResourceUrl) && (
+                  {watchedResourceUrl && isValidVideoUrl(watchedResourceUrl) && ReactPlayer.canPlay(watchedResourceUrl) && (
                     <div className="mt-4">
                       <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Preview</label>
                       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#000' }}>
@@ -563,78 +567,80 @@ export const AddContentPage = () => {
                           width="100%"
                           height="300px"
                           controls
+                          config={{
+                            youtube: {
+                              playerVars: {
+                                showinfo: 1,
+                                modestbranding: 1,
+                                rel: 0,
+                                origin: window.location.origin
+                              }
+                            }
+                          }}
+                          onError={() => {
+                            console.error('Error loading video')
+                          }}
                         />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-xs" style={{ color: '#6B7280' }}>
+                          Si el video no se muestra, puede ser por restricciones del autor
+                        </p>
+                        <a
+                          href={watchedResourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold underline"
+                          style={{ color: '#5A878C' }}
+                        >
+                          Ver en YouTube
+                        </a>
                       </div>
                     </div>
                   )}
-                  
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Duración (minutos)</label>
-                    <input
-                      {...register('durationMinutes', { valueAsNumber: true })}
-                      type="number"
-                      min="1"
-                      className="w-40 rounded-xl border-2 px-4 py-3 text-sm"
-                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', color: '#223740' }}
-                    />
-                  </div>
                 </div>
               )}
 
-              {/* IMAGE / DOCUMENT: drag & drop */}
+              {/* IMAGE / DOCUMENT: UploadButton del equipo 2 */}
               {(selectedType === ContentType.IMAGE || selectedType === ContentType.DOCUMENT) && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept={selectedType === ContentType.IMAGE ? 'image/png,image/jpeg,image/gif,image/webp' : '.pdf,.doc,.docx,.xls,.xlsx'}
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file) }}
-                  />
-                  <div
-                    className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-16 transition-all cursor-pointer"
-                    style={{ borderColor: dragOver ? '#5A878C' : '#AEEBF2', backgroundColor: dragOver ? '#F0FAFB' : 'transparent' }}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={(e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileUpload(file) }}
-                  >
-                    {uploading ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <svg className="h-10 w-10 animate-spin" viewBox="0 0 24 24" style={{ color: '#5A878C' }}>
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        <p className="text-sm font-semibold" style={{ color: '#5A878C' }}>Subiendo archivo...</p>
-                      </div>
-                    ) : uploadedFile ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: '#AEEBF2' }}>
-                          <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#223740' }}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-semibold" style={{ color: '#223740' }}>{uploadedFile.name}</p>
-                        <button type="button" className="text-xs underline" style={{ color: '#5A878C' }}
-                          onClick={(e) => { e.stopPropagation(); setUploadedFile(null); setValue('resourceUrl', '') }}>
-                          Cambiar archivo
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="mb-2 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{ color: '#5A878C' }}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        <p className="text-base font-semibold" style={{ color: '#5A878C' }}>Arrastra tu archivo aquí</p>
-                        <p className="text-sm" style={{ color: '#6B7280' }}>
-                          {selectedType === ContentType.IMAGE ? 'PNG, JPG, GIF, WEBP' : 'PDF, DOC, DOCX, XLS, XLSX'} — máx. 50 MB
-                        </p>
-                        <button type="button" className="mt-2 rounded-lg px-4 py-2 text-sm font-semibold" style={{ backgroundColor: '#AEEBF2', color: '#223740' }}>
-                          O selecciona un archivo
-                        </button>
-                      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold" style={{ color: '#223740' }}>
+                      {selectedType === ContentType.DOCUMENT ? 'Subir documento' : 'Subir imagen'}
+                    </label>
+                    {uploadedFile && (
+                      <button
+                        type="button"
+                        onClick={() => { setUploadedFile(null); setUploadedDoc(null); setValue('resourceUrl', '') }}
+                        className="text-xs underline"
+                        style={{ color: '#5A878C' }}
+                      >
+                        Cambiar archivo
+                      </button>
                     )}
                   </div>
+                  
+                  {uploadedFile ? (
+                    <div className="flex items-center gap-3 p-4 rounded-xl border-2" style={{ borderColor: '#5A878C', backgroundColor: '#F0FAFB' }}>
+                      <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#AEEBF2' }}>
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#223740' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: '#223740' }}>{uploadedFile.name}</p>
+                        {uploadedDoc && (
+                          <p className="text-xs" style={{ color: '#6B7280' }}>
+                            {(uploadedDoc.tamaño / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <UploadButton onUploaded={handleFileUploaded} className="w-full" />
+                  )}
+                  
+                  <input {...register('resourceUrl')} type="hidden" />
                   
                   {/* Preview de imagen */}
                   {selectedType === ContentType.IMAGE && watchedResourceUrl && (
@@ -650,7 +656,29 @@ export const AddContentPage = () => {
                       </div>
                     </div>
                   )}
-                </>
+
+                  {/* Preview de documento (PDF/Office) */}
+                  {selectedType === ContentType.DOCUMENT && watchedResourceUrl && (
+                    <div className="mt-4">
+                      <label className="mb-2 block text-sm font-semibold" style={{ color: '#223740' }}>Preview</label>
+                      <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FAFAFA', border: '2px solid #E5E7EB' }}>
+                        <iframe
+                          src={watchedResourceUrl}
+                          title="Preview del documento"
+                          className="w-full"
+                          style={{ height: '400px', border: 'none', backgroundColor: '#FFFFFF' }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs" style={{ color: '#6B7280' }}>
+                        Si el documento no se muestra,{' '}
+                        <a href={watchedResourceUrl} target="_blank" rel="noopener noreferrer"
+                          className="font-semibold underline" style={{ color: '#5A878C' }}>
+                          ábrelo en una pestaña nueva
+                        </a>.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -665,43 +693,49 @@ export const AddContentPage = () => {
                   Estado de Publicación
                 </h2>
               </div>
-              <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-xl border shadow-inner" style={{ borderColor: '#E5E7EB' }}>
+              <div className="grid grid-cols-2 gap-3">
                 <label className="group cursor-pointer">
                   <input {...register('status')} type="radio" value="active" className="sr-only" />
                   <div
-                    className="relative py-4 text-center text-sm font-bold transition-all"
+                    className="relative rounded-xl border-2 py-4 text-center text-sm font-bold transition-all"
                     style={
                       watchedStatus === 'active'
-                        ? { backgroundColor: '#223740', color: '#FFFFFF' }
-                        : { backgroundColor: '#FFFFFF', color: '#223740' }
+                        ? { borderColor: '#22C55E', backgroundColor: '#F0FDF4', color: '#166534' }
+                        : { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }
                     }
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: watchedStatus === 'active' ? '#22C55E' : '#D1D5DB' }}></div>
+                      {watchedStatus === 'active' ? (
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: '#22C55E' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2" style={{ borderColor: '#D1D5DB' }}></div>
+                      )}
                       <span>Activo</span>
                     </div>
-                    {watchedStatus === 'active' && (
-                      <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: '#22C55E' }}></div>
-                    )}
                   </div>
                 </label>
                 <label className="group cursor-pointer">
                   <input {...register('status')} type="radio" value="draft" className="sr-only" />
                   <div
-                    className="relative py-4 text-center text-sm font-medium transition-all"
+                    className="relative rounded-xl border-2 py-4 text-center text-sm font-medium transition-all"
                     style={
                       watchedStatus === 'draft'
-                        ? { backgroundColor: '#223740', color: '#FFFFFF' }
-                        : { backgroundColor: '#FFFFFF', color: '#223740' }
+                        ? { borderColor: '#EAB308', backgroundColor: '#FEFCE8', color: '#854D0E' }
+                        : { borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#6B7280' }
                     }
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: watchedStatus === 'draft' ? '#EAB308' : '#D1D5DB' }}></div>
-                      <span>Borrador</span>
+                      {watchedStatus === 'draft' ? (
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: '#EAB308' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2" style={{ borderColor: '#D1D5DB' }}></div>
+                      )}
+                      <span>Desactivado</span>
                     </div>
-                    {watchedStatus === 'draft' && (
-                      <div className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: '#EAB308' }}></div>
-                    )}
                   </div>
                 </label>
               </div>
@@ -781,7 +815,7 @@ export const AddContentPage = () => {
                   style={{ backgroundColor: '#AEEBF2', color: '#223740' }}
                 >
                   <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: watchedStatus === 'active' ? '#22C55E' : '#EAB308' }}></div>
-                  {watchedStatus === 'active' ? 'Activo' : 'Borrador'}
+                  {watchedStatus === 'active' ? 'Activo' : 'Desactivado'}
                 </span>
                 <div className="text-xs" style={{ color: '#9CA3AF' }}>
                   {selectedType === ContentType.VIDEO && '📹'}

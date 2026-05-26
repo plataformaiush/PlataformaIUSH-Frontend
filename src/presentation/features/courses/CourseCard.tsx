@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Course } from '../../../domain/courses/types'
 import { Eye, Edit, Trash2, Plus, BookOpen, Users, Loader2 } from 'lucide-react'
+import { getCourseImageUrl } from '../../services/courseService'
 
 interface CourseCardProps {
   course: Course
@@ -15,6 +16,8 @@ interface CourseCardProps {
 
 export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onToggleStatus, onAddModule, isToggling }: CourseCardProps) => {
   const isActive = course.status === 'active'
+  const imageUrl = getCourseImageUrl(course)
+  console.log('[CourseCard] Rendering course:', { courseId: course.id, imageId: course.imageId, imageUrl })
 
   const handleToggleStatus = () => {
     onToggleStatus?.(course.id, course.status)
@@ -24,9 +27,18 @@ export const CourseCard = ({ course, isLast, onDelete, onEdit, onView, onToggleS
       {/* Nombre del curso + descripción */}
       <td className="px-6 py-4" role="cell">
         <div className="flex items-center gap-3 h-full" style={{ minHeight: '80px' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#AEEBF2' }}>
-            <BookOpen className="w-5 h-5" style={{ color: '#5A878C' }} />
-          </div>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={course.title}
+              className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+              style={{ border: '2px solid #E5E7EB' }}
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#AEEBF2' }}>
+              <BookOpen className="w-6 h-6" style={{ color: '#5A878C' }} />
+            </div>
+          )}
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <button
               onClick={() => onView?.(course.id)}

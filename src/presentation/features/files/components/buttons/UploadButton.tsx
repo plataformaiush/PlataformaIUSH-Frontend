@@ -14,6 +14,7 @@ export function UploadButton({ onUploaded, className = '' }: UploadButtonProps) 
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
         aria-label="Subir archivo"
         className={[

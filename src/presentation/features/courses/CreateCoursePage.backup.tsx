@@ -1,16 +1,22 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { createCurso } from '../../services/courseService'
 import { Course } from '../../../domain/courses/types'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { CheckCircle2, BookOpen, Users, Target, Save, RotateCcw } from 'lucide-react'
+import { BookOpen, Users, Target, Save, RotateCcw, CheckCircle2 } from 'lucide-react'
 import { logger } from '../../utils/logger'
 import { useAuthStore } from '../../stores/auth.store'
 import api from '../../lib/axios'
 import { UploadButton } from '../files/components/buttons/UploadButton'
 import type { Documento } from '../../../domain/files/Filesapi'
+import '../styles/course-theme.css'
+import { CourseBreadcrumb } from './components/design-system/CourseBreadcrumb'
+import { CourseFormField } from './components/design-system/CourseFormField'
+import { CourseProgressIndicator } from './components/design-system/CourseProgressIndicator'
+import { CourseImageUploader } from './components/design-system/CourseImageUploader'
+import { useAutoSave } from './hooks/useAutoSave'
 
 interface DocenteOption {
   id: string
@@ -77,7 +83,6 @@ export const CreateCoursePage = () => {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const handleImageUploaded = (doc: Documento) => {
-    console.log('[CreateCoursePage] Image uploaded:', { id: doc.id, nombre: doc.nombre, url: doc.url })
     setUploadedImage({ name: doc.nombre, url: doc.url || '', id: doc.id })
   }
 
@@ -234,9 +239,7 @@ export const CreateCoursePage = () => {
 
       const idUsuario = user?.id
       if (!idUsuario) throw new Error('Usuario no autenticado')
-      console.log('[CreateCoursePage] Creating course with imageId:', newCourse.imageId)
       const createdCourse = await createCurso(newCourse, idUsuario)
-      console.log('[CreateCoursePage] Course created with imageId:', createdCourse.imageId)
       logger.info('Curso creado exitosamente', { courseId: createdCourse.id, imageId: createdCourse.imageId })
       
       // Limpiar borrador después de creación exitosa

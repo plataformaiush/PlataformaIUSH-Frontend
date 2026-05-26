@@ -21,10 +21,10 @@ import { archivosRoutes } from './archivos' // Equipo 2 (Archivos)
 
 export const allRoutes: RouteObject[] = [
     ...authRoutes, // Equipo 1
-    ...archivosRoutes,
     {
         element: createElement(RequireAuth),
         children: [
+            ...archivosRoutes, // Equipo 2 (Archivos) - requiere sesión
             ...vistaEstudiantesRutas, // Equipo 7
             ...adminRoutes, // Equipo 4
             {

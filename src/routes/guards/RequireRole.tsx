@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { tokenManager } from '../../presentation/services/tokenManager'
+import { UserRole } from '../../domain/shared/enums/UserRole.enum'
 
 type RequireRoleProps = {
   allowedRoles: string[]
@@ -7,8 +8,8 @@ type RequireRoleProps = {
   children?: React.ReactNode
 }
 
-const normalizeRole = (value: string) =>
-  value.trim().toLowerCase().replace(/[_\s]/g, '')
+// Comparación case-insensitive contra los valores PascalCase español del backend
+const normalizeRole = (value: string) => value.trim().toLowerCase()
 
 const RequireRole = ({ allowedRoles, fallbackPath = '/login', children }: RequireRoleProps) => {
   const location = useLocation()
@@ -20,7 +21,9 @@ const RequireRole = ({ allowedRoles, fallbackPath = '/login', children }: Requir
   )
 
   if (!isAllowed) {
-    const hasStudentRole = userRoles.some((role) => normalizeRole(role) === 'estudiante')
+    const hasStudentRole = userRoles.some(
+      (role) => normalizeRole(role) === normalizeRole(UserRole.ESTUDIANTE)
+    )
 
     return (
       <Navigate

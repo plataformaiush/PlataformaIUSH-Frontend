@@ -20,7 +20,6 @@ const typeLabels: Record<ContentType, string> = {
 }
 
 export const ContentCard = ({ content, isLast, onContentUpdate, onEdit }: ContentCardProps) => {
-  const isActive = content.status === 'active'
   const [showTextModal, setShowTextModal] = useState(false)
 
   const handleDelete = async () => {
@@ -150,12 +149,37 @@ export const ContentCard = ({ content, isLast, onContentUpdate, onEdit }: Conten
   }
 
   return (
-    <tr 
-      className="transition-colors hover:bg-gray-50" 
-      style={{ 
+    <tr
+      className="transition-colors hover:bg-gray-50"
+      style={{
         borderBottom: !isLast ? '1px solid #E5E7EB' : 'none'
       }}
     >
+      <ContentCardCells
+        content={content}
+        onEdit={onEdit}
+        handleDelete={handleDelete}
+        renderViewButton={renderViewButton}
+      />
+    </tr>
+  )
+}
+
+interface ContentCardCellsProps {
+  content: Content
+  onEdit?: (content: Content) => void
+  handleDelete: () => void | Promise<void>
+  renderViewButton: () => React.ReactNode
+}
+
+/**
+ * Fragmento de celdas (<td>) reutilizable: usado por ContentCard (modo normal)
+ * y por la fila sortable (modo reordenar).
+ */
+export const ContentCardCells = ({ content, onEdit, handleDelete, renderViewButton }: ContentCardCellsProps) => {
+  const isActive = content.status === 'active'
+  return (
+    <>
       {/* Title + description */}
       <td className="px-6 py-5">
         <p className="font-semibold" style={{ color: '#223740', fontSize: '14px' }}>{content.title}</p>
@@ -236,6 +260,6 @@ export const ContentCard = ({ content, isLast, onContentUpdate, onEdit }: Conten
           </button>
         </div>
       </td>
-    </tr>
+    </>
   )
 }

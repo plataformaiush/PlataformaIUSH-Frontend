@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore } from "../../../../stores/auth.store";
 import { useInstitution } from "../../../../../context/InstitutionContext";
+import { UserRole } from "../../../../../domain/shared/enums/UserRole.enum";
 
 import { trackIniciarSesion } from "../../../reports/events/TagManagerEvents";
 
@@ -33,10 +34,13 @@ export default function LoginForm() {
 
       const response = await loginRequest(data);
 
-      console.log("LOGIN EXITOSO:", response);
-
-      // Guarda el token y usuario en el store y localStorage
-      const expiresIn = response.expiresIn || 3600; // 1 hora por defecto
+      // Guarda el token y usuario en el store y localStorage.
+      // Prioridad: expiresIn (segundos) → token_expires (ISO) → fallback 1h
+      const expiresIn =
+        response.expiresIn ??
+        (response.token_expires
+          ? Math.floor((new Date(response.token_expires).getTime() - Date.now()) / 1000)
+          : 3600);
       setUser(response.user, response.token, expiresIn);
 
       // Redirige según el rol del usuario
@@ -44,14 +48,14 @@ export default function LoginForm() {
 
       //Vinculación de inicio de sesión para tag manager.
       trackIniciarSesion(userRoles[0]); //Trackeamos el inicio de sesión.
-      
-      if (userRoles.includes("SuperAdmin")) {
+
+      if (userRoles.includes(UserRole.SUPER_ADMIN)) {
         navigate("/super-admin");
-      } else if (userRoles.includes("Admin")) {
+      } else if (userRoles.includes(UserRole.ADMIN)) {
         navigate("/admin");
-      } else if (userRoles.includes("Estudiante")) {
+      } else if (userRoles.includes(UserRole.ESTUDIANTE)) {
         navigate("/student");
-      } else if (userRoles.includes("Docente")) {
+      } else if (userRoles.includes(UserRole.DOCENTE)) {
         navigate("/teacher/dashboard");
       } else {
         const rolesText = userRoles.length > 0 ? userRoles.join(", ") : "ninguno";

@@ -1,7 +1,10 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 
+const projectRoot = path.resolve(__dirname, '..')
+
 export default defineConfig({
+  root: projectRoot,
   test: {
     globals: true,
     environment: 'jsdom',
@@ -16,15 +19,15 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@domain': path.resolve(__dirname, './src/domain'),
-      '@application': path.resolve(__dirname, './src/application'),
-      '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
-      '@presentation': path.resolve(__dirname, './src/presentation'),
-      '@config': path.resolve(__dirname, './src/config'),
-      '@routes': path.resolve(__dirname, './src/routes'),
-      '@utils': path.resolve(__dirname, './src/utils'),
-      '@tests': path.resolve(__dirname, './src/tests'),
+      '@': path.resolve(__dirname, '../src'),
+      '@domain': path.resolve(__dirname, '../src/domain'),
+      '@application': path.resolve(__dirname, '../src/application'),
+      '@infrastructure': path.resolve(__dirname, '../src/infrastructure'),
+      '@presentation': path.resolve(__dirname, '../src/presentation'),
+      '@config': path.resolve(__dirname, '../src/config'),
+      '@routes': path.resolve(__dirname, '../src/routes'),
+      '@utils': path.resolve(__dirname, '../src/utils'),
+      '@tests': path.resolve(__dirname, '../src/tests'),
     },
   },
 })

@@ -10,11 +10,20 @@ import { BookOpen, Save, RotateCcw, CheckCircle2, Users, Target } from 'lucide-r
 import { logger } from '../../utils/logger'
 
 const moduleSchema = z.object({
-  title: z.string().min(1, 'El título es requerido').max(100, 'El título no puede exceder 100 caracteres'),
-  description: z.string().max(500).optional().default(''),
+  title: z
+    .string()
+    .min(1, 'El título es requerido')
+    .max(100, 'El título no puede exceder 100 caracteres')
+    // Sanitización defensiva contra XSS: no permitir `<` / `>`
+    .regex(/^[^<>]*$/, 'El título contiene caracteres no permitidos (<, >)'),
+  description: z
+    .string()
+    .max(500, 'La descripción no puede exceder 500 caracteres')
+    .optional()
+    .default(''),
   order: z.preprocess(
     (v) => (v === '' || v === null || Number.isNaN(v) ? 1 : Number(v)),
-    z.number().min(1, 'El orden debe ser al menos 1')
+    z.number().int().min(1, 'El orden debe ser al menos 1').max(999, 'El orden no puede exceder 999')
   )
 })
 
@@ -171,10 +180,31 @@ export const CreateModulePage = () => {
     }
   }
 
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-secondary)', borderTopColor: 'transparent' }} />
+          <p className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>Cargando curso...</p>
+        </div>
+      </main>
+    )
+  }
+
   if (!course) {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAFAFA' }}>
-        <p className="text-sm" style={{ color: '#6B7280' }}>Curso no encontrado.</p>
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2" style={{ color: 'var(--color-primary)' }}>Curso no encontrado</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>El curso que buscas no existe o ha sido eliminado.</p>
+          <Link
+            to="/courses"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+            style={{ backgroundColor: 'var(--color-primary)', color: '#FFFFFF' }}
+          >
+            Volver a cursos
+          </Link>
+        </div>
       </main>
     )
   }

@@ -74,12 +74,39 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate, onEdit }:
   }
 
   return (
-    <tr 
-      className="transition-colors hover:bg-gray-50" 
-      style={{ 
+    <tr
+      className="transition-colors hover:bg-gray-50"
+      style={{
         borderBottom: !isLast ? '1px solid #E5E7EB' : 'none'
       }}
     >
+      <ModuleCardCells
+        module={module}
+        courseId={courseId}
+        onEdit={onEdit}
+        handleToggleStatus={handleToggleStatus}
+        onModuleUpdate={onModuleUpdate}
+      />
+    </tr>
+  )
+}
+
+interface ModuleCardCellsProps {
+  module: Module
+  courseId: string
+  onEdit?: (module: Module) => void
+  handleToggleStatus: () => void | Promise<void>
+  onModuleUpdate?: () => void
+}
+
+/**
+ * Fragmento de celdas (<td>) usado tanto por ModuleCard (modo normal)
+ * como por la fila sortable (reordenar).
+ */
+export const ModuleCardCells = ({ module, courseId, onEdit, handleToggleStatus, onModuleUpdate }: ModuleCardCellsProps) => {
+  const isActive = module.status === 'active'
+  return (
+    <>
       {/* Module name */}
       <td className="px-6 py-5">
         <Link
@@ -193,6 +220,6 @@ export const ModuleCard = ({ module, courseId, isLast, onModuleUpdate, onEdit }:
           </button>
         </div>
       </td>
-    </tr>
+    </>
   )
 }
