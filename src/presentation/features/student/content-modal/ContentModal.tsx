@@ -17,6 +17,12 @@ const TextContent = lazy(() =>
 const QuizContent = lazy(() =>
   import('./components/QuizContent').then(m => ({ default: m.QuizContent }))
 )
+const QuizMCContent = lazy(() =>
+  import('./components/QuizMCContent').then(m => ({ default: m.QuizMCContent }))
+)
+const QuizTFContent = lazy(() =>
+  import('./components/QuizTFContent').then(m => ({ default: m.QuizTFContent }))
+)
 const PdfContent = lazy(() =>
   import('./components/PdfContent').then(m => ({ default: m.PdfContent }))
 )
@@ -70,6 +76,10 @@ export function ContentModal({
         return <TextContent data={content} onComplete={onClose} />
       case 'quiz':
         return <QuizContent data={content} onComplete={onClose} />
+      case 'quiz_mc':
+        return <QuizMCContent data={content} onComplete={onClose} />
+      case 'quiz_tf':
+        return <QuizTFContent data={content} onComplete={onClose} />
       case 'pdf':
         return <PdfContent data={content} onComplete={onClose} />
       case 'xlsx':

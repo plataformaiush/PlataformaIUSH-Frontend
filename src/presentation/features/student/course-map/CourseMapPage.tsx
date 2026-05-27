@@ -8,8 +8,9 @@ import {
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import {studentService} from '../services/studentService'
 import {ContentModal} from '../content-modal/ContentModal'
-import { trackIniciarModulo, trackCursoCompletado, trackCertificadoObtenido } from '../../reports/events/TagManagerEvents'
 import { CongratulationsModal } from './CongratulationsModal'
+import { trackIniciarModulo, trackCursoCompletado, trackCertificadoObtenido } from '../../reports/events/TagManagerEvents'
+import { parseQuizData } from '../../../../domain/contents/types'
 import type {
     Course,
     AnyContentData
@@ -200,13 +201,37 @@ function buildContentDetail(content: {
         case 'quiz':
             return { id: content.idContenido, title: content.titulo, type: 'quiz', questions: [] }
         case 'text':
-        default:
+        default: {
+            // El backend envía los quizzes como tipo "texto" con un JSON en url_o_texto.
+            const quiz = parseQuizData(url)
+            if (quiz?.questionType === 'quiz_mc') {
+                return {
+                    id: content.idContenido,
+                    title: content.titulo,
+                    type: 'quiz_mc',
+                    question: quiz.question,
+                    options: quiz.options,
+                    correctAnswerId: quiz.correctAnswerId,
+                    explanation: quiz.explanation,
+                }
+            }
+            if (quiz?.questionType === 'quiz_tf') {
+                return {
+                    id: content.idContenido,
+                    title: content.titulo,
+                    type: 'quiz_tf',
+                    question: quiz.question,
+                    correctAnswer: quiz.correctAnswer,
+                    explanation: quiz.explanation,
+                }
+            }
             return {
                 id: content.idContenido,
                 title: content.titulo,
                 type: 'text',
                 body: url || content.descripcion || 'Sin contenido disponible',
             }
+        }
     }
 }
 
@@ -530,14 +555,24 @@ export function CourseMapPage() {
                     return [...prev, currentContentId]
                 })
 
-                // Si el backend generó el certificado automáticamente, mostrar modal y redirigir
-                if (result?.completado && result?.certificado) {
+                 // Evento GTM: curso completado.
+                if (result?.completado === true) {
                     trackCursoCompletado(courseName)
+                }
+
+                // Evento GTM: curso completado.
+                if (result?.completado) {
+                    trackCursoCompletado(courseName)
+                }
+
+                // Si el backend generó el certificado automáticamente, mostrar modal y redirigir.
+                if (result?.certificado != null) {
                     trackCertificadoObtenido(courseName)
                     setActiveContent(null)
                     setCongratsCourse(courseName)
                     return
                 }
+
             } catch (err) {
                 console.error('Error al marcar contenido completado:', err)
             } finally {

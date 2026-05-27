@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Menu, Settings } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
 import { useInstitution } from '../../../../context/InstitutionContext'
 import { useAuthStore } from '@presentation/stores/auth.store'
 import { logoutRequest } from '@presentation/features/student/auth/services/authService'
 import logoDefault from '@presentation/components/shared/img/ProfunSoft.png'
 import Avatar from '@mui/material/Avatar'
-import StudentPersonalization from './StudentPersonalization'
 
 interface StudentNavBarProps {
   onToggle: () => void
@@ -30,19 +29,13 @@ const stringAvatar = (name: string) => {
 export function StudentNavBar({ onToggle, mobileMenuOpen = false }: StudentNavBarProps) {
   const navigate = useNavigate()
   const institution = useInstitution()
-  const { logo, colors, updateColors } = institution
+  const { logo } = institution
   const { user } = useAuthStore()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const userName = user?.nombre || 'Estudiante IUSH'
   const userAvatar = stringAvatar(userName)
   const logoSrc = logo || logoDefault
-  const [showCustomizer, setShowCustomizer] = useState(false)
-  const [form, setForm] = useState(() => ({
-    primary: colors?.primary ?? '#223740',
-    secondary: colors?.secondary ?? '#5a878C',
-    background: colors?.background ?? '#F8FAFC',
-  }))
 
   const handleLogout = async () => {
     try {
@@ -56,27 +49,6 @@ export function StudentNavBar({ onToggle, mobileMenuOpen = false }: StudentNavBa
       useAuthStore.getState().logout()
       // Redirigir a login
       navigate('/login', { replace: true })
-    }
-  }
-
-  const openCustomizer = () => {
-    setForm({
-      primary: colors.primary,
-      secondary: colors.secondary,
-      background: colors.background,
-    })
-    setShowCustomizer(true)
-  }
-
-  const handleSaveColors = () => {
-    try {
-      // Llamar updateColors del contexto
-      const ctx = useInstitution()
-      const newColors = { ...ctx.colors, primary: form.primary ?? ctx.colors.primary }
-      ctx.updateColors(newColors)
-      setShowCustomizer(false)
-    } catch (e) {
-      console.error('Error aplicando colores:', e)
     }
   }
 
@@ -99,18 +71,6 @@ export function StudentNavBar({ onToggle, mobileMenuOpen = false }: StudentNavBa
 
       {/* Controles a la derecha */}
       <div className="ml-auto flex items-center gap-2 md:gap-3">
-        {/* Botón Personalizar colores (solo vista estudiante) */}
-        <button
-          type="button"
-          onClick={openCustomizer}
-          className="inline-flex cursor-pointer items-center justify-center rounded-full p-2 transition-all duration-200 hover:opacity-80"
-          style={{ color: 'var(--color-text-on-dark)', backgroundColor: 'rgba(255,255,255,0.04)' }}
-          aria-label="Personalizar colores"
-          title="Personalizar colores"
-        >
-          <Settings size={18} />
-        </button>
-
         {/* Botón Logout - Visible en desktop siempre, en mobile cuando cierre sesión disponible */}
         <button
           type="button"
@@ -156,9 +116,6 @@ export function StudentNavBar({ onToggle, mobileMenuOpen = false }: StudentNavBa
           <Menu size={20} />
         </button>
        </div>
-      {showCustomizer && (
-        <StudentPersonalization onClose={() => setShowCustomizer(false)} />
-      )}
     </div>
   )
 }

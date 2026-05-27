@@ -173,33 +173,8 @@ const Reports = () => {
             <EventCardsGTM/>
            
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-             
-              <EventListGTM/>
+            <EventListGTM/>
 
-
-              <div
-                className="rounded-lg border p-5 shadow-sm"
-                style={{ background: colors.input, borderColor: colors.border }}
-              >
-                <div className="mb-4">
-                  <p
-                    className="text-base font-semibold"
-                    style={{ color: colors.textBase }}
-                  >
-                    Simulación de eventos
-                  </p>
-                  <p
-                    className="mt-1 text-xs"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Prueba rápida para validar el envío hacia Google Tag
-                    Manager.
-                  </p>
-                </div>
-                <SimulateEvents />
-              </div>
-            </div>
 
             <GraphsLooker />
           </section>
