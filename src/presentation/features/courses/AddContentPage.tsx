@@ -94,6 +94,15 @@ const contentTypes = [
     )
   },
   {
+    type: ContentType.IMAGE,
+    label: 'Imagen',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    )
+  },
+  {
     type: ContentType.QUIZ_MC,
     label: 'Quiz opción múltiple',
     icon: (
@@ -377,7 +386,7 @@ export const AddContentPage = () => {
                   Tipo de Contenido
                 </h2>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {contentTypes.map(({ type, label, icon }) => {
                   const isSelected = selectedType === type
                   return (
@@ -416,6 +425,7 @@ export const AddContentPage = () => {
                     : selectedType === ContentType.VIDEO ? 'URL del Video'
                     : selectedType === ContentType.QUIZ_TF ? 'Pregunta Verdadero / Falso'
                     : selectedType === ContentType.QUIZ_MC ? 'Pregunta de Opción Múltiple'
+                    : selectedType === ContentType.IMAGE ? 'Subir Imagen'
                     : 'Subir Archivo'}
                 </h2>
               </div>

@@ -14,39 +14,50 @@ function isInternalUrl(url: string): boolean {
   return url.includes('localhost') || url.includes('127.0.0.1')
 }
 
-type DetectedType = 'pdf' | 'excel' | 'word' | 'unknown'
+type DetectedType = 'pdf' | 'excel' | 'word' | 'image' | 'unknown'
 
 function detectType(mimeType: string): DetectedType {
+  if (mimeType.startsWith('image/')) return 'image'
   if (mimeType.includes('pdf')) return 'pdf'
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('xlsx') || mimeType.includes('xls')) return 'excel'
   if (mimeType.includes('wordprocessingml') || mimeType.includes('msword') || mimeType.includes('docx')) return 'word'
   return 'unknown'
 }
 
+const MIME_EXT: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/jpg':  '.jpg',
+  'image/png':  '.png',
+  'image/gif':  '.gif',
+  'image/webp': '.webp',
+  'image/svg+xml': '.svg',
+}
+
+function extFromMime(mime: string): string {
+  return MIME_EXT[mime] ?? ''
+}
+
 type Row = (string | number | boolean | null)[]
 
 export function PdfContent({ data, onComplete }: PdfContentProps) {
-  const [blobUrl, setBlobUrl]       = useState<string | null>(null)
-  const [loadError, setLoadError]   = useState(false)
-  const [loading, setLoading]       = useState(true)
-  const [fileType, setFileType]     = useState<DetectedType>('pdf')
-  const [xlsRows, setXlsRows]       = useState<Row[]>([])
-  const [xlsHeaders, setXlsHeaders] = useState<string[]>([])
+  const [blobUrl, setBlobUrl]           = useState<string | null>(null)
+  const [loadError, setLoadError]       = useState(false)
+  const [loading, setLoading]           = useState(true)
+  const [fileType, setFileType]         = useState<DetectedType>('pdf')
+  const [detectedMime, setDetectedMime] = useState<string>('')
+  const [xlsRows, setXlsRows]           = useState<Row[]>([])
+  const [xlsHeaders, setXlsHeaders]     = useState<string[]>([])
 
   const isInternal = isInternalUrl(data.url)
-  const filename = data.filename ?? 'documento'
+  const filename = data.filename
+    ?? (detectedMime ? `${data.title}${extFromMime(detectedMime)}` : 'documento')
 
   useEffect(() => {
-    if (!isInternal) {
-      setLoading(false)
-      return
-    }
-
     let objectUrl: string | null = null
 
     const fetchFile = async () => {
       try {
-        const headers = tokenManager.getAuthHeaders()
+        const headers = isInternal ? tokenManager.getAuthHeaders() : {}
         const res = await fetch(data.url, { headers })
 
         const contentType = res.headers.get('content-type') ?? ''
@@ -66,8 +77,10 @@ export function PdfContent({ data, onComplete }: PdfContentProps) {
           } catch { /* no es JSON */ }
         }
 
-        const detected = detectType(blob.type || contentType)
+        const resolvedMime = blob.type || contentType
+        const detected = detectType(resolvedMime)
         setFileType(detected)
+        setDetectedMime(resolvedMime)
         objectUrl = URL.createObjectURL(blob)
 
         if (detected === 'excel') {
@@ -194,6 +207,31 @@ export function PdfContent({ data, onComplete }: PdfContentProps) {
         <button onClick={onComplete}
                 className="w-full py-3 rounded-xl text-sm font-medium bg-primary text-tertiary hover:bg-secondary active:scale-95 transition-all">
           He revisado este documento
+        </button>
+      </div>
+    )
+  }
+
+  /* ── Imagen detectada por MIME ── */
+  if (fileType === 'image') {
+    return (
+      <div className="space-y-4">
+        <div className="relative rounded-2xl overflow-hidden bg-black/5 border border-mid/10 flex items-center justify-center max-h-[60vh]">
+          <img
+            src={blobUrl!}
+            alt={data.title}
+            className="max-w-full max-h-[60vh] object-contain"
+          />
+        </div>
+        <a href={blobUrl!} download={filename}
+           className="flex items-center justify-center gap-2 w-full py-3 rounded-xl
+                      border border-mid/30 text-sm font-medium text-primary hover:bg-primary/5 transition-colors">
+          <Download size={16} />
+          Descargar {filename}
+        </a>
+        <button onClick={onComplete}
+                className="w-full py-3 rounded-xl text-sm font-medium bg-primary text-tertiary hover:bg-secondary active:scale-95 transition-all">
+          He revisado esta imagen
         </button>
       </div>
     )
