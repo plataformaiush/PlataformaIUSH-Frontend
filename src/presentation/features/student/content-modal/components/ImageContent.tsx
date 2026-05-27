@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Loader, ImageOff } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Loader, ImageOff, ZoomIn, X } from 'lucide-react'
 import { tokenManager } from '../../../../services/tokenManager'
 import type { ImageContentData } from '../../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
 
@@ -17,12 +18,12 @@ export function ImageContent({ data, onComplete }: ImageContentProps) {
   const [marked, setMarked] = useState(false)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [lightbox, setLightbox] = useState(false)
 
   const isInternal = isInternalUrl(data.url)
 
   useEffect(() => {
     if (!isInternal) {
-      // URL externa: no necesita auth, el <img src> la carga directo
       const t = setTimeout(() => setCanMark(true), 2000)
       return () => clearTimeout(t)
     }
@@ -52,6 +53,22 @@ export function ImageContent({ data, onComplete }: ImageContentProps) {
     return () => clearTimeout(t)
   }, [blobUrl])
 
+  /* Bloquear scroll del body cuando el lightbox está abierto */
+  useEffect(() => {
+    if (!lightbox) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [lightbox])
+
+  /* Cerrar lightbox con Escape */
+  useEffect(() => {
+    if (!lightbox) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(false) }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [lightbox])
+
   const handleMark = () => {
     setMarked(true)
     onComplete()
@@ -78,20 +95,42 @@ export function ImageContent({ data, onComplete }: ImageContentProps) {
   const imgSrc = isInternal ? blobUrl! : data.url
 
   return (
-    <div className="space-y-4">
-      <figure className="space-y-2">
-        <img
-          src={imgSrc}
-          alt={data.alt ?? data.title}
-          onError={() => setLoadError(true)}
-          className="w-full rounded-xl object-contain max-h-[60vh]"
-        />
+    <div className="space-y-6">
+      <figure className="space-y-3">
+        {/* Contenedor con padding y fondo suave */}
+        <div className="p-3 bg-mid/5 rounded-2xl border border-mid/10">
+          <div
+            className="relative group cursor-zoom-in rounded-xl overflow-hidden max-h-[38vh] lg:max-h-[56vh] flex items-center justify-center bg-black/5"
+            onClick={() => setLightbox(true)}
+          >
+            <img
+              src={imgSrc}
+              alt={data.alt ?? data.title}
+              onError={() => setLoadError(true)}
+              className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+            />
+            {/* Hint de zoom */}
+            <div className="absolute inset-0 flex items-center justify-center
+                            bg-black/0 group-hover:bg-black/15 transition-colors duration-300">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                              bg-black/60 rounded-full p-2.5">
+                <ZoomIn size={20} className="text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Caption y separador */}
         {data.caption && (
-          <figcaption className="text-xs text-secondary text-center italic">
+          <figcaption className="px-1 flex items-start gap-2 text-xs text-secondary italic leading-relaxed">
+            <span className="mt-0.5 shrink-0 w-0.5 h-3 rounded-full bg-mid/40" />
             {data.caption}
           </figcaption>
         )}
       </figure>
+
+      {/* Separador visual */}
+      <div className="border-t border-mid/15" />
 
       {!marked ? (
         <button
@@ -106,6 +145,45 @@ export function ImageContent({ data, onComplete }: ImageContentProps) {
         </button>
       ) : (
         <p className="text-center text-sm text-secondary font-medium">✓ Contenido completado</p>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && createPortal(
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+          onClick={() => setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Vista completa de imagen"
+        >
+          {/* Botón cerrar */}
+          <button
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center
+                       rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Cerrar"
+          >
+            <X size={20} />
+          </button>
+
+          {/* Imagen a tamaño completo */}
+          <img
+            src={imgSrc}
+            alt={data.alt ?? data.title}
+            onClick={e => e.stopPropagation()}
+            className="max-w-full max-h-[90vh] rounded-2xl object-contain shadow-2xl
+                       animate-in fade-in zoom-in-95 duration-200"
+          />
+
+          {/* Caption en lightbox */}
+          {data.caption && (
+            <p className="absolute bottom-5 left-1/2 -translate-x-1/2 text-xs text-white/70
+                          italic text-center max-w-sm px-4">
+              {data.caption}
+            </p>
+          )}
+        </div>,
+        document.body
       )}
     </div>
   )

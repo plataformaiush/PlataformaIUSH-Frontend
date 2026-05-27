@@ -19,7 +19,7 @@ export function StudentLayout() {
       <main
         className={[
           'w-full pt-14 md:pt-16 pb-20 md:pb-0',
-          'overflow-v-auto h-screen',
+          'overflow-y-auto h-screen',
           'transition-all duration-300',
           sidebarOpen ? 'md:ml-56 md:w-[calc(100%-224px)]' : 'md:ml-0',
         ].join(' ')}

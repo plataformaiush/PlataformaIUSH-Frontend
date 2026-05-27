@@ -7,6 +7,7 @@ interface StudentProgressStore {
   enrolledCourses: EnrolledCourse[]
   enrollCourses: (courses: EnrolledCourse[]) => void
   unenrollAll: () => void
+  unenrollCourse: (courseId: string) => void
 
   // Progreso por contenido
   progress: Record<string, StudentProgress>
@@ -32,6 +33,15 @@ export const useStudentProgressStore = create<StudentProgressStore>()(
         })),
 
       unenrollAll: () => set({ enrolledCourses: [], progress: {} }),
+
+      unenrollCourse: (courseId) =>
+        set(state => {
+          const { [courseId]: _, ...rest } = state.progress
+          return {
+            enrolledCourses: state.enrolledCourses.filter(c => c.id !== courseId),
+            progress: rest,
+          }
+        }),
 
       progress: {},
 

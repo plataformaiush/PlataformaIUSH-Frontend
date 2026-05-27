@@ -8,7 +8,8 @@ import {
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 import {studentService} from '../services/studentService'
 import {ContentModal} from '../content-modal/ContentModal'
-import { trackIniciarModulo } from '../../reports/events/TagManagerEvents'
+import { trackIniciarModulo, trackCursoCompletado, trackCertificadoObtenido } from '../../reports/events/TagManagerEvents'
+import { CongratulationsModal } from './CongratulationsModal'
 import type {
     Course,
     AnyContentData
@@ -320,6 +321,7 @@ export function CourseMapPage() {
     /* ── Estado mutable de progreso ─────────────────────────────────────── */
     const [completedIds, setCompletedIds] = useState<string[]>([])
     const [markingComplete, setMarkingComplete] = useState(false)
+    const [congratsCourse, setCongratsCourse] = useState<string | null>(null)
 
     useEffect(() => {
         const loadCourse = async () => {
@@ -365,12 +367,19 @@ export function CourseMapPage() {
                 setCourseData({raw: data, course: mappedCourse, contentDetails})
                 setCourseError(null)
 
-                // Inicializa completedIds desde el backend (progreso se deriva localmente)
-                const ids = data.modulos.flatMap((m) =>
-                    m.contenidos
-                        .filter((c) => Boolean(c.completado))
-                        .map((c) => c.idContenido)
-                )
+                // Inicializa completedIds desde el backend.
+                // Si el backend reporta 0 contenidos completados en el agregado, los flags
+                // individuales pueden ser registros huérfanos de una inscripción anterior
+                // (el DELETE de inscripciones no borra progreso_estudiante en el backend).
+                // En ese caso se ignoran los flags obsoletos para que el progreso arranque en 0.
+                const overallCompleted = data.progresoCurso?.contenidosCompletados ?? null
+                const ids = (overallCompleted === 0)
+                    ? []
+                    : data.modulos.flatMap((m) =>
+                        m.contenidos
+                            .filter((c) => Boolean(c.completado))
+                            .map((c) => c.idContenido)
+                    )
                 setCompletedIds(ids)
             } catch (error) {
                 console.error('Error loading course detail:', error)
@@ -521,10 +530,12 @@ export function CourseMapPage() {
                     return [...prev, currentContentId]
                 })
 
-                // Si el backend generó el certificado automáticamente, redirigir a logros
+                // Si el backend generó el certificado automáticamente, mostrar modal y redirigir
                 if (result?.completado && result?.certificado) {
+                    trackCursoCompletado(courseName)
+                    trackCertificadoObtenido(courseName)
                     setActiveContent(null)
-                    navigate('/student/grades')
+                    setCongratsCourse(courseName)
                     return
                 }
             } catch (err) {
@@ -755,6 +766,16 @@ export function CourseMapPage() {
                     hasPrev={activeIdx > 0}
                     hasNext={hasNext}
                     isMarkingComplete={markingComplete}
+                />
+            )}
+
+            {congratsCourse && (
+                <CongratulationsModal
+                    courseName={congratsCourse}
+                    onRedirect={() => {
+                        setCongratsCourse(null)
+                        navigate('/student/grades')
+                    }}
                 />
             )}
         </div>

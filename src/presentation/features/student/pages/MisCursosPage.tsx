@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap, Loader, Play, CheckCircle, ArrowRight, ArrowLeft, Trash2, AlertTriangle, X } from 'lucide-react'
 import { studentService, type CursoInscritoBackend } from '../services/studentService'
+import { useStudentProgressStore } from '../../../stores/studentProgressStore'
 
 /* ═══════════════════════════════════════════════════════════════════
    Página: Mis Cursos
 ══════════════════════════════════════════════════════════════════════ */
 export function MisCursosPage() {
     const navigate = useNavigate()
+    const unenrollCourse = useStudentProgressStore(s => s.unenrollCourse)
     const [misCursos, setMisCursos] = useState<CursoInscritoBackend[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    const [courseToDelete, setCourseToDelete] = useState<{ idInscripcion: string, titulo: string } | null>(null)
+    const [courseToDelete, setCourseToDelete] = useState<{ idInscripcion: string, idCurso: string, titulo: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
     const getCurrentUserId = (): string | null => {
@@ -76,8 +78,8 @@ export function MisCursosPage() {
         }
     }
 
-    const handleDeleteClick = (idInscripcion: string, tituloCurso: string) => {
-        setCourseToDelete({ idInscripcion, titulo: tituloCurso })
+    const handleDeleteClick = (idInscripcion: string, idCurso: string, tituloCurso: string) => {
+        setCourseToDelete({ idInscripcion, idCurso, titulo: tituloCurso })
     }
 
     const confirmDeletion = async () => {
@@ -86,6 +88,7 @@ export function MisCursosPage() {
         setIsDeleting(true)
         try {
             await studentService.eliminarInscripcion(courseToDelete.idInscripcion)
+            unenrollCourse(courseToDelete.idCurso)
             setCourseToDelete(null)
             navigate('/student/dashboard')
         } catch (error) {
@@ -154,7 +157,7 @@ export function MisCursosPage() {
                                 course={curso}
                                 onClick={() => handleCourseClick(curso)}
                                 // Conectamos el botón de la tarjeta con la función que abre el modal
-                                onDelete={() => handleDeleteClick(curso.id_inscripcion, curso.titulo)}
+                                onDelete={() => handleDeleteClick(curso.id_inscripcion, curso.id_curso, curso.titulo)}
                             />
                         ))}
                     </div>
