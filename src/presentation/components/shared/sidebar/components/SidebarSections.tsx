@@ -19,8 +19,6 @@ const selectSectionByRole: Record<Role, Section[]> = {
 
     Admin: [
         { path: "/admin/dashboard", label: "Dashboard", icon: <DashboardIcon /> },
-        { path: "/admin/usuarios", label: "Usuarios", icon: <PeopleIcon /> },
-        { path: "/admin/cursos", label: "Cursos", icon: <SchoolIcon /> },
         { path: "/admin/reportes", label: "Reportes", icon: <EqualizerIcon /> },
     ],
 
