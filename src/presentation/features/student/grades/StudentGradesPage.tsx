@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Award, Download, X, Trophy, BookOpen, ChevronRight } from 'lucide-react'
+import { Award, Download, X, Trophy, BookOpen, ChevronRight, ArrowLeft } from 'lucide-react'
 import { studentService, type MisCursos, type Certificado, type CursoInscritoBackend } from '../services/studentService'
 import { tokenManager } from '../../../services/tokenManager'
 
@@ -24,17 +24,58 @@ function injectBodyReset(raw: string): string {
     : style + raw
 }
 
+function injectCleanStyles(raw: string): string {
+  // Remove body padding/flex so the certificate-wrapper (1240×1754) sits at top-left
+  // and scrollWidth/scrollHeight accurately reflect natural cert dimensions.
+  const style = `<style>
+    html, body { margin: 0 !important; padding: 0 !important; }
+    body { display: block !important; }
+  </style>`
+  return raw.includes('</head>')
+    ? raw.replace('</head>', `${style}</head>`)
+    : style + raw
+}
+
 function CertificateModal({ certificateId, courseName, onClose }: CertModalProps) {
   const hiddenFrameRef = useRef<HTMLIFrameElement>(null)
-  const [rawHtml, setRawHtml] = useState<string | null>(null)
-  const [loadError, setLoadError] = useState(false)
+  const containerRef  = useRef<HTMLDivElement>(null)
+  const [rawHtml, setRawHtml]         = useState<string | null>(null)
+  const [loadError, setLoadError]     = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [certScale, setCertScale]     = useState<{ scale: number; mL: number; mT: number } | null>(null)
+
+  // Certificate template fixed dimensions (from CertificateService.js)
+  const CERT_W = 1240
+  const CERT_H = 1754
 
   useEffect(() => {
     studentService.previewCertificado(certificateId)
       .then(setRawHtml)
       .catch(() => setLoadError(true))
   }, [certificateId])
+
+  // ResizeObserver: recalculate scale whenever the container is resized
+  useEffect(() => {
+    if (!rawHtml) return
+    const container = containerRef.current
+    if (!container) return
+
+    const recalc = () => {
+      const { width, height } = container.getBoundingClientRect()
+      if (width <= 0 || height <= 0) return
+      const scale = Math.min(width / CERT_W, height / CERT_H)
+      setCertScale({
+        scale,
+        mL: Math.max(0, (width  - CERT_W * scale) / 2),
+        mT: Math.max(0, (height - CERT_H * scale) / 2),
+      })
+    }
+
+    const obs = new ResizeObserver(recalc)
+    obs.observe(container)
+    recalc()
+    return () => obs.disconnect()
+  }, [rawHtml])
 
   const handleDownloadPdf = async () => {
     if (downloading || !rawHtml) return
@@ -91,8 +132,8 @@ function CertificateModal({ certificateId, courseName, onClose }: CertModalProps
 
   return createPortal(
     <div
-      className="fixed inset-0 z-100 bg-neutral/70 backdrop-blur-sm
-                 flex items-end md:items-center md:justify-center"
+      className="fixed inset-0 z-200 bg-black/60 backdrop-blur-sm
+                 flex items-center justify-center p-4 md:p-6"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       {/* Hidden off-screen iframe for PDF capture */}
@@ -100,24 +141,25 @@ function CertificateModal({ certificateId, courseName, onClose }: CertModalProps
         ref={hiddenFrameRef}
         title="pdf-capture"
         className="absolute border-0"
-        style={{ left: '-9999px', top: 0, width: '1100px', height: '800px', visibility: 'hidden' }}
+        style={{ left: '-9999px', top: 0, width: `${CERT_W}px`, height: `${CERT_H}px`, visibility: 'hidden' }}
         sandbox="allow-same-origin"
       />
 
-      <div
-        className="flex flex-col bg-surface-muted w-full max-h-[92dvh]
-                   rounded-t-2xl md:rounded-2xl
-                   md:w-170 shadow-2xl"
-      >
+      {/* Modal — large, viewport-height-bound */}
+      <div className="flex flex-col w-full max-w-2xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden bg-surface-muted">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-primary shrink-0 rounded-t-2xl md:rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <Award size={16} className="text-tertiary/80" />
-            <span className="text-sm font-semibold text-tertiary">Tu certificado</span>
+        <div className="flex items-center justify-between px-5 py-3 bg-primary shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Award size={16} className="text-tertiary/80 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-tertiary leading-tight">Tu certificado</p>
+              <p className="text-[11px] text-tertiary/70 leading-tight mt-0.5 truncate">{courseName}</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="min-w-9 min-h-9 flex items-center justify-center
+            className="shrink-0 min-w-9 min-h-9 flex items-center justify-center
                        rounded-full hover:bg-white/10 text-mid hover:text-tertiary transition-colors"
             aria-label="Cerrar"
           >
@@ -125,34 +167,46 @@ function CertificateModal({ certificateId, courseName, onClose }: CertModalProps
           </button>
         </div>
 
-        {/* Certificado — scrollable */}
-        <div className="flex-1 overflow-y-auto bg-gray-100 px-4 py-4">
+        {/* Certificate area — fills all remaining height, cert auto-scales to fit */}
+        <div
+          ref={containerRef}
+          className="flex-1 bg-gray-200 relative overflow-hidden"
+        >
           {loadError ? (
-            <div className="flex flex-col items-center py-10 gap-3 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center p-6">
               <Award size={36} className="text-mid opacity-40" />
               <p className="font-semibold text-primary text-sm">No se pudo cargar el certificado</p>
               <p className="text-xs text-secondary">Intenta de nuevo más tarde.</p>
             </div>
-          ) : rawHtml === null ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          ) : rawHtml === null || !certScale ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-primary" />
             </div>
           ) : (
-            <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-white">
+            <div style={{
+              position: 'absolute',
+              left: certScale.mL,
+              top: certScale.mT,
+              width: CERT_W,
+              height: CERT_H,
+              transform: `scale(${certScale.scale})`,
+              transformOrigin: 'top left',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+            }}>
               <iframe
                 title={`Certificado — ${courseName}`}
-                srcDoc={rawHtml}
-                className="w-full border-0 block"
-                style={{ height: '560px' }}
+                srcDoc={injectCleanStyles(rawHtml)}
+                className="border-0 block"
+                style={{ width: CERT_W, height: CERT_H }}
                 sandbox="allow-same-origin"
-                scrolling="yes"
+                scrolling="no"
               />
             </div>
           )}
         </div>
 
-        {/* Acción */}
-        <div className="px-4 py-3 border-t border-mid/20 shrink-0 bg-surface-muted">
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-mid/20 bg-surface-muted shrink-0">
           <button
             onClick={handleDownloadPdf}
             disabled={!rawHtml || downloading}
@@ -187,41 +241,46 @@ export function StudentGradesPage() {
         const user = tokenManager.getUser() as { id?: string } | null
         const userId = user?.id ?? ''
 
-        const [cursosData, certsData, inscritosData] = await Promise.all([
-          studentService.getMisCursos(),
+        const [certsData, inscritosData] = await Promise.all([
           studentService.getMisCertificados().catch(() => [] as Certificado[]),
           userId
             ? studentService.getMisCursosInscritos(userId).catch(() => [] as CursoInscritoBackend[])
             : Promise.resolve([] as CursoInscritoBackend[]),
         ])
 
-        // Merge: cursos del endpoint de progreso + cursos marcados completado=true
-        // en inscripciones pero que el endpoint de progreso reporta 0% (inconsistencia del backend)
-        const cursosMap = new Map((cursosData ?? []).map(c => [c.idCurso, c]))
-        for (const inscrito of inscritosData ?? []) {
-          if (!inscrito.completado) continue
-          if (cursosMap.has(inscrito.id_curso)) {
-            // Corregir el porcentaje si está mal reportado
-            const existing = cursosMap.get(inscrito.id_curso)!
-            if (existing.porcentajeProgreso < 100) {
-              cursosMap.set(inscrito.id_curso, { ...existing, porcentajeProgreso: 100 })
+        // Build course list from inscripciones — tiene el fallback COALESCE correcto para todos los cursos
+        const allCursos: MisCursos[] = (inscritosData ?? []).map(inscrito => ({
+          idCurso:            inscrito.id_curso,
+          titulo:             inscrito.titulo,
+          descripcion:        inscrito.descripcion,
+          thumbnail:          inscrito.thumbnail,
+          modulosTotal:       inscrito.modulos_total,
+          modulosCompletados: inscrito.contenidos_completados,
+          porcentajeProgreso: Math.round(parseFloat(inscrito.porcentaje_progreso || '0')),
+        }))
+
+        let certs = certsData ?? []
+
+        // Sync progreso_curso para todos los cursos al 100% que aún no tienen certificado
+        if (userId) {
+          const certCourseIds = new Set(certs.map(c => c.courseId))
+          const needsSync = allCursos.filter(
+            c => c.porcentajeProgreso >= 100 && !certCourseIds.has(c.idCurso)
+          )
+          if (needsSync.length > 0) {
+            const syncResults = await Promise.allSettled(
+              needsSync.map(c => studentService.sincronizarProgreso(userId, c.idCurso))
+            )
+            const newCerts = syncResults
+              .flatMap(r => (r.status === 'fulfilled' && r.value.certificado ? [r.value.certificado] : []))
+            if (newCerts.length > 0) {
+              certs = [...certs, ...newCerts]
             }
-          } else {
-            // Curso completado que no aparece en el endpoint de progreso
-            cursosMap.set(inscrito.id_curso, {
-              idCurso: inscrito.id_curso,
-              titulo: inscrito.titulo,
-              descripcion: inscrito.descripcion,
-              thumbnail: inscrito.thumbnail,
-              modulosTotal: inscrito.modulos_total,
-              modulosCompletados: inscrito.modulos_total,
-              porcentajeProgreso: 100,
-            })
           }
         }
 
-        setCursos(Array.from(cursosMap.values()))
-        setCertificados(certsData ?? [])
+        setCursos(allCursos)
+        setCertificados(certs)
       } catch {
         setError('No se pudo cargar la información. Intenta de nuevo.')
       } finally {
@@ -263,6 +322,19 @@ export function StudentGradesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-8">
+
+      {/* Botón volver sticky */}
+      <div className="sticky top-4 z-10 self-start">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-mid/20
+                     shadow-sm text-sm font-semibold text-secondary
+                     hover:text-primary hover:border-primary/30 transition-all"
+        >
+          <ArrowLeft size={16} />
+          Volver
+        </button>
+      </div>
 
       {/* Encabezado */}
       <div>

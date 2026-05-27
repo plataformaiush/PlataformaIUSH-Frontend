@@ -31,8 +31,28 @@ export function MisCursosPage() {
             const userId = getCurrentUserId()
             if (!userId) return
 
-            const response = await studentService.getMisCursosInscritos(userId)
-            setMisCursos(response)
+            // El endpoint de inscripciones no devuelve idImagen; lo cruzamos con el catálogo
+            // (1 sola petición extra) para obtener el UUID de la imagen por curso.
+            const [response, allCursos] = await Promise.all([
+                studentService.getMisCursosInscritos(userId),
+                studentService.getAllCursos().catch(() => []),
+            ])
+
+            const idImagenByCurso = new Map<string, string>()
+            for (const curso of allCursos as any[]) {
+                if (curso?.idImagen && curso?.idCurso) {
+                    idImagenByCurso.set(String(curso.idCurso), curso.idImagen)
+                }
+            }
+
+            const withImages = response.map((curso) => {
+                if (curso.thumbnail) return curso
+                const idImagen = idImagenByCurso.get(String(curso.id_curso))
+                const url = studentService.getImagenUrl(idImagen)
+                return url ? { ...curso, thumbnail: url } : curso
+            })
+
+            setMisCursos(withImages)
         } catch (error) {
             console.error('Error cargando mis cursos:', error)
             setMisCursos([])
@@ -66,10 +86,8 @@ export function MisCursosPage() {
         setIsDeleting(true)
         try {
             await studentService.eliminarInscripcion(courseToDelete.idInscripcion)
-            // Quitamos el curso de la interfaz
-            setMisCursos((prev) => prev.filter(curso => curso.id_inscripcion !== courseToDelete.idInscripcion))
-            // Cerramos el modal
             setCourseToDelete(null)
+            navigate('/student/dashboard')
         } catch (error) {
             console.error('Error eliminando inscripción:', error)
             window.alert('Hubo un error al intentar eliminar la inscripción. Por favor intenta de nuevo.')

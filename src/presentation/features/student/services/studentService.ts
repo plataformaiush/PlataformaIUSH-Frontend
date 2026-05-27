@@ -17,6 +17,7 @@ export interface MisCursos {
   titulo: string
   descripcion?: string
   thumbnail?: string
+  idImagen?: string | null
   modulosTotal: number
   modulosCompletados: number
   porcentajeProgreso: number
@@ -28,6 +29,7 @@ export interface CursoDetalle {
   titulo: string
   descripcion: string
   activo: boolean
+  idImagen?: string | null
   creacion: string
   actualizacion?: string
   modulos: ModuloItem[]
@@ -193,6 +195,14 @@ export interface CursoInscritoBackend {
 
 // ─── Servicios ───
 export const studentService = {
+  // Devuelve la URL del endpoint público que stremea los bytes de la imagen del curso.
+  // El backend (Equipo 2) sirve los bytes en GET /api/documentos/:id/descargar con
+  // Content-Type image/* — el navegador la usa como <img src> sin necesidad de fetch previo.
+  getImagenUrl(idImagen: string | null | undefined): string | null {
+    if (!idImagen) return null
+    return `${API_URL}/documentos/${idImagen}/descargar`
+  },
+
   // Obtener todos los cursos disponibles (Endpoint con /api)
   async getAllCursos(): Promise<MisCursos[]> {
     const response = await apiAxiosInstance.get('/cursos?limit=1000', {
@@ -366,6 +376,19 @@ export const studentService = {
     }, {
       headers: getStudentAuthHeaders(),
     })
+    return response.data.data
+  },
+
+  // Sincronizar progreso_curso desde progreso_estudiante y generar certificado si aplica
+  async sincronizarProgreso(
+    idUsuario: string,
+    idCurso: string
+  ): Promise<{ porcentaje: number; completado: boolean; certificado: Certificado | null }> {
+    const response = await rootAxiosInstance.post(
+      '/progreso/sincronizar',
+      { id_usuario: idUsuario, id_curso: idCurso },
+      { headers: getStudentAuthHeaders() }
+    )
     return response.data.data
   },
 

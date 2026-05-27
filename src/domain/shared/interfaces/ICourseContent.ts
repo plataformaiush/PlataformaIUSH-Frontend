@@ -31,14 +31,14 @@ export interface ContentDetail {
 export interface VideoContentData extends ContentDetail {
   type: 'video'
   url: string
-  duration: number
+  duration?: number
   thumbnail?: string
 }
 
 export interface ImageContentData extends ContentDetail {
   type: 'image'
   url: string
-  alt: string
+  alt?: string
   caption?: string
 }
 

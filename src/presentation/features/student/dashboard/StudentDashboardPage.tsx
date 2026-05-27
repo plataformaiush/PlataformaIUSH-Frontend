@@ -8,8 +8,6 @@ import {
 import {studentService, type MisCursos, type CursoInscritoBackend} from '../services/studentService'
 import { trackIniciarCurso } from '../../reports/events/TagManagerEvents'
 
-const STREAK_DAYS = 14
-
 interface EnrichedCourse extends MisCursos {
     displayTitle: string
     displayDescription: string
@@ -78,11 +76,17 @@ export function StudentDashboardPage() {
                     : 0
                 const completado = enrollment ? enrollment.completado || porcentajeProgreso >= 100 : false
 
+                const thumbnail: string | undefined =
+                    (curso as any).thumbnail
+                    || enrollment?.thumbnail
+                    || studentService.getImagenUrl(curso.idImagen)
+                    || undefined
+
                 return {
                     idCurso: curso.idCurso,
                     titulo: curso.titulo,
                     descripcion: curso.descripcion,
-                    thumbnail: (curso as any).thumbnail || enrollment?.thumbnail || undefined,
+                    thumbnail,
                     modulosTotal: curso.modulosCount ?? enrollment?.modulos_total ?? 0,
                     modulosCompletados: enrollment?.contenidos_completados ?? 0,
                     porcentajeProgreso,
@@ -198,7 +202,6 @@ export function StudentDashboardPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
                     <HeroBanner
                         name={studentName}
-                        streak={STREAK_DAYS}
                         courseName={inProgress?.displayTitle ?? null}
                         onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
                     />
@@ -276,20 +279,14 @@ export function StudentDashboardPage() {
 /* ── Hero Banner ────────────────────────────────────────────────── */
 interface HeroBannerProps {
     name: string
-    streak: number
     courseName: string | null
     onContinue: () => void
 }
 
-function HeroBanner({name, streak, courseName, onContinue}: HeroBannerProps) {
+function HeroBanner({name, courseName, onContinue}: HeroBannerProps) {
     return (
         <div className="rounded-2xl p-8 lg:p-10 flex flex-col gap-5 min-h-65
                         bg-gradient-to-br from-primary to-secondary">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                      bg-white/15 text-white text-xs font-semibold w-fit">
-                🔥 ¡{streak} días seguidos!
-            </div>
-
             <div>
                 <h1 className="text-4xl lg:text-5xl font-extrabold text-white leading-[1.1]">
                     Bienvenida,<br/>{name}.
@@ -457,7 +454,15 @@ function LearningPathSection({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map(course => {
-                    const handleAction = () => {
+                    const handleCardClick = () => {
+                        if (course.isEnrolled) {
+                            onContinueCourse(course)
+                        } else {
+                            onEnrollRequest(course)
+                        }
+                    }
+
+                    const handleButtonClick = () => {
                         if (course.completado) {
                             onGoToCertificates(course)
                         } else if (course.isEnrolled) {
@@ -471,7 +476,8 @@ function LearningPathSection({
                         <CourseGridCard
                             key={course.idCurso}
                             course={course}
-                            onAction={handleAction}
+                            onCardClick={handleCardClick}
+                            onButtonClick={handleButtonClick}
                             isEnrolling={enrollingCourseId === course.idCurso}
                         />
                     )
@@ -484,11 +490,13 @@ function LearningPathSection({
 /* ── Course Grid Card ───────────────────────────────────────────── */
 function CourseGridCard({
                             course,
-                            onAction,
+                            onCardClick,
+                            onButtonClick,
                             isEnrolling,
                         }: {
     course: EnrichedCourse
-    onAction: () => void
+    onCardClick: () => void
+    onButtonClick: () => void
     isEnrolling: boolean
 }) {
     let buttonLabel = 'Inscribirse'
@@ -506,7 +514,7 @@ function CourseGridCard({
 
     return (
         <div
-            onClick={onAction}
+            onClick={onCardClick}
             className="bg-surface rounded-2xl overflow-hidden border border-mid/20
                  flex flex-col text-left hover:shadow-md transition-all duration-200 w-full cursor-pointer"
         >
@@ -559,7 +567,7 @@ function CourseGridCard({
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            onAction()
+                            onButtonClick()
                         }}
                         disabled={isEnrolling}
                         className={`w-full py-2 px-3 rounded-lg text-sm font-semibold text-white
