@@ -1,4 +1,4 @@
-export type ContentType = 'video' | 'image' | 'text' | 'quiz' | 'pdf' | 'xlsx'
+export type ContentType = 'video' | 'image' | 'text' | 'quiz' | 'quiz_mc' | 'quiz_tf' | 'pdf' | 'xlsx'
 
 export interface Course {
   id: string
@@ -59,6 +59,28 @@ export interface QuizContentData extends ContentDetail {
   questions: QuizQuestion[]
 }
 
+/** Quiz de opción múltiple (una sola pregunta) — JSON `quiz_mc` ya desmenuzado. */
+export interface QuizMCOption {
+  id: string
+  text: string
+}
+
+export interface QuizMCContentData extends ContentDetail {
+  type: 'quiz_mc'
+  question: string
+  options: QuizMCOption[]
+  correctAnswerId: string
+  explanation?: string
+}
+
+/** Quiz verdadero/falso (una sola pregunta) — JSON `quiz_tf` ya desmenuzado. */
+export interface QuizTFContentData extends ContentDetail {
+  type: 'quiz_tf'
+  question: string
+  correctAnswer: boolean
+  explanation?: string
+}
+
 export interface PdfContentData extends ContentDetail {
   type: 'pdf'
   url: string
@@ -76,5 +98,7 @@ export type AnyContentData =
   | ImageContentData
   | TextContentData
   | QuizContentData
+  | QuizMCContentData
+  | QuizTFContentData
   | PdfContentData
   | XlsxContentData
