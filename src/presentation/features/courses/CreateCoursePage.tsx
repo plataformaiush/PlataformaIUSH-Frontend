@@ -253,7 +253,7 @@ export const CreateCoursePage = () => {
   }
 
   return (
-    <main style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif', minHeight: '100vh' }}>
+    <main style={{ backgroundColor: '#FAFAFA', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
       {/* Encabezado */}
       <div className="border-b" style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}>
         <div className="relative px-4 md:px-8 py-4 md:py-6">
