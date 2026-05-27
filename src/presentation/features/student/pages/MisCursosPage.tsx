@@ -54,7 +54,15 @@ export function MisCursosPage() {
                 return url ? { ...curso, thumbnail: url } : curso
             })
 
-            setMisCursos(withImages)
+            const sorted = [...withImages].sort((a, b) => {
+                const pa = parseFloat(a.porcentaje_progreso || '0')
+                const pb = parseFloat(b.porcentaje_progreso || '0')
+                const aComplete = pa >= 100
+                const bComplete = pb >= 100
+                if (aComplete !== bComplete) return aComplete ? 1 : -1
+                return pb - pa
+            })
+            setMisCursos(sorted)
         } catch (error) {
             console.error('Error cargando mis cursos:', error)
             setMisCursos([])

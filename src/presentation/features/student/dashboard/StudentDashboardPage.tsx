@@ -203,7 +203,7 @@ export function StudentDashboardPage() {
                     <HeroBanner
                         name={studentName}
                         courseName={inProgress?.displayTitle ?? null}
-                        onContinue={() => inProgress && goToCourse(inProgress.idCurso)}
+                        onContinue={() => navigate('/student/mis-cursos')}
                     />
                     <CertificatesCard onNavigate={() => navigate('/student/grades')}/>
                 </div>

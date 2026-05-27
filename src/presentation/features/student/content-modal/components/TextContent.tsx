@@ -1,12 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TextContentData } from '../../../../../../../PlataformaIUSH-Frontend/src/domain/shared/interfaces/ICourseContent'
+import { NoContentAvailable } from './NoContentAvailable'
 
 interface TextContentProps {
   data: TextContentData
   onComplete: () => void
 }
 
+function isErrorBody(body: string): boolean {
+  const trimmed = body.trim()
+  if (!trimmed.startsWith('{')) return false
+  try {
+    const parsed = JSON.parse(trimmed)
+    return parsed.success === false || typeof parsed.error === 'string'
+  } catch {
+    return false
+  }
+}
+
 export function TextContent({ data, onComplete }: TextContentProps) {
+  if (isErrorBody(data.body)) return <NoContentAvailable onClose={onComplete} />
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const [reachedEnd, setReachedEnd] = useState(false)
   const [marked, setMarked] = useState(false)
