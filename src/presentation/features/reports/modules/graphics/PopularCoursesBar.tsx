@@ -14,10 +14,18 @@ type Props = {
 };
 
 export default function PopularCoursesBar({ popularCourses, colors }: Props) {
-  // Máximo de inscritos, usado para destacar el curso líder con color primario
+  // Oculta cursos sin inscritos y conserva solo los cursos con actividad.
+  const visibleCourses = popularCourses.filter(
+    (course) => Number.parseInt(course.total_inscritos, 10) >= 1
+  );
+
   const totalInscritos =
-    popularCourses.length > 0
-      ? popularCourses.reduce((acc, c) => acc + parseInt(c.total_inscritos), 0)
+    visibleCourses.length > 0
+      ? visibleCourses.reduce((acc, c) => acc + Number.parseInt(c.total_inscritos, 10), 0)
+      : 0;
+  const maxInscritos =
+    visibleCourses.length > 0
+      ? Math.max(...visibleCourses.map((course) => Number.parseInt(course.total_inscritos, 10)))
       : 0;
 
   return (
@@ -26,14 +34,14 @@ export default function PopularCoursesBar({ popularCourses, colors }: Props) {
         Inscritos por curso
       </p>
 
-      {/* Número máximo de inscritos como métrica destacada */}
+      {/* Total de inscritos en los cursos visibles */}
       <h2 className="text-2xl font-bold mb-3" style={{ color: colors.textBase }}>
         {totalInscritos.toLocaleString()} inscritos
       </h2>
 
       {/* Gráfica de barras: el curso con más inscritos se resalta en color primario */}
       <ResponsiveContainer width="100%" height={110}>
-        <BarChart data={popularCourses} barCategoryGap="20%">
+        <BarChart data={visibleCourses} barCategoryGap="20%">
           <XAxis
             dataKey="curso_titulo"
             tick={{ fontSize: 9, fill: colors.textSecondary }}
@@ -51,12 +59,12 @@ export default function PopularCoursesBar({ popularCourses, colors }: Props) {
             }}
           />
           <Bar dataKey="total_inscritos" radius={[4, 4, 0, 0]}>
-            {popularCourses.map((course) => (
+            {visibleCourses.map((course) => (
               // El curso con más inscritos recibe el color primario, los demás el secundario
               <Cell
                 key={course.curso_id}
                 fill={
-                  parseInt(course.total_inscritos) === totalInscritos
+                  Number.parseInt(course.total_inscritos, 10) === maxInscritos
                     ? colors.primary
                     : colors.secondary
                 }

@@ -555,14 +555,24 @@ export function CourseMapPage() {
                     return [...prev, currentContentId]
                 })
 
-                // Si el backend generó el certificado automáticamente, mostrar modal y redirigir
-                if (result?.completado && result?.certificado) {
+                 // Evento GTM: curso completado.
+                if (result?.completado === true) {
                     trackCursoCompletado(courseName)
+                }
+
+                // Evento GTM: curso completado.
+                if (result?.completado) {
+                    trackCursoCompletado(courseName)
+                }
+
+                // Si el backend generó el certificado automáticamente, mostrar modal y redirigir.
+                if (result?.certificado != null) {
                     trackCertificadoObtenido(courseName)
                     setActiveContent(null)
                     setCongratsCourse(courseName)
                     return
                 }
+
             } catch (err) {
                 console.error('Error al marcar contenido completado:', err)
             } finally {
