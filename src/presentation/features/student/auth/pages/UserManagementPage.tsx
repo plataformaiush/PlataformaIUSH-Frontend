@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useUsersViewPreference } from "../../../../../context/UsersViewPreferenceContext";
+import { useAuthStore } from "../../../../stores/auth.store";
 import {
   createUser,
   CreateUserPayload,
@@ -33,6 +34,9 @@ export default function UserManagementPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const { viewType, setViewType } = useUsersViewPreference();
+  const { user } = useAuthStore();
+  
+  const isSuperAdmin = user?.roles?.includes('SuperAdmin') ?? false;
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -196,18 +200,20 @@ export default function UserManagementPage() {
               <div className="rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
                 {loading ? "Cargando datos..." : `${users.length} usuarios cargados`}
               </div>
-              <button
-                onClick={() => setViewType(viewType === 'management' ? 'original' : 'management')}
-                className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'white',
-                  borderColor: 'var(--color-primary)'
-                }}
-                title={`Cambiar a vista ${viewType === 'management' ? 'original' : 'de gestión'}`}
-              >
-                Cambiar Vista
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setViewType(viewType === 'management' ? 'original' : 'management')}
+                  className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'white',
+                    borderColor: 'var(--color-primary)'
+                  }}
+                  title={`Cambiar a vista ${viewType === 'management' ? 'original' : 'de gestión'}`}
+                >
+                  Vista Usuarios
+                </button>
+              )}
             </div>
           </div>
         </header>

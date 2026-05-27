@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { CourseListPage } from '../../courses/CourseListPage'
 import { BookOpen, Users, TrendingUp, AlertCircle, Search, Eye } from 'lucide-react'
+import { useAuthStore } from '../../../stores/auth.store'
 
 interface Curso {
   id: string
@@ -66,6 +67,10 @@ export function CursosView() {
   const [page, setPage] = useState(1)
   const [selectedCurso, setSelectedCurso] = useState<Curso | null>(null)
   const [showModal, setShowModal] = useState(false)
+
+  // Obtener usuario del store para verificar permisos
+  const user = useAuthStore((state) => state.user)
+  const isSuperAdmin = user?.roles?.includes('SuperAdmin') ?? false
 
   // Estado para datos del backend
   const [cursos, setCursos] = useState<Curso[]>([])
@@ -191,13 +196,15 @@ export function CursosView() {
                 <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{cursos.length} cursos en la plataforma</p>
               </div>
             </div>
-            <button
-              onClick={() => setViewType('gestion')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
-              style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
-            >
-              Gestión de Cursos
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setViewType('gestion')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:opacity-90"
+                style={{ backgroundColor: '#223740', color: '#FFFFFF' }}
+              >
+                Gestión de Cursos
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Institution, InstitutionColors, defaultInstitutionColors } from '../../../../domain/institution/types'
 import { institutionService, applyTheme } from '../../../../domain/institution/institutionService'
 import { useInstitution } from '../../../../context/InstitutionContext'
+import { useAuthStore } from '../../../stores/auth.store'
 import { buildCertificateHtml } from '../../../../domain/shared/certificateTemplate'
 
 // ─── Constantes de campos de color ───────────────────────────────────────────
@@ -29,6 +30,10 @@ type ToastType = 'success' | 'error' | null
 
 export function PersonalizacionView() {
   const { updateColors } = useInstitution()
+  
+  // Obtener usuario del store para verificar permisos
+  const user = useAuthStore((state) => state.user)
+  const isSuperAdmin = user?.roles?.includes('SuperAdmin') ?? false
 
   const [logo, setLogo]       = useState('')
   const [colors, setColors]   = useState<InstitutionColors>(defaultInstitutionColors)
@@ -104,6 +109,16 @@ export function PersonalizacionView() {
 
   // ── Estados de carga / error total ────────────────────────────────────────
 
+  // Verificar permisos
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center h-64 space-y-3">
+        <p className="text-sm text-red-600 font-medium">⚠ Acceso denegado</p>
+        <p className="text-xs text-muted-foreground">Solo los SuperAdministradores pueden personalizar la institución</p>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="p-6 flex flex-col items-center justify-center h-64 space-y-3">
@@ -140,7 +155,7 @@ export function PersonalizacionView() {
       {/* Encabezado */}
       <div>
         <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>
-          Personalización
+          Gestión de Personalización
         </h1>
         <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
           Identidad visual de la institución

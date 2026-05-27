@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import axios from 'axios'
+import { Eye } from 'lucide-react'
 import { useUsersViewPreference } from '../../../../context/UsersViewPreferenceContext'
+import { useAuthStore } from '../../../stores/auth.store'
 import { StatCard } from './shared/cards'
 
 interface Usuario {
   id: string
-  nombre: string
-  correo: string
-  rol: string
-  estado: string
+  nombre: string | null
+  correo: string | null
+  rol: string | null
+  estado: string | null
   ultimoAcceso: string | null
 }
 
@@ -32,6 +34,8 @@ const pillStyle: Record<string, string> = {
   Pendiente: 'bg-amber-100 text-amber-700',
   Estudiante: 'bg-secondary/20 text-secondary',
   Docente: 'bg-primary/10 text-primary',
+  'Desconocido': 'bg-gray-100 text-gray-800',
+  '': 'bg-gray-100 text-gray-800',
 }
 
 const roleColors: Record<string, { bg: string; text: string }> = {
@@ -41,11 +45,17 @@ const roleColors: Record<string, { bg: string; text: string }> = {
   SuperAdmin: { bg: 'var(--color-foreground)', text: 'var(--color-text-on-dark)' },
 }
 
-const getRoleColor = (rol: string) => {
-  return roleColors[rol] || { bg: 'var(--color-muted)', text: 'var(--color-muted-foreground)' }
+const getRoleColor = (rol: string | null) => {
+  return roleColors[rol || ''] || { bg: 'var(--color-muted)', text: 'var(--color-muted-foreground)' }
 }
 
 const PER_PAGE = 10
+
+// Funciones para valores predeterminados
+const getDisplayName = (nombre: string | null): string => nombre || 'Sin nombre'
+const getDisplayEmail = (correo: string | null): string => correo || 'Sin correo'
+const getDisplayRole = (rol: string | null): string => rol || 'Sin rol'
+const getDisplayStatus = (estado: string | null): string => estado || 'Desconocido'
 
 // Función para formatear el último acceso
 const formatLastAccess = (ultimoAcceso: string | null): string => {
@@ -66,6 +76,10 @@ export function UsuariosView() {
   const [page, setPage] = useState(1)
   const { viewType, setViewType } = useUsersViewPreference()
 
+  // Obtener usuario del store para verificar permisos
+  const user = useAuthStore((state) => state.user)
+  const isSuperAdmin = user?.roles?.includes('SuperAdmin') ?? false
+
   // Estado para datos del backend
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [estadisticas, setEstadisticas] = useState({
@@ -77,7 +91,6 @@ export function UsuariosView() {
   const [error, setError] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
-  const [isFromCache, setIsFromCache] = useState(false)
 
   // Configuración de filtros de rol disponibles
   const roleFilters = [
@@ -99,7 +112,6 @@ export function UsuariosView() {
       try {
         setLoading(true)
         setError(null)
-        setIsFromCache(false)
         const token = localStorage.getItem('token')
         
         if (!token) {
@@ -140,7 +152,6 @@ export function UsuariosView() {
             const parsed = JSON.parse(cachedData)
             setUsuarios(parsed.usuarios)
             setEstadisticas(parsed.estadisticas)
-            setIsFromCache(true)
             setError(`Error al cargar usuarios: ${mensaje}. Mostrando últimos datos disponibles.`)
           } catch {
             setError(`Error al cargar usuarios: ${mensaje}`)
@@ -158,9 +169,9 @@ export function UsuariosView() {
   }, [rolFilter, filtroEstado, page])
 
   const filtered = usuarios.filter((u) => {
-    const matchSearch = u.nombre.toLowerCase().includes(search.toLowerCase()) ||
-                        u.correo.toLowerCase().includes(search.toLowerCase())
-    const matchRol = rolFilter === 'Todos' || u.rol.includes(rolFilter)
+    const matchSearch = (u.nombre?.toLowerCase() || '').includes(search.toLowerCase()) ||
+                        (u.correo?.toLowerCase() || '').includes(search.toLowerCase())
+    const matchRol = rolFilter === 'Todos' || ((u.rol?.toLowerCase() || '').includes(rolFilter.toLowerCase()))
     return matchSearch && matchRol
   })
 
@@ -174,18 +185,20 @@ export function UsuariosView() {
           <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Usuarios</h1>
           <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{estadisticas.usuariosActivos.toLocaleString()} usuarios activos</p>
         </div>
-        <button
-          onClick={() => setViewType(viewType === 'original' ? 'management' : 'original')}
-          className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-          style={{
-            backgroundColor: 'var(--color-primary)',
-            color: 'white',
-            borderColor: 'var(--color-primary)'
-          }}
-          title={`Cambiar a vista ${viewType === 'original' ? 'de gestión' : 'original'}`}
-        >
-          Cambiar Vista
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setViewType(viewType === 'original' ? 'management' : 'original')}
+            className="group relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl cursor-pointer"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              color: 'white',
+              borderColor: 'var(--color-primary)'
+            }}
+            title={`Cambiar a vista ${viewType === 'original' ? 'de gestión' : 'original'}`}
+          >
+            Gestión de Usuarios
+          </button>
+        )}
       </div>
 
       {/* Tarjetas de estadísticas */}
@@ -236,7 +249,7 @@ export function UsuariosView() {
               <button
                 key={filter.id}
                 onClick={() => { setRolFilter(filter.id); setPage(1) }}
-                className="text-xs px-4 py-2.5 rounded-lg border-2 transition-all duration-200 font-semibold hover:scale-105 active:scale-95"
+                className="text-xs px-4 py-2.5 rounded-lg border-2 transition-all duration-200 font-semibold hover:scale-105 active:scale-95 cursor-pointer"
                 style={(rolFilter === filter.id) ? {
                   backgroundColor: 'var(--color-primary)',
                   borderColor: 'var(--color-primary)',
@@ -259,7 +272,7 @@ export function UsuariosView() {
               <button
                 key={filter.id}
                 onClick={() => { setFiltroEstado(filter.id === 'Todos' ? '' : filter.id); setPage(1) }}
-                className="text-xs px-4 py-2.5 rounded-lg border-2 transition-all duration-200 font-semibold hover:scale-105 active:scale-95"
+                className="text-xs px-4 py-2.5 rounded-lg border-2 transition-all duration-200 font-semibold hover:scale-105 active:scale-95 cursor-pointer"
                 style={((filtroEstado === '' && filter.id === 'Todos') || (filtroEstado === filter.id)) ? {
                   backgroundColor: 'var(--color-primary)',
                   borderColor: 'var(--color-primary)',
@@ -296,29 +309,29 @@ export function UsuariosView() {
               ) : (
                 slice.map((u) => (
                   <tr key={u.id} style={{ borderBottomColor: 'var(--color-border)', borderBottomWidth: '1px' }}>
-                    <td className="px-2 py-2" style={{ color: 'var(--color-foreground)' }}>{u.nombre}</td>
-                    <td className="px-2 py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{u.correo}</td>
+                    <td className="px-2 py-2" style={{ color: 'var(--color-foreground)' }}>{getDisplayName(u.nombre)}</td>
+                    <td className="px-2 py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{getDisplayEmail(u.correo)}</td>
                     <td className="px-2 py-2">
                       <span className="text-[11px] px-3 py-1 rounded-full font-semibold" style={{
                         backgroundColor: getRoleColor(u.rol).bg,
                         color: getRoleColor(u.rol).text,
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
-                      }}>{u.rol}</span>
+                      }}>{getDisplayRole(u.rol)}</span>
                     </td>
                     <td className="px-2 py-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[u.estado] || 'bg-gray-100 text-gray-800'}`}>{u.estado}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[u.estado || 'Desconocido'] || 'bg-gray-100 text-gray-800'}`}>{getDisplayStatus(u.estado)}</span>
                     </td>
                     <td className="px-2 py-2 text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{formatLastAccess(u.ultimoAcceso)}</td>
                     <td className="px-2 py-2">
                       <button 
                         onClick={() => setSelectedUser(u)}
-                        className="text-xs px-2 py-1 border rounded-lg transition-all hover:bg-primary hover:text-white"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-all cursor-pointer hover:opacity-70"
                         style={{
                           borderColor: 'var(--color-border)',
                           color: 'var(--color-muted-foreground)'
                         }}
                       >
-                        Ver
+                        <Eye size={16} />
                       </button>
                     </td>
                   </tr>
@@ -342,15 +355,15 @@ export function UsuariosView() {
               }}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{u.nombre}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>{u.correo}</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--color-foreground)' }}>{getDisplayName(u.nombre)}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>{getDisplayEmail(u.correo)}</p>
                     <div className="flex gap-2 mt-1">
                       <span className="text-[11px] px-3 py-1 rounded-full font-semibold" style={{
                         backgroundColor: getRoleColor(u.rol).bg,
                         color: getRoleColor(u.rol).text,
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
-                      }}>{u.rol}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[u.estado] || 'bg-gray-100 text-gray-800'}`}>{u.estado}</span>
+                      }}>{getDisplayRole(u.rol)}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${pillStyle[u.estado || 'Desconocido'] || 'bg-gray-100 text-gray-800'}`}>{getDisplayStatus(u.estado)}</span>
                     </div>
                   </div>
                 </div>
@@ -360,14 +373,14 @@ export function UsuariosView() {
                 </div>
                 <button 
                   onClick={() => setSelectedUser(u)}
-                  className="w-full text-xs px-3 py-1.5 border rounded-lg transition-all hover:bg-primary hover:text-white"
+                  className="w-8 h-8 border rounded-lg transition-all flex items-center justify-center cursor-pointer hover:opacity-70"
                   style={{
                     borderColor: 'var(--color-border)',
                     color: 'var(--color-primary)',
                     backgroundColor: 'transparent'
                   }}
                 >
-                  Ver
+                  <Eye size={16} />
                 </button>
               </div>
             ))
@@ -382,7 +395,7 @@ export function UsuariosView() {
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               style={page === 1 ? {
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-muted-foreground)'
@@ -410,7 +423,7 @@ export function UsuariosView() {
                   <button
                     key={1}
                     onClick={() => setPage(1)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    className="text-xs w-7 h-7 rounded-lg border transition-all cursor-pointer"
                     style={{
                       borderColor: 'var(--color-border)',
                       color: 'var(--color-muted-foreground)'
@@ -431,7 +444,7 @@ export function UsuariosView() {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    className="text-xs w-7 h-7 rounded-lg border transition-all cursor-pointer"
                     style={page === p ? {
                       backgroundColor: 'var(--color-primary)',
                       borderColor: 'var(--color-primary)',
@@ -456,7 +469,7 @@ export function UsuariosView() {
                   <button
                     key={pages}
                     onClick={() => setPage(pages)}
-                    className="text-xs w-7 h-7 rounded-lg border transition-all"
+                    className="text-xs w-7 h-7 rounded-lg border transition-all cursor-pointer"
                     style={{
                       borderColor: 'var(--color-border)',
                       color: 'var(--color-muted-foreground)'
@@ -473,7 +486,7 @@ export function UsuariosView() {
             <button
               onClick={() => setPage(Math.min(pages, page + 1))}
               disabled={page === pages}
-              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-xs w-7 h-7 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               style={page === pages ? {
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-muted-foreground)'
@@ -511,7 +524,7 @@ export function UsuariosView() {
               </h2>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="text-2xl font-bold transition-all hover:scale-110"
+                className="text-2xl font-bold transition-all hover:scale-110 cursor-pointer"
                 style={{ color: 'var(--color-muted-foreground)' }}
               >
                 ×
@@ -556,7 +569,7 @@ export function UsuariosView() {
                   ROL
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedUser.rol.split(',').map((r, i) => (
+                  {selectedUser.rol!.split(',').map((r, i) => (
                     <span 
                       key={i}
                       className="text-xs px-3 py-1.5 rounded-full font-medium"
@@ -578,7 +591,7 @@ export function UsuariosView() {
                   ESTADO
                 </p>
                 <span 
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedUser.estado] || 'bg-gray-100 text-gray-800'}`}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium inline-block ${pillStyle[selectedUser.estado!] || 'bg-gray-100 text-gray-800'}`}
                 >
                   {selectedUser.estado}
                 </span>
@@ -604,7 +617,7 @@ export function UsuariosView() {
             <div className="flex gap-3 mt-6 pt-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
                 style={{
                   backgroundColor: 'var(--color-primary)',
                   color: 'white'
