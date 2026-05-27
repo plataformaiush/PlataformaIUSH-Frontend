@@ -22,8 +22,14 @@ export function XlsxContent({ data, onComplete }: XlsxContentProps) {
     const load = async () => {
       try {
         const res  = await fetch(data.url, { signal: controller.signal })
-        const buf  = await res.arrayBuffer()
-        const wb   = read(buf, { type: 'array' })
+        const blob = await res.blob()
+        const binaryStr = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader()
+          fr.onload  = () => resolve(fr.result as string)
+          fr.onerror = reject
+          fr.readAsBinaryString(blob)
+        })
+        const wb   = read(binaryStr, { type: 'binary' })
         const ws   = wb.Sheets[wb.SheetNames[0]]
         const json = utils.sheet_to_json<Row>(ws, { header: 1, defval: '' })
         if (json.length > 0) {

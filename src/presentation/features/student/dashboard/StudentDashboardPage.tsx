@@ -7,6 +7,7 @@ import {
 // ...existing code... (EmptyCoursesState removed on purpose)
 import {studentService, type MisCursos, type CursoInscritoBackend} from '../services/studentService'
 import { trackIniciarCurso } from '../../reports/events/TagManagerEvents'
+import { AuthImage } from '../components/AuthImage'
 
 interface EnrichedCourse extends MisCursos {
     displayTitle: string
@@ -79,7 +80,7 @@ export function StudentDashboardPage() {
                 const thumbnail: string | undefined =
                     (curso as any).thumbnail
                     || enrollment?.thumbnail
-                    || studentService.getImagenUrl(curso.idImagen)
+                    || studentService.getImagenUrl(curso.idImagen ?? (curso as any).id_imagen)
                     || undefined
 
                 return {
@@ -215,7 +216,7 @@ export function StudentDashboardPage() {
                             course={inProgress}
                             onClick={() => goToCourse(inProgress.idCurso)}
                         />
-                        <UpNextCard onClick={() => goToCourse(inProgress.idCurso)}/>
+                        <UpNextCard course={inProgress} onClick={() => goToCourse(inProgress.idCurso)}/>
                     </div>
                 )}
 
@@ -390,29 +391,41 @@ function InProgressCard({
 }
 
 /* ── Up Next Card ───────────────────────────────────────────────── */
-function UpNextCard({onClick}: { onClick: () => void }) {
+function UpNextCard({course, onClick}: { course: EnrichedCourse; onClick: () => void }) {
+    const pending = course.modulosTotal - course.modulosCompletados
+
     return (
-        <div className="bg-surface rounded-2xl border border-mid/20 p-5 flex items-center gap-4">
-            {/* Thumbnail izquierdo — fondo teal claro */}
-            <div className="w-14 h-14 rounded-xl bg-secondary/15 flex items-center justify-center shrink-0">
+        <div
+            onClick={onClick}
+            className="bg-surface rounded-2xl border border-mid/20 p-5 flex items-center gap-4
+                       cursor-pointer hover:shadow-md transition-all duration-200 group"
+        >
+            {/* Thumbnail izquierdo */}
+            <div className="w-14 h-14 rounded-xl bg-secondary/15 flex items-center justify-center shrink-0
+                            group-hover:bg-secondary/25 transition-colors">
                 <Play size={20} className="text-secondary ml-0.5"/>
             </div>
 
             {/* Contenido */}
             <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-secondary uppercase tracking-wider">Siguiente</p>
+                <p className="text-xs font-semibold text-secondary uppercase tracking-wider">Continúa aquí</p>
                 <p className="text-sm font-bold text-primary truncate mt-0.5">
-                    Implementando la regla del "No-Line"
+                    {course.displayTitle}
                 </p>
-                <p className="text-xs text-mid mt-0.5">Video · 12 min restantes</p>
+                <p className="text-xs text-mid mt-0.5">
+                    {pending > 0
+                        ? `${pending} contenido${pending !== 1 ? 's' : ''} pendiente${pending !== 1 ? 's' : ''}`
+                        : `${course.porcentajeProgreso}% completado`
+                    }
+                </p>
             </div>
 
-            {/* Botón play derecho — fondo oscuro */}
+            {/* Botón play derecho */}
             <button
-                onClick={onClick}
+                onClick={e => { e.stopPropagation(); onClick() }}
                 className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center
-                   shrink-0 hover:bg-secondary transition-colors"
-                aria-label="Reproducir"
+                           shrink-0 hover:bg-secondary transition-colors"
+                aria-label="Continuar curso"
             >
                 <Play size={18} className="text-tertiary ml-0.5"/>
             </button>
@@ -520,17 +533,16 @@ function CourseGridCard({
         >
             {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-primary/10">
-                {course.thumbnail ? (
-                    <img
-                        src={course.thumbnail}
-                        alt={course.displayTitle}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/20">
-                        <GraduationCap size={32} className="text-primary/50" />
-                    </div>
-                )}
+                <AuthImage
+                    src={course.thumbnail}
+                    alt={course.displayTitle}
+                    className="w-full h-full object-cover"
+                    fallback={
+                        <div className="w-full h-full flex items-center justify-center bg-primary/20">
+                            <GraduationCap size={32} className="text-primary/50" />
+                        </div>
+                    }
+                />
                 <div className={`absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/90 backdrop-blur-sm
                         text-[11px] font-semibold ${badge.cls}`}>

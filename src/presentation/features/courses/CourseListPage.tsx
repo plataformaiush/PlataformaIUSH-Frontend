@@ -3,7 +3,7 @@ import { SortableRow } from './SortableRow'
 import { TableRowSkeleton, StatCardSkeleton, PageHeaderSkeleton } from './Skeletons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Search, BookOpen, Users, TrendingUp, Plus, Grid, List, Edit, Trash2, Eye } from 'lucide-react'
+import { Search, BookOpen, Users, TrendingUp, Plus, Grid, List, Edit, Trash2, Eye, ImageIcon } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -20,6 +20,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { fetchCursos, toggleCursoActivo, deleteCurso, updateCurso, reorderCursos, getCourseImageUrl } from '../../services/courseService'
+import { filesApi } from '../../../domain/files/Filesapi'
 import { fetchModulos, toggleModuloActivo } from '../../services/moduleService'
 import type { Course } from '../../../domain/courses/types'
 import { logger } from '../../utils/logger'
@@ -44,6 +45,8 @@ export const CourseListPage = ({ onBack }: CourseListPageProps = {}) => {
   const [editDescription, setEditDescription] = useState('')
   const [editStatus, setEditStatus] = useState<'active' | 'inactive'>('inactive')
   const [editSaving, setEditSaving] = useState(false)
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [limit] = useState(10)
   const [hasMore, setHasMore] = useState(true)
@@ -228,6 +231,15 @@ export const CourseListPage = ({ onBack }: CourseListPageProps = {}) => {
     }
   }
   
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEditImageFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setEditImagePreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
   const handleEditCourse = (courseId: string) => {
     const course = courses.find(c => c.id === courseId)
     if (!course) return
@@ -235,13 +247,24 @@ export const CourseListPage = ({ onBack }: CourseListPageProps = {}) => {
     setEditTitle(course.title)
     setEditDescription(course.description)
     setEditStatus(course.status)
+    setEditImageFile(null)
+    setEditImagePreview(null)
   }
 
   const handleSaveEdit = async () => {
     if (!editingCourse || !editTitle.trim()) return
     setEditSaving(true)
     try {
-      await updateCurso(editingCourse.id, { title: editTitle.trim(), description: editDescription.trim() })
+      let newImageId = editingCourse.imageId
+      if (editImageFile) {
+        const uploaded = await filesApi.subir(editImageFile)
+        newImageId = uploaded.id
+      }
+      await updateCurso(editingCourse.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        imageId: newImageId,
+      })
       if (editStatus !== editingCourse.status) {
         await toggleCursoActivo(editingCourse.id, editStatus === 'active')
       }
@@ -891,6 +914,60 @@ export const CourseListPage = ({ onBack }: CourseListPageProps = {}) => {
                 <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3}
                   className="w-full px-4 py-3 rounded-xl border-2 focus:outline-none text-sm resize-none"
                   style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)' }} />
+              </div>
+
+              {/* Imagen */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--color-primary)' }}>
+                  Imagen del curso
+                </label>
+                <div
+                  className="relative aspect-video w-full rounded-xl overflow-hidden border-2 border-dashed"
+                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-muted)' }}
+                >
+                  {editImagePreview ? (
+                    <img src={editImagePreview} alt="Nueva imagen" className="w-full h-full object-cover" />
+                  ) : editingCourse.imageId ? (
+                    <img
+                      src={getCourseImageUrl(editingCourse)}
+                      alt="Imagen actual"
+                      className="w-full h-full object-cover"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                      <ImageIcon className="w-10 h-10" style={{ color: 'var(--color-muted-foreground)' }} />
+                      <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Sin imagen</p>
+                    </div>
+                  )}
+
+                  <label className="absolute inset-0 flex items-center justify-center cursor-pointer
+                                     bg-black/0 hover:bg-black/40 transition-colors group">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5
+                                     rounded-lg text-xs font-semibold text-white bg-black/60">
+                      {editImagePreview || editingCourse.imageId ? 'Cambiar imagen' : 'Subir imagen'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      className="sr-only"
+                      onChange={handleEditImageChange}
+                    />
+                  </label>
+                </div>
+
+                {editImageFile && (
+                  <div className="mt-2 flex items-center justify-between text-xs"
+                       style={{ color: 'var(--color-muted-foreground)' }}>
+                    <span>📷 {editImageFile.name}</span>
+                    <button
+                      onClick={() => { setEditImageFile(null); setEditImagePreview(null) }}
+                      className="hover:opacity-70 underline"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Nivel + Instructor (solo visual, no persisten en backend) */}

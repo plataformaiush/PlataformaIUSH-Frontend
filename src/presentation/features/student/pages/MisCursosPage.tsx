@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { GraduationCap, Loader, Play, CheckCircle, ArrowRight, ArrowLeft, Trash2, AlertTriangle, X } from 'lucide-react'
 import { studentService, type CursoInscritoBackend } from '../services/studentService'
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
+import { AuthImage } from '../components/AuthImage'
 
 /* ═══════════════════════════════════════════════════════════════════
    Página: Mis Cursos
@@ -42,8 +43,10 @@ export function MisCursosPage() {
 
             const idImagenByCurso = new Map<string, string>()
             for (const curso of allCursos as any[]) {
-                if (curso?.idImagen && curso?.idCurso) {
-                    idImagenByCurso.set(String(curso.idCurso), curso.idImagen)
+                const idImagen = curso?.idImagen ?? curso?.id_imagen
+                const idCurso  = curso?.idCurso  ?? curso?.id_curso
+                if (idImagen && idCurso) {
+                    idImagenByCurso.set(String(idCurso), idImagen)
                 }
             }
 
@@ -255,17 +258,16 @@ function EnrolledCourseCard({
                  flex flex-col text-left hover:shadow-lg transition-all duration-300 w-full cursor-pointer group relative"
         >
             <div className="relative aspect-video w-full overflow-hidden bg-primary/5">
-                {course.thumbnail ? (
-                    <img
-                        src={course.thumbnail}
-                        alt={course.titulo}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                        <GraduationCap size={40} className="text-primary/30" />
-                    </div>
-                )}
+                <AuthImage
+                    src={course.thumbnail}
+                    alt={course.titulo}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fallback={
+                        <div className="w-full h-full flex items-center justify-center bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                            <GraduationCap size={40} className="text-primary/30" />
+                        </div>
+                    }
+                />
 
                 <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1
                         rounded-full bg-white/95 backdrop-blur-sm shadow-sm

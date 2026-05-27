@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useParams, Link, useNavigate} from 'react-router-dom'
 import {
     ArrowLeft, Check, Lock, Play,
-    FileText, HelpCircle, Image as ImageIcon, Table,
+    FileText, File, HelpCircle, Image as ImageIcon, Table,
 } from 'lucide-react'
 
 import { useStudentProgressStore } from '../../../stores/studentProgressStore'
@@ -850,7 +850,7 @@ const CONTENT_ICON: Record<string, React.ElementType> = {
     text: FileText,
     quiz: HelpCircle,
     image: ImageIcon,
-    pdf: FileText,
+    pdf: File,
     xlsx: Table,
 }
 
@@ -902,7 +902,7 @@ function ContentCircle({type, status, moduleIndex, onAction}: {
 
 /* ── Card ───────────────────────────────────────────────────────────────── */
 const CONTENT_TYPE_LABEL: Record<string, string> = {
-    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen', pdf: 'PDF', xlsx: 'Excel',
+    video: 'Video', text: 'Texto', quiz: 'Quiz', image: 'Imagen', pdf: 'Archivo', xlsx: 'Excel',
 }
 
 function ContentCard({item, onAction}: { item: FlatItem; onAction: () => void }) {
