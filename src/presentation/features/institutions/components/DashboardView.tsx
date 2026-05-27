@@ -1,212 +1,177 @@
-const stats = [
-  { label: 'Estudiantes', value: '1,284', delta: '+12 este mes', up: true },
-  { label: 'Docentes', value: '48', delta: '4 inactivos', up: false },
-  { label: 'Cursos activos', value: '32', delta: '+3 este mes', up: true },
-  { label: 'Contenidos', value: '510', delta: '+28 este mes', up: true },
-]
+import { useState, useEffect } from 'react'
+import { axiosInstance } from '../../../features/student/auth/services/authService'
+import { SessionsChart, ContentPieChart, completarDatosSemana } from './shared/charts'
+import { StatCard, AlertCard } from './shared/cards'
+import type { SesionDia } from './shared/charts/chartUtils'
 
-const sessionesSemanales = [
-  { dia: 'Lun', val: 280 },
-  { dia: 'Mar', val: 240 },
-  { dia: 'Mié', val: 320 },
-  { dia: 'Jue', val: 260 },
-  { dia: 'Vie', val: 180 },
-  { dia: 'Sáb', val: 120 },
-  { dia: 'Dom', val: 90 },
-]
-
-const recentActivity = [
-  { text: 'Juan Pérez completó módulo 3', time: 'hace 5 min' },
-  { text: 'Nuevo docente registrado', time: 'hace 20 min' },
-  { text: 'Curso de Inglés actualizado', time: 'hace 1h' },
-  { text: 'María López obtuvo certificado', time: 'hace 2h' },
-  { text: 'Nuevo PDF subido en Física', time: 'hace 3h' },
-]
-
-const topCursos = [
-  { nombre: 'Matemáticas', pct: 88 },
-  { nombre: 'Programación', pct: 74 },
-  { nombre: 'Inglés', pct: 61 },
-  { nombre: 'Física', pct: 45 },
-  { nombre: 'Historia', pct: 30 },
-]
-
-const contentTypes = [
-  { type: 'Video', pct: 45, color: 'var(--color-primary)' },
-  { type: 'Texto', pct: 35, color: 'var(--color-secondary)' },
-  { type: 'PDF', pct: 20, color: 'var(--color-tertiary)' },
-]
-
-// Gráfica de líneas para sesiones
-function SessionsChart() {
-  const maxVal = Math.max(...sessionesSemanales.map((s) => s.val))
-  
-  const width = 300
-  const height = 150
-  const padding = 30
-  const graphWidth = width - padding * 2
-  const graphHeight = height - padding * 2
-
-  const points = sessionesSemanales.map((s, i) => {
-    const x = padding + (i / (sessionesSemanales.length - 1)) * graphWidth
-    const y = height - padding - ((s.val / maxVal) * graphHeight)
-    return { x, y, val: s.val, dia: s.dia }
-  })
-
-  // Curva suave
-  let pathD = `M ${points[0].x} ${points[0].y}`
-  for (let i = 1; i < points.length; i++) {
-    const xc = (points[i].x + points[i - 1].x) / 2
-    const yc = (points[i].y + points[i - 1].y) / 2
-    pathD += ` Q ${xc} ${yc}, ${points[i].x} ${points[i].y}`
-  }
-
-  return (
-    <svg width="100%" height="150" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="sessionGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-        </linearGradient>
-        <filter id="shadow">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1" />
-        </filter>
-      </defs>
-      
-      {/* Area with shadow */}
-      <path d={`${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`} fill="url(#sessionGradient)" filter="url(#shadow)" />
-      
-      {/* Line with glow */}
-      <path d={pathD} stroke="var(--color-primary)" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
-      <path d={pathD} stroke="var(--color-primary)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      
-      {/* Points with hover effect */}
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill="var(--color-primary)" opacity="0.2" />
-          <circle cx={p.x} cy={p.y} r="3" fill="var(--color-primary)" />
-        </g>
-      ))}
-      
-      {/* Labels */}
-      {points.map((p, i) => (
-        <text key={i} x={p.x} y={height - 10} textAnchor="middle" className="text-[9px]" fontSize="10" fill="var(--color-muted-foreground)">
-          {p.dia}
-        </text>
-      ))}
-    </svg>
-  )
+// Tipos TypeScript
+interface KPIData {
+  total: number
+  variacion?: number
+  inactivos?: number
 }
 
-// Gráfica de dona para tipo de contenido
-function ContentPieChart() {
-  let currentAngle = -90
-  const radius = 50
-  const innerRadius = 32
-  const centerX = 70
-  const centerY = 70
+interface Tarjetas {
+  estudiantes: KPIData
+  docentes: KPIData
+  cursos: KPIData
+  contenidos: KPIData
+}
 
-  const slices = contentTypes.map((item) => {
-    const sliceAngle = (item.pct / 100) * 360
-    const startAngle = currentAngle
-    const endAngle = currentAngle + sliceAngle
-    currentAngle = endAngle
+interface ElementosAtencion {
+  docentesInactivos: number
+  cursosSinInscripciones: number
+  cursosSinContenido: number
+}
 
-    const x1 = centerX + radius * Math.cos((startAngle * Math.PI) / 180)
-    const y1 = centerY + radius * Math.sin((startAngle * Math.PI) / 180)
-    const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180)
-    const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180)
-    
-    const ix1 = centerX + innerRadius * Math.cos((startAngle * Math.PI) / 180)
-    const iy1 = centerY + innerRadius * Math.sin((startAngle * Math.PI) / 180)
-    const ix2 = centerX + innerRadius * Math.cos((endAngle * Math.PI) / 180)
-    const iy2 = centerY + innerRadius * Math.sin((endAngle * Math.PI) / 180)
-    
-    const largeArc = sliceAngle > 180 ? 1 : 0
+interface ContenidoTipo {
+  tipo: string
+  cantidad: number
+  porcentaje: number
+}
 
-    return {
-      path: `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${ix1} ${iy1} Z`,
-      color: item.color,
-      label: item.type,
-      pct: item.pct,
-    }
-  })
+interface TopCurso {
+  id: string
+  titulo: string
+  docente: string
+  completitud: number
+  estudiantes: number
+}
 
-  return (
-    <div className="flex items-center gap-6">
-      <svg width="140" height="140" viewBox="0 0 140 140" className="flex-shrink-0 drop-shadow-sm">
-        {slices.map((slice, i) => (
-          <path key={i} d={slice.path} fill={slice.color} opacity="0.9" stroke="white" strokeWidth="2" className="transition-opacity duration-300 hover:opacity-100" />
-        ))}
-        <text x="70" y="73" textAnchor="middle" className="text-xs font-bold" fill="var(--color-foreground)">
-          100%
-        </text>
-      </svg>
-      <div className="space-y-3">
-        {contentTypes.map((c) => (
-          <div key={c.type} className="group flex items-center gap-2.5 p-2 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer">
-            <div className="w-3 h-3 rounded-sm flex-shrink-0 transition-transform duration-200 group-hover:scale-125" style={{ backgroundColor: c.color }} />
-            <div className="flex-1">
-              <p className="text-xs font-medium transition-colors" style={{ color: 'var(--color-foreground)' }}>{c.type}</p>
-            </div>
-            <span className="text-xs font-bold px-2 py-1 rounded-md transition-all duration-200 group-hover:scale-110" style={{ color: c.color, backgroundColor: `${c.color}15` }}>{c.pct}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+interface TopDocente {
+  id: string
+  nombre: string
+  estudiantes: number
+  cursos: number
+}
+
+interface Graficos {
+  sesionesSemana: SesionDia[]
+  contenidoPorTipo: ContenidoTipo[]
+  topCursos: TopCurso[]
+  topDocentes: TopDocente[]
+}
+
+interface DashboardData {
+  tarjetas: Tarjetas
+  elementosAtencion: ElementosAtencion
+  graficos: Graficos
+}
+
+interface DashboardResponse {
+  success: boolean
+  data: DashboardData
 }
 
 export function DashboardView() {
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await axiosInstance.get<DashboardResponse>('/api/superadmin/dashboardControl')
+        if (response.data.success && response.data.data) {
+          setDashboard(response.data.data)
+        } else {
+          throw new Error('Respuesta inválida del servidor')
+        }
+      } catch (err) {
+        const message = (err as any)?.response?.data?.message || 
+                        (err instanceof Error ? err.message : 'Error desconocido')
+        setError(message)
+        console.error('Error cargando dashboard:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--color-primary)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--color-muted-foreground)' }}>Cargando panel de control...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !dashboard) {
+    return (
+      <div className="p-6" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="rounded-lg border-2 border-red-500 bg-red-50 p-6" style={{ borderColor: 'var(--color-destructive)', backgroundColor: 'var(--color-muted)' }}>
+          <p style={{ color: 'var(--color-destructive)' }}>Error: {error || 'No se pudo cargar el dashboard'}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Construir datos de tarjetas KPI
+  const stats = [
+    {
+      label: 'Estudiantes',
+      value: dashboard.tarjetas.estudiantes.total.toLocaleString(),
+      delta: `${dashboard.tarjetas.estudiantes.variacion! > 0 ? '+' : ''}${dashboard.tarjetas.estudiantes.variacion} este mes`,
+      up: dashboard.tarjetas.estudiantes.variacion! > 0
+    },
+    {
+      label: 'Docentes',
+      value: dashboard.tarjetas.docentes.total,
+      delta: `${dashboard.tarjetas.docentes.inactivos} inactivos`,
+      up: dashboard.tarjetas.docentes.inactivos! < 5
+    },
+    {
+      label: 'Cursos activos',
+      value: dashboard.tarjetas.cursos.total,
+      delta: `${dashboard.tarjetas.cursos.variacion! > 0 ? '+' : ''}${dashboard.tarjetas.cursos.variacion} este mes`,
+      up: dashboard.tarjetas.cursos.variacion! > 0
+    },
+    {
+      label: 'Contenidos',
+      value: dashboard.tarjetas.contenidos.total.toLocaleString(),
+      delta: `${dashboard.tarjetas.contenidos.variacion! > 0 ? '+' : ''}${dashboard.tarjetas.contenidos.variacion} este mes`,
+      up: dashboard.tarjetas.contenidos.variacion! > 0
+    }
+  ]
+
   return (
     <div className="p-6 space-y-6" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Panel de control</h1>
-          <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Bienvenido, últimas 24 horas</p>
-        </div>
-        <button className="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary) 50%, var(--color-secondary) 100%)',
-            color: 'var(--color-text-on-dark)',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}>
-          Descargar
-        </button>
+      <div>
+        <h1 className="text-base font-semibold" style={{ color: 'var(--color-foreground)' }}>Panel de control</h1>
+        <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Bienvenido, últimas 24 horas</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl"
-            style={{
-              background: 'var(--color-muted)',
-              borderColor: 'var(--color-border)',
-              overflow: 'hidden'
-            }}>
-            {/* Header con color primario */}
-            <div className="w-full p-3 transition-all duration-300"
-              style={{ 
-                background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                color: 'var(--color-text-on-dark)'
-              }}>
-              <p className="text-sm font-semibold uppercase tracking-wider">{s.label}</p>
-            </div>
-            
-            {/* Body blanco */}
-            <div className="p-5">
-              <p className="text-4xl font-bold mb-3 transition-all duration-300 group-hover:scale-105 origin-left" style={{ color: 'var(--color-foreground)' }}>{s.value}</p>
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg w-fit transition-all duration-300"
-                style={{ backgroundColor: s.up ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)' }}>
-                <span className={`text-sm font-bold ${s.up ? 'text-green-600' : 'text-red-600'}`}>
-                  {s.up ? '↑' : '↓'} {s.delta}
-                </span>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            delta={s.delta}
+            up={s.up}
+          />
         ))}
       </div>
+
+      {/* Alertas de atención */}
+      <AlertCard
+        title="Elementos que requieren atención"
+        description="Hay algunos problemas que podrían afectar la plataforma"
+        items={[
+          { label: 'Docentes inactivos', value: dashboard.elementosAtencion.docentesInactivos },
+          { label: 'Cursos sin inscripciones', value: dashboard.elementosAtencion.cursosSinInscripciones },
+          { label: 'Cursos sin contenido', value: dashboard.elementosAtencion.cursosSinContenido }
+        ]}
+      />
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -217,7 +182,7 @@ export function DashboardView() {
             <p className="text-sm font-semibold uppercase tracking-wider">Sesiones semanales</p>
           </div>
           <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
-            <SessionsChart />
+            <SessionsChart data={completarDatosSemana(dashboard.graficos.sesionesSemana)} />
           </div>
         </div>
 
@@ -228,31 +193,32 @@ export function DashboardView() {
             <p className="text-sm font-semibold uppercase tracking-wider">Tipo de contenido</p>
           </div>
           <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
-            <ContentPieChart />
+            <ContentPieChart data={dashboard.graficos.contenidoPorTipo} />
           </div>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:h-96">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Top Courses */}
         <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
           <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
-            <p className="text-sm font-semibold uppercase tracking-wider">Cursos más visitados</p>
+            <p className="text-sm font-semibold uppercase tracking-wider">Cursos con mayor completitud</p>
           </div>
           <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
             <div className="space-y-4">
-              {topCursos.map((c, idx) => (
-                <div key={c.nombre} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer">
+              {dashboard.graficos.topCursos.map((c, idx) => (
+                <div key={c.id} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-xs font-medium w-24 truncate" style={{ color: 'var(--color-foreground)' }}>{c.nombre}</span>
-                    <span className="text-xs font-bold px-2 py-1 rounded-md transition-all duration-200 group-hover:scale-110" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary)15' }}>{c.pct}%</span>
+                    <span className="text-xs font-medium flex-1 truncate" style={{ color: 'var(--color-foreground)' }}>{idx + 1}. {c.titulo}</span>
+                    <span className="text-xs font-bold px-2 py-1 rounded-md transition-all duration-200 group-hover:scale-110" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary)15' }}>{c.completitud}%</span>
                   </div>
+                  <p className="text-[10px] mb-2" style={{ color: 'var(--color-muted-foreground)' }}>{c.estudiantes} estudiantes</p>
                   <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-tertiary)' }}>
                     <div className="h-full rounded-full transition-all duration-500" style={{ 
                       background: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`,
-                      width: `${c.pct}%`,
+                      width: `${c.completitud}%`,
                       boxShadow: `0 0 10px rgba(0, 0, 0, 0.1)`
                     }} />
                   </div>
@@ -262,34 +228,35 @@ export function DashboardView() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col"
+        {/* Top Teachers */}
+        <div className="border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
           style={{ borderColor: 'var(--color-border)' }}>
-          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'var(--color-text-on-dark)' }}>
-            <p className="text-sm font-semibold uppercase tracking-wider">Actividad reciente</p>
+          <div className="p-4 transition-all duration-300" style={{ background: 'linear-gradient(135deg, var(--color-secondary), var(--color-primary))', color: 'var(--color-text-on-dark)' }}>
+            <p className="text-sm font-semibold uppercase tracking-wider">Top docentes</p>
           </div>
-          <div style={{ backgroundColor: 'var(--color-muted)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="space-y-0 flex-1 overflow-y-auto px-4 py-4">
-              {recentActivity.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="text-3xl mb-2 text-muted-foreground">-</div>
-                  <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Sin actividad</p>
-                </div>
-              ) : (
-                recentActivity.map((a, i) => (
-                  <div key={i} className="group flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer"
-                    style={{
-                      borderBottomColor: 'var(--color-border)',
-                      borderBottomWidth: i < recentActivity.length - 1 ? '1px' : '0'
-                    }}>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 transition-transform duration-200 group-hover:scale-150" style={{ backgroundColor: 'var(--color-primary)' }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs leading-tight transition-colors" style={{ color: 'var(--color-foreground)' }}>{a.text}</p>
-                      <p className="text-[10px] mt-1 transition-colors" style={{ color: 'var(--color-muted-foreground)' }}>{a.time}</p>
+          <div className="p-6" style={{ backgroundColor: 'var(--color-muted)' }}>
+            <div className="space-y-4">
+              {dashboard.graficos.topDocentes.map((d, idx) => (
+                <div key={d.id} className="group p-3 rounded-lg transition-all duration-200 hover:bg-muted/40 cursor-pointer border" style={{ borderColor: 'var(--color-border)' }}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>{idx + 1}. {d.nombre}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--color-muted-foreground)' }}>{d.cursos} {d.cursos === 1 ? 'curso' : 'cursos'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold" style={{ color: 'var(--color-secondary)' }}>{d.estudiantes}</p>
+                      <p className="text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>estudiantes</p>
                     </div>
                   </div>
-                ))
-              )}
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-tertiary)' }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ 
+                      background: `linear-gradient(to right, var(--color-secondary), var(--color-primary))`,
+                      width: `${(d.estudiantes / Math.max(...dashboard.graficos.topDocentes.map(x => x.estudiantes))) * 100}%`,
+                      boxShadow: `0 0 10px rgba(0, 0, 0, 0.1)`
+                    }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

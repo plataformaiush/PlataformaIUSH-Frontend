@@ -1,10 +1,9 @@
-import { useRoutes } from 'react-router-dom'
-import { authRoutes } from './definitions/auth.routes'
-import { superAdminRoutes } from './definitions/superadmin.routes'
+import React from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { allRoutes } from './definitions'
 
+const router = createBrowserRouter(allRoutes)
 
 export const AppRouter = () => {
-  const element = useRoutes([...authRoutes, ...superAdminRoutes])
-
-  return element
+  return <RouterProvider router={router} />
 }

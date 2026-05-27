@@ -1,6 +1,14 @@
 // Analytics Google Ad Manager - Requisito del correo
 
-import { ITokenManager, MockTokenManager } from '../shared/interfaces/ITokenManager'
+import { ITokenManager } from '../shared/interfaces/ITokenManager'
+
+// TokenManager por defecto: no expone headers de autorización hasta que se inyecte
+// la implementación real (presentation/services/tokenManager) vía AnalyticsService.setTokenManager.
+const noopTokenManager: ITokenManager = {
+  getToken: () => null,
+  getAuthHeaders: () => ({}),
+  isTokenExpired: () => true,
+}
 
 export interface AnalyticsEvent {
   event: string
@@ -62,7 +70,7 @@ export type AnalyticsEventType =
 export class AnalyticsService {
   private static isInitialized = false
   private static queue: AnalyticsEvent[] = []
-  private static tokenManager: ITokenManager = new MockTokenManager()  // Default mock
+  private static tokenManager: ITokenManager = noopTokenManager  // Default no-op (sin auth)
 
   // Inyección de dependencias para desacoplar
   static setTokenManager(tokenManager: ITokenManager): void {

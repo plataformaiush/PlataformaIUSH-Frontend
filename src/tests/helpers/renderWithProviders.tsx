@@ -2,6 +2,7 @@ import { type ReactElement } from 'react'
 import { render, type RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
+import { InstitutionProvider } from '../../context/InstitutionContext'
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -27,7 +28,9 @@ function AllProviders({ children }: AllProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        {children}
+        <InstitutionProvider>
+          {children}
+        </InstitutionProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

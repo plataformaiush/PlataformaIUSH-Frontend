@@ -1,0 +1,1 @@
+En este espacio se debera colocar el tipado de los datos de las respuestas del backend y los que se requieran.

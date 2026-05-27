@@ -107,6 +107,30 @@ export const institutionService = {
       throw error
     }
   },
+
+  async saveCertificateTemplate(certificateHtml: string): Promise<void> {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      throw new Error('Sin token de autenticación')
+    }
+
+    try {
+      const res = await fetch(`${BASE}/certificate-template`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ html: certificateHtml }),
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(`HTTP ${res.status}: ${errorData.message || res.statusText}`)
+      }
+    } catch (error) {
+      console.error('saveCertificateTemplate error:', error)
+      throw error
+    }
+  },
 }
 
 // Aplica los colores de la institución en toda la app

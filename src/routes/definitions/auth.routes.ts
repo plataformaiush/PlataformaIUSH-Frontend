@@ -1,7 +1,6 @@
 import { createElement } from "react";
 import { RouteObject } from "react-router-dom";
 import LoginPage from "../../presentation/features/student/auth/pages/LoginPage";
-import RolePage from "../../presentation/features/student/auth/pages/rolePage";
 
 export const authRoutes: RouteObject[] = [
   {
@@ -9,7 +8,7 @@ export const authRoutes: RouteObject[] = [
     element: createElement(LoginPage),
   },
   {
-    path: "/role",
-    element: createElement(RolePage),
+    path: "/login",
+    element: createElement(LoginPage),
   },
 ];

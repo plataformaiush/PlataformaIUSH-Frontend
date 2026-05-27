@@ -2,6 +2,11 @@ import { useForm } from "react-hook-form";
 import { loginRequest } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuthStore } from "../../../../stores/auth.store";
+import { useInstitution } from "../../../../../context/InstitutionContext";
+import { UserRole } from "../../../../../domain/shared/enums/UserRole.enum";
+
+import { trackIniciarSesion } from "../../../reports/events/TagManagerEvents";
 
 type LoginData = {
   correo: string;
@@ -11,6 +16,9 @@ type LoginData = {
 export default function LoginForm() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const { colors } = useInstitution();
+  const { setUser, setLoading, setError } = useAuthStore();
 
   const {
     register,
@@ -20,29 +28,63 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginData) => {
     try {
+      setLoading(true);
+      setErrorMsg("");
+      setError("");
+
       const response = await loginRequest(data);
 
-      console.log("LOGIN OK:", response);
+      // Guarda el token y usuario en el store y localStorage.
+      // Prioridad: expiresIn (segundos) → token_expires (ISO) → fallback 1h
+      const expiresIn =
+        response.expiresIn ??
+        (response.token_expires
+          ? Math.floor((new Date(response.token_expires).getTime() - Date.now()) / 1000)
+          : 3600);
+      setUser(response.user, response.token, expiresIn);
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      // Redirige según el rol del usuario
+      const userRoles = response.user.roles || [];
 
-      //redireccion
-      navigate("/role");
+      //Vinculación de inicio de sesión para tag manager.
+      trackIniciarSesion(userRoles[0]); //Trackeamos el inicio de sesión.
 
+      if (userRoles.includes(UserRole.SUPER_ADMIN)) {
+        navigate("/super-admin");
+      } else if (userRoles.includes(UserRole.ADMIN)) {
+        navigate("/admin");
+      } else if (userRoles.includes(UserRole.ESTUDIANTE)) {
+        navigate("/student");
+      } else if (userRoles.includes(UserRole.DOCENTE)) {
+        navigate("/teacher/dashboard");
+      } else {
+        const rolesText = userRoles.length > 0 ? userRoles.join(", ") : "ninguno";
+        const errorMessage = `No hay vista disponible para los roles: ${rolesText}`;
+        setErrorMsg(errorMessage);
+        setError(errorMessage);
+        // Limpiar el usuario si no tiene vista disponible
+        setTimeout(() => {
+          setUser({ id: "", correo: "" }, "", 0);
+          navigate("/login");
+        }, 2000);
+      }
     } catch (error) {
-      console.error("Error login:", error);
-      setErrorMsg("Credenciales incorrectas o error del servidor");
+      console.error("Error en login:", error);
+      const errorMessage = "Credenciales incorrectas o error del servidor";
+      setErrorMsg(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="rounded-3xl bg-transparent px-2 md:px-4">
       <div className="mb-8">
-        <h2 className="text-4xl font-bold tracking-tight text-[#223740]">
+        <h2 className="text-4xl font-bold tracking-tight" style={{ color: colors.primary }}>
           Bienvenido
         </h2>
-        <p className="mt-2 text-sm text-[#5A878C]">
+        <p className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
           Inicia sesión para acceder a tus cursos, seguir tu progreso y descubrir nuevas oportunidades de aprendizaje con nosotros.
         </p>
       </div>
@@ -51,14 +93,21 @@ export default function LoginForm() {
         
         {/* ERROR GENERAL */}
         {errorMsg && (
-          <div className="rounded-lg bg-[#AEEBF2] text-[#223740] text-sm p-2 text-center border border-[#5A878C]/40">
+          <div
+            className="rounded-lg text-sm p-2 text-center"
+            style={{
+              backgroundColor: colors.tertiary,
+              color: colors.primary,
+              border: `1px solid ${colors.primary}66`,
+            }}
+          >
             {errorMsg}
           </div>
         )}
 
         {/* CORREO */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#223740]">
+          <label className="mb-2 block text-sm font-medium" style={{ color: colors.primary }}>
             Correo electrónico
           </label>
           <input
@@ -67,10 +116,15 @@ export default function LoginForm() {
             {...register("correo", {
               required: "El correo es obligatorio",
             })}
-            className="w-full rounded-xl border border-[#5A878C]/50 bg-white px-4 py-3 text-sm text-[#223740] outline-none transition placeholder:text-[#5A878C]/70 focus:border-[#5A878C] focus:ring-2 focus:ring-[#AEEBF2]"
+            className="w-full rounded-xl px-4 py-3 text-sm outline-none transition"
+            style={{
+              backgroundColor: colors.input,
+              color: colors.primary,
+              border: `1px solid ${colors.border}`,
+            }}
           />
           {errors.correo && (
-            <p className="mt-1 text-sm text-[#223740]">
+            <p className="mt-1 text-sm" style={{ color: colors.primary }}>
               {errors.correo.message}
             </p>
           )}
@@ -78,35 +132,52 @@ export default function LoginForm() {
 
         {/* CONTRASEÑA */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-[#223740]">
+          <label className="mb-2 block text-sm font-medium" style={{ color: colors.primary }}>
             Contraseña
           </label>
-          <input
-            type="password"
-            placeholder="Ingresa tu contraseña"
-            {...register("contrasena", {
-              required: "La contraseña es obligatoria",
-            })}
-            className="w-full rounded-xl border border-[#5A878C]/50 bg-white px-4 py-3 text-sm text-[#223740] outline-none transition placeholder:text-[#5A878C]/70 focus:border-[#5A878C] focus:ring-2 focus:ring-[#AEEBF2]"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Ingresa tu contraseña"
+              {...register("contrasena", {
+                required: "La contraseña es obligatoria",
+              })}
+              className="w-full rounded-xl px-4 py-3 pr-24 text-sm outline-none transition"
+              style={{
+                backgroundColor: colors.input,
+                color: colors.primary,
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-xs font-semibold transition"
+              style={{ color: colors.primary }}
+            >
+              {showPassword ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
           {errors.contrasena && (
-            <p className="mt-1 text-sm text-[#223740]">
+            <p className="mt-1 text-sm" style={{ color: colors.primary }}>
               {errors.contrasena.message}
             </p>
           )}
         </div>
 
         {/* DIVIDER */}
-        <div className="flex items-center gap-3 py-1 text-xs text-[#5A878C]">
-          <div className="h-px flex-1 bg-[#AEEBF2]" />
+        <div className="flex items-center gap-3 py-1 text-xs" style={{ color: colors.textSecondary }}>
+          <div className="h-px flex-1" style={{ backgroundColor: colors.tertiary }} />
           <span>o</span>
-          <div className="h-px flex-1 bg-[#AEEBF2]" />
+          <div className="h-px flex-1" style={{ backgroundColor: colors.tertiary }} />
         </div>
 
         {/* boton */}
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#223740] py-3 text-sm font-semibold text-white transition hover:bg-[#5A878C]"
+          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+          style={{ backgroundColor: colors.primary }}
+          disabled={false}
         >
           Iniciar sesión
         </button>
